@@ -37,7 +37,7 @@ namespace Ryujinx.Cpu.Nce
         public event Action<ulong, ulong> UnmapEvent;
 
         public int AddressSpaceBits { get; }
-        protected override ulong AddressSpaceSize { get; }
+        public override ulong AddressSpaceSize { get; }
 
         /// <summary>
         /// Creates a new instance of the host mapped memory manager.
@@ -79,8 +79,9 @@ namespace Ryujinx.Cpu.Nce
         public void Map(ulong va, ulong pa, ulong size, MemoryMapFlags flags)
         {
             AssertValidAddressAndSize(va, size);
+            Console.WriteLine($"Map called: va=0x{va:X16}, pa=0x{pa:X16}, size=0x{size:X16}, AddressSpaceSize=0x{AddressSpaceSize:X16}");
 
-            _addressSpace.MapView(_backingMemory, pa, AddressToOffset(va), size);
+            _addressSpace.MapView(_backingMemory, pa, va, size);
             _pages.AddMapping(va, size);
             PtMap(va, pa, size);
 
@@ -109,7 +110,7 @@ namespace Ryujinx.Cpu.Nce
 
             _pages.RemoveMapping(va, size);
             PtUnmap(va, size);
-            _addressSpace.UnmapView(_backingMemory, AddressToOffset(va), size);
+            _addressSpace.UnmapView(_backingMemory, va, size);
         }
 
         private void PtUnmap(ulong va, ulong size)
@@ -126,7 +127,15 @@ namespace Ryujinx.Cpu.Nce
         /// <inheritdoc/>
         public void Reprotect(ulong va, ulong size, MemoryPermission protection)
         {
-            _addressSpace.Reprotect(AddressToOffset(va), size, protection);
+            if (!IsRangeMapped(va, size))
+            {
+                Console.WriteLine($"Warning: Attempting to reprotect unmapped memory at 0x{va:X16}, size 0x{size:X16}");
+                Map(va, 0, size, MemoryMapFlags.None);
+            }
+
+            Console.WriteLine($"Reprotecting mapped memory at 0x{va:X16}, size 0x{size:X16}");
+            
+            _addressSpace.Reprotect(va, size, protection);
         }
 
         public ref T GetRef<T>(ulong va) where T : unmanaged
@@ -268,7 +277,7 @@ namespace Ryujinx.Cpu.Nce
         {
             if (guest)
             {
-                _addressSpace.Reprotect(AddressToOffset(va), size, protection, false);
+                _addressSpace.Reprotect(va, size, protection, false);
             }
             else
             {
@@ -292,16 +301,6 @@ namespace Ryujinx.Cpu.Nce
         public SmartMultiRegionHandle BeginSmartGranularTracking(ulong address, ulong size, ulong granularity, int id)
         {
             return Tracking.BeginSmartGranularTracking(address, size, granularity, id);
-        }
-
-        private ulong AddressToOffset(ulong address)
-        {
-            if (address < ReservedSize)
-            {
-                throw new ArgumentException($"Invalid address 0x{address:x16}");
-            }
-
-            return address - ReservedSize;
         }
 
         /// <summary>

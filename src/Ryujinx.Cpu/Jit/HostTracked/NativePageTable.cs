@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Ryujinx.Cpu.Jit.HostTracked
 {
-    sealed class NativePageTable : IDisposable
+    public sealed class NativePageTable : IDisposable
     {
         private delegate ulong TrackingEventDelegate(ulong address, ulong size, bool write);
 

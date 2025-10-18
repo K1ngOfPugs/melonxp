@@ -83,7 +83,7 @@ struct MeloNXApp: App {
             .onAppear() {
                 if UIDevice.current.userInterfaceIdiom == .pad && !ignores {
                     print((Double(ProcessInfo.processInfo.physicalMemory) / 1_000_000_000))
-                    if round(Double(ProcessInfo.processInfo.physicalMemory) / 1_000_000_000) <= 4 {
+                    if round(Double(ProcessInfo.processInfo.physicalMemory) / 1_000_000_000) <= 4 && !checkAppEntitlement("com.apple.developer.kernel.extended-virtual-addressing") {
                         fourgbiPad = true
                     }
                 }
@@ -94,7 +94,7 @@ struct MeloNXApp: App {
                     fourgbiPad = false
                 }
             } message: {
-                Text("Your Device is an iPad with \(String(format: "%.0f GB", Double(ProcessInfo.processInfo.physicalMemory) / 1_000_000_000)) of memory, MeloNX has issues with those devices")
+                Text("Your Device is an iPad with \(String(format: "%.0f GB", Double(ProcessInfo.processInfo.physicalMemory) / 1_000_000_000)) of memory, MeloNX has issues with those devices.")
             }
         }
     }

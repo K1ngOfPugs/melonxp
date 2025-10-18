@@ -28,11 +28,11 @@ namespace Ryujinx.Cpu.Jit
         public MemoryTracking Tracking { get; }
 
         private readonly NativePageTable _nativePageTable;
-        private readonly Ryujinx.Cpu.Jit.HostTracked.AddressSpacePartitioned _addressSpace;
+        public readonly Ryujinx.Cpu.Jit.HostTracked.AddressSpacePartitioned _addressSpace;
 
         private readonly ManagedPageFlags _pages;
 
-        protected override ulong AddressSpaceSize { get; }
+        public override ulong AddressSpaceSize { get; }
 
         /// <inheritdoc/>
         public bool UsesPrivateAllocations => true;

@@ -159,7 +159,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
             {
                 if (owner.AllocateThreadLocalStorage(out _tlsAddress) != Result.Success)
                 {
-                    return KernelResult.OutOfMemory;
+                    Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
                 }
 
                 MemoryHelper.FillWithZeros(owner.CpuMemory, _tlsAddress, KTlsPageInfo.TlsEntrySize);

@@ -47,7 +47,7 @@ namespace Ryujinx.Cpu.Jit
 
         public event Action<ulong, ulong> UnmapEvent;
 
-        protected override ulong AddressSpaceSize { get; }
+        public override ulong AddressSpaceSize { get; }
 
         /// <summary>
         /// Creates a new instance of the memory manager.

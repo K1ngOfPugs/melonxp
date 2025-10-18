@@ -233,7 +233,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
                         codeRegionSize = BitUtils.AlignUp(endAddr, RegionAlignment) - CodeRegionStart;
                         stackAndTlsIoStart = 0;
                         stackAndTlsIoEnd = 0;
-                        AslrRegionStart = Math.Max(reservedSize, 0x8000000);
+                        AslrRegionStart = 0x8000000;
                         addrSpaceEnd = reservedSize + reservedAddressSpaceSize;
                         AslrRegionEnd = addrSpaceEnd;
                     }
@@ -245,7 +245,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
                         tlsIoRegion.Size = 0x1000000000;
                         CodeRegionStart = BitUtils.AlignDown(address, RegionAlignment);
                         codeRegionSize = BitUtils.AlignUp(endAddr, RegionAlignment) - CodeRegionStart;
-                        AslrRegionStart = Math.Max(reservedSize, 0x8000000);
+                        AslrRegionStart = 0x8000000;
                         AslrRegionEnd = AslrRegionStart + 0x7ff8000000;
                         stackAndTlsIoStart = 0;
                         stackAndTlsIoEnd = 0;
@@ -295,8 +295,11 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
 
             if (mapAvailableSize < mapTotalSize)
             {
+                Console.WriteLine($"Out of memory: mapAvailableSize: 0x{mapAvailableSize:X}, testing: 0x{Math.Max(reservedSize, 0x8000000):X}, mapTotalSize: 0x{mapTotalSize:X}, aliasRegion.Size: 0x{aliasRegion.Size:X}, heapRegion.Size: 0x{heapRegion.Size:X}, stackRegion.Size: 0x{stackRegion.Size:X}, tlsIoRegion.Size: 0x{tlsIoRegion.Size:X}, Stacktrace: {Environment.StackTrace}");
                 return KernelResult.OutOfMemory;
             }
+
+            Console.WriteLine($"I have memory™: mapAvailableSize: 0x{mapAvailableSize:X}, testing: 0x{Math.Max(reservedSize, 0x8000000):X} testing2: 0x{AslrRegionStart:X}, mapTotalSize: 0x{mapTotalSize:X}, aliasRegion.Size: 0x{aliasRegion.Size:X}, heapRegion.Size: 0x{heapRegion.Size:X}, stackRegion.Size: 0x{stackRegion.Size:X}, tlsIoRegion.Size: 0x{tlsIoRegion.Size:X}");
 
             if (aslrEnabled)
             {
@@ -539,7 +542,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
 
             if (regionPagesCount <= pagesCount)
             {
-                return KernelResult.OutOfMemory;
+                Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
             }
 
             lock (_blockManager)
@@ -548,7 +552,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
 
                 if (address == 0)
                 {
-                    return KernelResult.OutOfMemory;
+                    Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
                 }
 
                 if (!_slabManager.CanAllocate(MaxBlocksNeededForInsertion))
@@ -747,7 +752,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
 
             if (size > HeapRegionEnd - HeapRegionStart || size > _heapCapacity)
             {
-                return KernelResult.OutOfMemory;
+                Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
             }
 
             KProcess currentProcess = KernelStatic.GetCurrentProcess();
@@ -1902,7 +1908,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
                 {
                     CleanUpForError();
 
-                    return KernelResult.OutOfMemory;
+                    Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
                 }
             }
 
@@ -1916,7 +1923,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
                 {
                     CleanUpForError();
 
-                    return KernelResult.OutOfMemory;
+                    Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
                 }
             }
 

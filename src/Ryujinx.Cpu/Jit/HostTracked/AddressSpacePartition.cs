@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace Ryujinx.Cpu.Jit.HostTracked
 {
-    readonly struct PrivateRange
+    public readonly struct PrivateRange
     {
         public readonly MemoryBlock Memory;
         public readonly ulong Offset;
@@ -23,7 +23,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
         }
     }
 
-    class AddressSpacePartition : IDisposable
+    public class AddressSpacePartition : IDisposable
     {
         public const ulong GuestPageSize = 0x1000;
 

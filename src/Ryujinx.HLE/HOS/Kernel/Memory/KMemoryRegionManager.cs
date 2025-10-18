@@ -1,5 +1,6 @@
 using Ryujinx.Horizon.Common;
 using System.Diagnostics;
+using System;
 
 namespace Ryujinx.HLE.HOS.Kernel.Memory
 {
@@ -77,11 +78,6 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
 
             int heapIndex = KPageHeap.GetBlockIndex(pagesCount);
 
-            if (heapIndex < 0)
-            {
-                return KernelResult.OutOfMemory;
-            }
-
             for (int index = heapIndex; index >= 0; index--)
             {
                 ulong pagesPerAlloc = KPageHeap.GetBlockPagesCount(index);
@@ -113,7 +109,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
             {
                 FreePages(pageList);
 
-                return KernelResult.OutOfMemory;
+                Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
             }
 
             return Result.Success;

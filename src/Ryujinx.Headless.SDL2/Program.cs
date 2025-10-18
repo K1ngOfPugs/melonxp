@@ -1266,13 +1266,13 @@ namespace Ryujinx.Headless.SDL2
             }
 
             // Setup logging level
-            Logger.SetEnable(LogLevel.Debug, option.LoggingEnableDebug);
-            Logger.SetEnable(LogLevel.Stub, !option.LoggingDisableStub);
-            Logger.SetEnable(LogLevel.Info, !option.LoggingDisableInfo);
-            Logger.SetEnable(LogLevel.Warning, !option.LoggingDisableWarning);
-            Logger.SetEnable(LogLevel.Error, option.LoggingEnableError);
-            Logger.SetEnable(LogLevel.Trace, option.LoggingEnableTrace);
-            Logger.SetEnable(LogLevel.Guest, !option.LoggingDisableGuest);
+            Logger.SetEnable(LogLevel.Debug, true);
+            Logger.SetEnable(LogLevel.Stub, true);
+            Logger.SetEnable(LogLevel.Info, true);
+            Logger.SetEnable(LogLevel.Warning, true);
+            Logger.SetEnable(LogLevel.Error, true);
+            Logger.SetEnable(LogLevel.Trace, true);
+            Logger.SetEnable(LogLevel.Guest, true);
             Logger.SetEnable(LogLevel.AccessLog, option.LoggingEnableFsAccessLog);
 
             if (!option.DisableFileLog)
@@ -1321,7 +1321,7 @@ namespace Ryujinx.Headless.SDL2
                 _userChannelPersistence.ShouldRestart = false;
             }
 
-            _inputManager.Dispose();
+            // _inputManager.Dispose();
         }
 
         private static void SetupProgressHandler()

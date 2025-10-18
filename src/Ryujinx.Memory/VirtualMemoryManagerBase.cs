@@ -12,7 +12,7 @@ namespace Ryujinx.Memory
         public const int PageSize = 1 << PageBits;
         public const int PageMask = PageSize - 1;
 
-        protected abstract ulong AddressSpaceSize { get; }
+        public abstract ulong AddressSpaceSize { get; }
 
         public virtual ReadOnlySequence<byte> GetReadOnlySequence(ulong va, int size, bool tracked = false)
         {

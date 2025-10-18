@@ -172,6 +172,7 @@ namespace Ryujinx.HLE.Loaders.Processes
             KMemoryRegionManager region = context.MemoryManager.MemoryRegions[(int)memoryRegion];
 
             Result result = region.AllocatePages(out KPageList pageList, (ulong)codePagesCount);
+            Logger.Error?.Print(LogClass.Loader, $"Allocated {codePagesCount} pages for process code, StackTrace: {Environment.StackTrace}");
             if (result != Result.Success)
             {
                 Logger.Error?.Print(LogClass.Loader, $"Process initialization returned error \"{result}\".");
@@ -193,15 +194,17 @@ namespace Ryujinx.HLE.Loaders.Processes
             result = process.InitializeKip(creationInfo, kip.Capabilities, pageList, context.ResourceLimit, memoryRegion, processContextFactory);
             if (result != Result.Success)
             {
-                Logger.Error?.Print(LogClass.Loader, $"Process initialization returned error \"{result}\".");
+                Logger.Info?.Print(LogClass.Loader, $"Process initialization returned error \"{result}\".");
 
                 return false;
             }
 
+            Logger.Info?.Print(LogClass.Loader, $"Process initialization returned \"{result}\".");
+                
             result = LoadIntoMemory(process, kip, codeBaseAddress);
             if (result != Result.Success)
             {
-                Logger.Error?.Print(LogClass.Loader, $"Process initialization returned error \"{result}\".");
+                Logger.Info?.Print(LogClass.Loader, $"Process initialization returned error \"{result}\".");
 
                 return false;
             }
@@ -399,7 +402,7 @@ namespace Ryujinx.HLE.Loaders.Processes
 
             if (result != Result.Success)
             {
-                Logger.Error?.Print(LogClass.Loader, $"Process initialization returned error \"{result}\".");
+                Logger.Error?.Print(LogClass.Loader, $"Process1 initialization returned error \"{result}\", StackTrace: {Environment.StackTrace}");
 
                 return ProcessResult.Failed;
             }
@@ -408,13 +411,13 @@ namespace Ryujinx.HLE.Loaders.Processes
             {
                 ulong nsoBaseAddress = process.Context.ReservedSize + nsoBase[index];
 
-                Logger.Info?.Print(LogClass.Loader, $"Loading image {index} at 0x{nsoBaseAddress:x16}...");
+                Logger.Info?.Print(LogClass.Loader, $"Loading image {index} at 0x{nsoBaseAddress:x16}, old addr 0x{process.Context.ReservedSize:x16}...");
 
                 result = LoadIntoMemory(process, executables[index], nsoBaseAddress, nsoPatch[index]);
 
                 if (result != Result.Success)
                 {
-                    Logger.Error?.Print(LogClass.Loader, $"Process initialization returned error \"{result}\".");
+                    Logger.Error?.Print(LogClass.Loader, $"Process2 initialization returned error \"{result}\".");
 
                     return ProcessResult.Failed;
                 }
@@ -469,6 +472,10 @@ namespace Ryujinx.HLE.Loaders.Processes
             return processResult;
         }
 
+        [DllImport("libc", EntryPoint = "sys_icache_invalidate")]
+        private static extern unsafe void sys_icache_invalidate(IntPtr start, IntPtr length);
+        
+
         private static Result LoadIntoMemory(KProcess process, IExecutable image, ulong baseAddress, NceCpuCodePatch codePatch = null)
         {
             ulong textStart = baseAddress + image.TextOffset;
@@ -511,6 +518,7 @@ namespace Ryujinx.HLE.Loaders.Processes
             {
                 return result;
             }
+
 
             result = SetProcessMemoryPermission(roStart, (ulong)image.Ro.Length, KMemoryPermission.Read);
             if (result != Result.Success)

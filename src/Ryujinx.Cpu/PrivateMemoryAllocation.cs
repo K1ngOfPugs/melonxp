@@ -3,7 +3,7 @@ using System;
 
 namespace Ryujinx.Cpu
 {
-    readonly struct PrivateMemoryAllocation : IDisposable
+    public readonly struct PrivateMemoryAllocation : IDisposable
     {
         private readonly PrivateMemoryAllocator _owner;
         private readonly PrivateMemoryAllocator.Block _block;

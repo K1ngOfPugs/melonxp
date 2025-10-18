@@ -23,7 +23,7 @@ namespace Ryujinx.Memory
         private readonly MemoryBlock _backingMemory;
         private readonly PageTable<nuint> _pageTable;
 
-        protected override ulong AddressSpaceSize { get; }
+        public override ulong AddressSpaceSize { get; }
 
         /// <summary>
         /// Creates a new instance of the memory manager.

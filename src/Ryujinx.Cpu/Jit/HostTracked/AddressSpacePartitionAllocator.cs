@@ -6,7 +6,7 @@ using System;
 
 namespace Ryujinx.Cpu.Jit.HostTracked
 {
-    readonly struct AddressSpacePartitionAllocation : IDisposable
+    public readonly struct AddressSpacePartitionAllocation : IDisposable
     {
         private readonly AddressSpacePartitionAllocator _owner;
         private readonly PrivateMemoryAllocatorImpl<AddressSpacePartitionAllocator.Block>.Allocation _allocation;
@@ -55,7 +55,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
         }
     }
 
-    class AddressSpacePartitionAllocator : PrivateMemoryAllocatorImpl<AddressSpacePartitionAllocator.Block>
+    public class AddressSpacePartitionAllocator : PrivateMemoryAllocatorImpl<AddressSpacePartitionAllocator.Block>
     {
         private const ulong DefaultBlockAlignment = 1UL << 32; // 4GB
 

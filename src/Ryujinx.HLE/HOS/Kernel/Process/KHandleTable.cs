@@ -25,7 +25,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
         {
             if (size > 1024)
             {
-                return KernelResult.OutOfMemory;
+                Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
             }
 
             if (size < 1)

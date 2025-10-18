@@ -2,6 +2,7 @@ using Ryujinx.Common;
 using Ryujinx.HLE.HOS.Kernel.Memory;
 using Ryujinx.Horizon.Common;
 using System.Collections.Generic;
+using System;
 
 namespace Ryujinx.HLE.HOS.Kernel.Ipc
 {
@@ -44,7 +45,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Ipc
                 return Result.Success;
             }
 
-            return KernelResult.OutOfMemory;
+            Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
         }
 
         public Result CopyBuffersToClient(KPageTableBase memoryManager)

@@ -105,6 +105,7 @@ namespace Ryujinx.Cpu.Nce
 
             RegisterAlternateStack();
         }
+        
 
         public void Exit()
         {
@@ -159,6 +160,17 @@ namespace Ryujinx.Cpu.Nce
                     NceThreadPal.SuspendThread(threadHandle);
                 }
             }
+        }
+        
+        public void SetAddressSpaceBase(ulong addressSpaceBase)
+        {
+            ref var storage = ref _context.GetStorage();
+            storage.AddressSpaceBase = addressSpaceBase;
+        }
+
+        public ulong GetAddressSpaceBase()
+        {
+            return _context.GetStorage().AddressSpaceBase;
         }
 
         public void StopRunning()

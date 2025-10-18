@@ -22,7 +22,7 @@ namespace Ryujinx.Cpu.Jit
         private readonly PageTable<ulong> _pageTable;
 
         public int AddressSpaceBits { get; }
-        protected override ulong AddressSpaceSize { get; }
+        public override ulong AddressSpaceSize { get; }
 
         private readonly MemoryEhMeilleure _memoryEh;
 

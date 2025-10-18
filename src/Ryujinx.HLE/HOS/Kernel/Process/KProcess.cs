@@ -427,7 +427,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
 
             if (!KernelContext.UserSlabHeapPages.TryGetItem(out ulong tlsPagePa))
             {
-                return KernelResult.OutOfMemory;
+                Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
             }
 
             ulong regionStart = MemoryManager.TlsIoRegionStart;
@@ -554,7 +555,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
                 {
                     threadResourceLimit?.Release(LimitableResource.Thread, 1);
 
-                    return KernelResult.OutOfMemory;
+                    Console.WriteLine($"Out of memory Stacktrace: {Environment.StackTrace}");
+return KernelResult.OutOfMemory;
                 }
 
                 if (stackSizeRounded != 0 && ResourceLimit != null)

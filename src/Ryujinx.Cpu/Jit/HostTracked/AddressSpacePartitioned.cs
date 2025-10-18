@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace Ryujinx.Cpu.Jit.HostTracked
 {
-    class AddressSpacePartitioned : IDisposable
+    public class AddressSpacePartitioned : IDisposable
     {
         private const int PartitionBits = 25;
         private const ulong PartitionSize = 1UL << PartitionBits;
