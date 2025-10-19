@@ -57,7 +57,7 @@ namespace Ryujinx.HLE.HOS
         public IProcessContext Create(KernelContext context, ulong pid, ulong addressSpaceSize2, InvalidAccessHandler invalidAccessHandler, bool for64Bit)
         {
             IArmProcessContext processContext;
-            ulong addressSpaceSize = addressSpaceSize2 / 4;
+            ulong addressSpaceSize = addressSpaceSize2;
 
             bool isArm64Host = RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 
@@ -71,16 +71,17 @@ namespace Ryujinx.HLE.HOS
                 }
                 else
                 {
-                    // if (!AddressSpace.TryCreate(context.Memory, addressSpaceSize, out var addressSpace))
-                    // {
-                    //     throw new Exception("Address space creation failed");
-                    // }
+                    if (!AddressSpace.TryCreateWithoutMirror(addressSpaceSize, out var addressSpace))
+                    {
+                        throw new Exception("Address space creation failed");
+                    }
 
-                    Logger.Info?.Print(LogClass.Cpu, $"NCE Base AS Address, Size: 0x{addressSpaceSize:X}");
+                    Logger.Info?.Print(LogClass.Cpu, $"NCE Base AS Address: 0x{addressSpace.Pointer.ToInt64():X} Size: 0x{addressSpace.Size:X}");
 
                     var cpuEngine = new NceEngine(_tickSource);
-                    var memoryManager = new MemoryManagerHostTracked(context.Memory, addressSpaceSize, true, invalidAccessHandler);
-                    processContext = new ArmProcessContext<MemoryManagerHostTracked>(pid, cpuEngine, _gpu, memoryManager, addressSpaceSize, for64Bit);
+                    var memoryManager = new MemoryManagerNative(addressSpace, context.Memory, addressSpaceSize, invalidAccessHandler);
+                    processContext = new ArmProcessContext<MemoryManagerNative>(pid, cpuEngine, _gpu, memoryManager, addressSpace.Size, for64Bit, memoryManager.ReservedSize);
+
                 }
             }
             else

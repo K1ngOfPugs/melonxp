@@ -71,15 +71,15 @@ namespace Ryujinx.Cpu.Nce
 
             _addressSpace = addressSpace;
 
-            Tracking = new MemoryTracking(this, PageSize, invalidAccessHandler);
+            Tracking = new MemoryTracking(this, PageSize, invalidAccessHandler, OperatingSystem.IsIOS());
             _memoryEh = new MemoryEhMeilleure(addressSpaceSize, Tracking);
         }
 
         /// <inheritdoc/>
         public void Map(ulong va, ulong pa, ulong size, MemoryMapFlags flags)
         {
-            AssertValidAddressAndSize(va, size);
             Console.WriteLine($"Map called: va=0x{va:X16}, pa=0x{pa:X16}, size=0x{size:X16}, AddressSpaceSize=0x{AddressSpaceSize:X16}");
+            AssertValidAddressAndSize(va, size);
 
             _addressSpace.MapView(_backingMemory, pa, va, size);
             _pages.AddMapping(va, size);
@@ -252,7 +252,12 @@ namespace Ryujinx.Cpu.Nce
 
         private ulong GetPhysicalAddressInternal(ulong va)
         {
-            return _pageTable.Read(va) + (va & PageMask);
+            return _pageTable.Read(va);
+        }
+
+        public ulong GetPhysicalAddress(ulong va)
+        {
+            return GetPhysicalAddressInternal(va);
         }
 
         /// <inheritdoc/>

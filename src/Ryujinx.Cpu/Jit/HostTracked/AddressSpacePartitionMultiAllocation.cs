@@ -8,6 +8,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
     {
         private readonly AddressSpacePartitionAllocation _baseMemory;
         private AddressSpacePartitionAllocation _baseMemoryRo;
+        private AddressSpacePartitionAllocation _baseMemoryRx;
         private AddressSpacePartitionAllocation _baseMemoryNone;
 
         public AddressSpacePartitionMultiAllocation(AddressSpacePartitionAllocation baseMemory)
@@ -40,6 +41,11 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             {
                 _baseMemoryRo.UnmapView(srcBlock, offset, size);
             }
+
+            if (_baseMemoryRx.IsValid)
+            {
+                _baseMemoryRx.UnmapView(srcBlock, offset, size);
+            }
         }
 
         public void Reprotect(ulong offset, ulong size, MemoryPermission permission, bool throwOnFail)
@@ -63,6 +69,11 @@ namespace Ryujinx.Cpu.Jit.HostTracked
                 _baseMemoryRo = addressSpace.CreateAsPartitionAllocation(blockAddress, blockSize);
 
                 return true;
+            } else if (permission == MemoryPermission.ReadAndExecute && !_baseMemoryRx.IsValid)
+            {
+                _baseMemoryRx = addressSpace.CreateAsPartitionAllocation(blockAddress, blockSize);
+
+                return true;
             }
 
             return false;
@@ -75,6 +86,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
                 MemoryPermission.ReadAndWrite => _baseMemory,
                 MemoryPermission.Read => _baseMemoryRo,
                 MemoryPermission.None => _baseMemoryNone,
+                MemoryPermission.ReadAndExecute => _baseMemoryRx,
                 _ => throw new ArgumentException($"Invalid protection \"{permission}\"."),
             };
 
@@ -95,6 +107,11 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             if (_baseMemoryNone.IsValid)
             {
                 _baseMemoryNone.Dispose();
+            }
+
+            if (_baseMemoryRx.IsValid)
+            {
+                _baseMemoryRx.Dispose();
             }
         }
     }

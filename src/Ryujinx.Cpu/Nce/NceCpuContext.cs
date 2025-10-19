@@ -231,6 +231,26 @@ namespace Ryujinx.Cpu.Nce
                 ulong pageSize = (ulong)MemoryBlock.GetPageSize();
                 ulong pageAlignedAddress = address & ~(pageSize - 1);
 
+                // _memoryManager.IsMapped
+                if (_memoryManager != null)
+                {
+                    Logger.Debug?.Print(LogClass.Cpu, "Verifying address mapping...");
+                    if (!_memoryManager.IsMapped(address))
+                    {
+                        Logger.Error?.Print(LogClass.Cpu, $"Address 0x{address:X16} is not mapped!");
+                        throw new InvalidOperationException($"Attempted to execute unmapped address 0x{address:X16}");
+                    }
+
+                    if (_memoryManager is MemoryManagerNative trackedMemoryManager)
+                    {
+                        ulong physicalAddress = trackedMemoryManager.GetPhysicalAddress(address);
+                        Logger.Debug?.Print(LogClass.Cpu, $"Physical address for 0x{address:X16} is 0x{physicalAddress:X16}");
+
+                        pageAlignedAddress = physicalAddress & ~(pageSize - 1);
+                    }
+                    Logger.Debug?.Print(LogClass.Cpu, "Address mapping verified.");
+                }
+
                 Logger.Debug?.Print(LogClass.Cpu, $"Original address: 0x{address:X16}");
                 Logger.Debug?.Print(LogClass.Cpu, $"Page-aligned address: 0x{pageAlignedAddress:X16}");
 
@@ -247,20 +267,8 @@ namespace Ryujinx.Cpu.Nce
                 Logger.Info?.Print(LogClass.Cpu, $"Thread registered in NceThreadTable at index {tableIndex}");
 
                 Logger.Debug?.Print(LogClass.Cpu, $"Setting start address to 0x{address:X16}...");
-                nec.SetStartAddress(address);
+                nec.SetStartAddress(pageAlignedAddress);
                 Logger.Debug?.Print(LogClass.Cpu, "Start address set successfully.");
-
-                // Verify the address is mapped before execution
-                if (_memoryManager != null)
-                {
-                    Logger.Debug?.Print(LogClass.Cpu, "Verifying address mapping...");
-                    if (!_memoryManager.IsMapped(address))
-                    {
-                        Logger.Error?.Print(LogClass.Cpu, $"Address 0x{address:X16} is not mapped!");
-                        throw new InvalidOperationException($"Attempted to execute unmapped address 0x{address:X16}");
-                    }
-                    Logger.Debug?.Print(LogClass.Cpu, "Address mapping verified.");
-                }
 
                 Logger.Info?.Print(LogClass.Cpu, "Starting thread execution...");
                 Stopwatch threadStopwatch = Stopwatch.StartNew();

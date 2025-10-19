@@ -563,10 +563,15 @@ namespace Ryujinx.Cpu.Jit
             return _nativePageTable.GetPhysicalAddress(va);
         }
 
+        public ulong GetPhysicalAddress(ulong va)
+        {
+            return GetPhysicalAddressInternal(va);
+        }
+
         /// <inheritdoc/>
         public void Reprotect(ulong va, ulong size, MemoryPermission protection)
         {
-            // TODO
+            _addressSpace.Reprotect(va, size, protection);
         }
 
         /// <inheritdoc/>

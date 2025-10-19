@@ -404,7 +404,7 @@ namespace Ryujinx.Cpu.Jit
         /// <inheritdoc/>
         public void Reprotect(ulong va, ulong size, MemoryPermission protection)
         {
-            // TODO
+            _addressSpace.Base.Reprotect(va, size, protection, false);
         }
 
         /// <inheritdoc/>
