@@ -1,5 +1,5 @@
 {
-  "originHash" : "b4a593815773c4e9eedb98cabe88f41620776314bffb6c39d5a41cb743e4d390",
+  "originHash" : "93a3d727506eff685cbcce06bf5ced505891a4ba8a5c5ae65c39e95c8f103fd7",
   "pins" : [
     {
       "identity" : "cocoaasyncsocket",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "dbdc00669c1ced63b27c3c5f052ee4d28f10150c",
         "version" : "7.6.5"
+      }
+    },
+    {
+      "identity" : "navigation-stack-backport",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/lm/navigation-stack-backport",
+      "state" : {
+        "revision" : "55acfe7693c233ddc7f62f887f0df6ebd779ef01",
+        "version" : "1.1.0"
       }
     },
     {

@@ -24,7 +24,7 @@ namespace Ryujinx.Memory
         public IntPtr Pointer => _pointer;
 
         /// <summary>
-        /// Pointer to the RX mapping (for execution), or IntPtr.Zero if not dual-mapped.
+        /// Pointer to the RX mapping (for execution), or Pointer if not dual-mapped.
         /// </summary>
         public IntPtr RxPointer => _rxPointer;
 
@@ -108,6 +108,18 @@ namespace Ryujinx.Memory
             }
 
             return new MemoryBlock(Size, _sharedMemory);
+        }
+
+        /// <summary>
+        /// Detaches StikDebug from the app, Indicating that the JIT regions have been mapped.
+        /// AFter this is called, We will not be able to map any more JIT memory for iOS 26+ (TXM)
+        /// </summary>
+        public void Detach()
+        {
+            if (_dualMappedAllocator != null && _dualMappedAllocator.hasTXM)
+            {
+                DualMappedJitAllocator.BreakJITDetach();
+            }
         }
 
         /// <summary>

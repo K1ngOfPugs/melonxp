@@ -24,6 +24,7 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using ApplicationId = LibHac.Ncm.ApplicationId;
+using Ryujinx.Cpu.Nce;
 
 namespace Ryujinx.HLE.Loaders.Processes
 {
@@ -258,6 +259,7 @@ namespace Ryujinx.HLE.Loaders.Processes
                 _ => "",
             }).ToUpper());
 
+            NceCpuCodePatch[] nsoPatch = new NceCpuCodePatch[executables.Length];
             ulong[] nsoBase = new ulong[executables.Length];
 
             for (int index = 0; index < executables.Length; index++)
@@ -281,6 +283,11 @@ namespace Ryujinx.HLE.Loaders.Processes
                 }
 
                 nsoSize = BitUtils.AlignUp<uint>(nsoSize, KPageTableBase.PageSize);
+
+                bool for64Bit = ((ProcessCreationFlags)meta.Flags).HasFlag(ProcessCreationFlags.Is64Bit);
+
+                NceCpuCodePatch codePatch = ArmProcessContextFactory.CreateCodePatchForNce(context, for64Bit, nso.Text);
+                nsoPatch[index] = codePatch;
 
                 nsoBase[index] = codeStart + codeSize;
 
@@ -453,7 +460,7 @@ namespace Ryujinx.HLE.Loaders.Processes
             return processResult;
         }
 
-        public static Result LoadIntoMemory(KProcess process, IExecutable image, ulong baseAddress)
+        public static Result LoadIntoMemory(KProcess process, IExecutable image, ulong baseAddress, NceCpuCodePatch codePatch = null)
         {
             ulong textStart = baseAddress + image.TextOffset;
             ulong roStart = baseAddress + image.RoOffset;
@@ -468,10 +475,56 @@ namespace Ryujinx.HLE.Loaders.Processes
             }
 
             process.CpuMemory.Write(textStart, image.Text);
+
+            Logger.Info?.Print(LogClass.Loader, $"Wrote {image.Text.Length} bytes to 0x{textStart:X16}");
+
+
+            // Verify it was written
+            byte[] verify = new byte[16];
+
+            process.CpuMemory.Read(textStart, verify);
+
+            Logger.Info?.Print(LogClass.Loader, $"First bytes: {BitConverter.ToString(verify)}");
+
+            if (process.CpuMemory is Cpu.Nce.MemoryManagerNative nativeMM)
+            {
+                ulong hostPointer = nativeMM.GetPhysicalAddress(textStart);
+                Logger.Info?.Print(LogClass.Loader, $"Host pointer for text section: 0x{hostPointer:X16}");
+                
+                // Read directly from host memory
+                unsafe
+                {
+                    byte* hostPtr = (byte*)hostPointer;
+                    byte[] verifyHost = new byte[Math.Min(64, image.Text.Length)];
+                    for (int i = 0; i < verifyHost.Length; i++)
+                    {
+                        verifyHost[i] = hostPtr[i];
+                    }
+                    Logger.Info?.Print(LogClass.Loader, $"Verify read from host pointer 0x{hostPointer:X16}: {BitConverter.ToString(verifyHost.Take(32).ToArray())}");
+                    
+                    // Compare first 16 instructions
+                    Logger.Info?.Print(LogClass.Loader, $"First 8 instructions at host pointer:");
+                    uint* instPtr = (uint*)hostPtr;
+                    for (int i = 0; i < 8 && i * 4 < image.Text.Length; i++)
+                    {
+                        Logger.Info?.Print(LogClass.Loader, $"  [0x{hostPointer + (ulong)(i * 4):X16}] = 0x{instPtr[i]:X8}");
+                    }
+                }
+                
+                // Also check if the memory is mapped
+                Logger.Info?.Print(LogClass.Loader, $"IsMapped check for guest VA 0x{textStart:X16}: {nativeMM.IsMapped(textStart)}");
+                Logger.Info?.Print(LogClass.Loader, $"IsRangeMapped check for guest VA 0x{textStart:X16} size 0x{image.Text.Length:X}: {nativeMM.IsRangeMapped(textStart, (ulong)image.Text.Length)}");
+            }
+
             process.CpuMemory.Write(roStart, image.Ro);
             process.CpuMemory.Write(dataStart, image.Data);
 
-            process.CpuMemory.Fill(bssStart, image.BssSize, 0);
+            if (codePatch != null)
+            {
+                codePatch.Write(process.CpuMemory, baseAddress - codePatch.Size, textStart);
+            }
+
+            // process.CpuMemory.Fill(bssStart, image.BssSize, 0);
 
             Result SetProcessMemoryPermission(ulong address, ulong size, KMemoryPermission permission)
             {

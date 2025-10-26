@@ -2,6 +2,7 @@ using Ryujinx.Common;
 using Ryujinx.Common.Collections;
 using Ryujinx.Memory;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -210,6 +211,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
         private MemoryBlock _firstPageMemoryForUnmap;
         private ulong _firstPageOffsetForLateMap;
         private MemoryPermission _firstPageMemoryProtection;
+        private readonly Dictionary<ulong, MemoryPermission> _pageProtections;
 
         public ulong Address { get; }
         public ulong Size { get; }
@@ -221,6 +223,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             _mappingTree = new AddressIntrusiveRedBlackTree<Mapping>();
             _privateTree = new AddressIntrusiveRedBlackTree<PrivateMapping>();
             _treeLock = new ReaderWriterLockSlim();
+            _pageProtections = new Dictionary<ulong, MemoryPermission>();
 
             _mappingTree.Add(new Mapping(address, size, MappingType.None));
             _privateTree.Add(new PrivateMapping(address, size, default));
@@ -300,6 +303,15 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             {
                 _firstPageMemoryProtection = protection;
             }
+
+            lock (_pageProtections)
+            {
+                ulong endVa = va + size;
+                for (ulong pageVa = va; pageVa < endVa; pageVa += GuestPageSize)
+                {
+                    _pageProtections[pageVa] = protection;
+                }
+            }
         }
 
         public void Reprotect(
@@ -314,6 +326,15 @@ namespace Ryujinx.Cpu.Jit.HostTracked
                 LateMap();
             }
 
+            lock (_pageProtections)
+            {
+                ulong endVa = va + size;
+                for (ulong pageVa = va; pageVa < endVa; pageVa += GuestPageSize)
+                {
+                    _pageProtections[pageVa] = protection;
+                }
+            }
+
             updatePtCallback(va, _baseMemory.GetPointerForProtection(va - Address, size, protection), size);
         }
 
@@ -321,6 +342,13 @@ namespace Ryujinx.Cpu.Jit.HostTracked
         {
             Debug.Assert(va >= Address);
             Debug.Assert(va + size <= EndAddress);
+
+            
+            if (_baseMemory.HasProtectionMirrors())
+            {
+                MemoryPermission protection = GetProtection(va);
+                return _baseMemory.GetPointerForProtection(va - Address, size, protection);
+            }
 
             return _baseMemory.GetPointer(va - Address, size);
         }
@@ -495,6 +523,18 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             }
 
             return map;
+        }
+
+        public MemoryPermission GetProtection(ulong va)
+        {
+            lock (_pageProtections)
+            {
+                if (_pageProtections.TryGetValue(va & ~(GuestPageSize - 1), out MemoryPermission protection))
+                {
+                    return protection;
+                }
+            }
+            return MemoryPermission.ReadAndWrite; 
         }
 
         private static bool CanCoalesce(Mapping left, Mapping right)

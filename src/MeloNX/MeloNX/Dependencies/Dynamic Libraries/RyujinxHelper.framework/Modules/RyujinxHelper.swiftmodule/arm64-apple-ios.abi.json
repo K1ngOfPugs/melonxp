@@ -1,0 +1,197 @@
+{
+  "ABIRoot": {
+    "kind": "Root",
+    "name": "RyujinxHelper",
+    "printedName": "RyujinxHelper",
+    "children": [
+      {
+        "kind": "Import",
+        "name": "Foundation",
+        "printedName": "Foundation",
+        "declKind": "Import",
+        "moduleName": "RyujinxHelper",
+        "declAttributes": [
+          "RawDocComment"
+        ]
+      },
+      {
+        "kind": "Import",
+        "name": "Darwin",
+        "printedName": "Darwin",
+        "declKind": "Import",
+        "moduleName": "RyujinxHelper"
+      },
+      {
+        "kind": "Var",
+        "name": "ALTSTACK_SUCCESS",
+        "printedName": "ALTSTACK_SUCCESS",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "Int32",
+            "printedName": "Swift.Int32",
+            "usr": "s:s5Int32V"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "s:13RyujinxHelper16ALTSTACK_SUCCESSs5Int32Vvp",
+        "mangledName": "$s13RyujinxHelper16ALTSTACK_SUCCESSs5Int32Vvp",
+        "moduleName": "RyujinxHelper",
+        "declAttributes": [
+          "HasInitialValue",
+          "HasStorage"
+        ],
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "ALTSTACK_ERROR_SIZE_TOO_SMALL",
+        "printedName": "ALTSTACK_ERROR_SIZE_TOO_SMALL",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "Int32",
+            "printedName": "Swift.Int32",
+            "usr": "s:s5Int32V"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "s:13RyujinxHelper29ALTSTACK_ERROR_SIZE_TOO_SMALLs5Int32Vvp",
+        "mangledName": "$s13RyujinxHelper29ALTSTACK_ERROR_SIZE_TOO_SMALLs5Int32Vvp",
+        "moduleName": "RyujinxHelper",
+        "declAttributes": [
+          "HasInitialValue",
+          "HasStorage"
+        ],
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "ALTSTACK_ERROR_SIGALTSTACK_FAILED",
+        "printedName": "ALTSTACK_ERROR_SIGALTSTACK_FAILED",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "Int32",
+            "printedName": "Swift.Int32",
+            "usr": "s:s5Int32V"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "s:13RyujinxHelper33ALTSTACK_ERROR_SIGALTSTACK_FAILEDs5Int32Vvp",
+        "mangledName": "$s13RyujinxHelper33ALTSTACK_ERROR_SIGALTSTACK_FAILEDs5Int32Vvp",
+        "moduleName": "RyujinxHelper",
+        "declAttributes": [
+          "HasInitialValue",
+          "HasStorage"
+        ],
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Function",
+        "name": "RegisterAlternateStack",
+        "printedName": "RegisterAlternateStack(_:_:)",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "Int32",
+            "printedName": "Swift.Int32",
+            "usr": "s:s5Int32V"
+          },
+          {
+            "kind": "TypeNominal",
+            "name": "UnsafeMutableRawPointer",
+            "printedName": "Swift.UnsafeMutableRawPointer",
+            "usr": "s:Sv"
+          },
+          {
+            "kind": "TypeNominal",
+            "name": "UInt64",
+            "printedName": "Swift.UInt64",
+            "usr": "s:s6UInt64V"
+          }
+        ],
+        "declKind": "Func",
+        "usr": "c:(cm)RegisterAlternateStack::",
+        "mangledName": "$s13RyujinxHelper22RegisterAlternateStackys5Int32VSv_s6UInt64VtF",
+        "moduleName": "RyujinxHelper",
+        "declAttributes": [
+          "AccessControl",
+          "CDecl"
+        ],
+        "funcSelfKind": "NonMutating"
+      },
+      {
+        "kind": "Function",
+        "name": "UnregisterAlternateStack",
+        "printedName": "UnregisterAlternateStack()",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "Int32",
+            "printedName": "Swift.Int32",
+            "usr": "s:s5Int32V"
+          }
+        ],
+        "declKind": "Func",
+        "usr": "c:(cm)UnregisterAlternateStack",
+        "mangledName": "$s13RyujinxHelper24UnregisterAlternateStacks5Int32VyF",
+        "moduleName": "RyujinxHelper",
+        "declAttributes": [
+          "AccessControl",
+          "CDecl"
+        ],
+        "funcSelfKind": "NonMutating"
+      },
+      {
+        "kind": "Function",
+        "name": "GetLastAlternateStackErrno",
+        "printedName": "GetLastAlternateStackErrno()",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "Int32",
+            "printedName": "Swift.Int32",
+            "usr": "s:s5Int32V"
+          }
+        ],
+        "declKind": "Func",
+        "usr": "c:(cm)GetLastAlternateStackErrno",
+        "mangledName": "$s13RyujinxHelper26GetLastAlternateStackErrnos5Int32VyF",
+        "moduleName": "RyujinxHelper",
+        "declAttributes": [
+          "AccessControl",
+          "CDecl"
+        ],
+        "funcSelfKind": "NonMutating"
+      }
+    ],
+    "json_format_version": 8
+  },
+  "ConstValues": [
+    {
+      "filePath": "\/Users\/stossy11\/Developer\/RyujinxHelper\/RyujinxHelper\/NativeSignal.swift",
+      "kind": "IntegerLiteral",
+      "offset": 146,
+      "length": 1,
+      "value": "0"
+    },
+    {
+      "filePath": "\/Users\/stossy11\/Developer\/RyujinxHelper\/RyujinxHelper\/NativeSignal.swift",
+      "kind": "IntegerLiteral",
+      "offset": 191,
+      "length": 2,
+      "value": "-1"
+    },
+    {
+      "filePath": "\/Users\/stossy11\/Developer\/RyujinxHelper\/RyujinxHelper\/NativeSignal.swift",
+      "kind": "IntegerLiteral",
+      "offset": 241,
+      "length": 2,
+      "value": "-2"
+    }
+  ]
+}

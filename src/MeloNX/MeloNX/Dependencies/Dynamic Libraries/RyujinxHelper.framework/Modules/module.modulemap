@@ -4,3 +4,8 @@ framework module RyujinxHelper {
 
   module * { export * }
 }
+
+module RyujinxHelper.Swift {
+  header "RyujinxHelper-Swift.h"
+  requires objc
+}

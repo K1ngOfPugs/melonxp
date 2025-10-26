@@ -1351,14 +1351,14 @@ namespace Ryujinx.Headless.SDL2
             }
 
             // Setup logging level
-            Logger.SetEnable(LogLevel.Debug, option.LoggingEnableDebug);
+            Logger.SetEnable(LogLevel.Debug, true);
             Logger.SetEnable(LogLevel.Stub, !option.LoggingDisableStub);
             Logger.SetEnable(LogLevel.Info, !option.LoggingDisableInfo);
-            Logger.SetEnable(LogLevel.Warning, !option.LoggingDisableWarning);
-            Logger.SetEnable(LogLevel.Error, option.LoggingEnableError);
-            Logger.SetEnable(LogLevel.Trace, option.LoggingEnableTrace);
-            Logger.SetEnable(LogLevel.Guest, !option.LoggingDisableGuest);
-            Logger.SetEnable(LogLevel.AccessLog, option.LoggingEnableFsAccessLog);
+            Logger.SetEnable(LogLevel.Warning, true);
+            Logger.SetEnable(LogLevel.Error, true);
+            Logger.SetEnable(LogLevel.Trace, true);
+            Logger.SetEnable(LogLevel.Guest, true);
+            Logger.SetEnable(LogLevel.AccessLog, true);
 
             if (!option.DisableFileLog)
             {
@@ -1537,19 +1537,8 @@ namespace Ryujinx.Headless.SDL2
 
             renderer = new ThreadedRenderer(renderer);
 
-            bool AppleHV = false;
-
-            if ((!OperatingSystem.IsIOSVersionAtLeast(16, 4)) && options.UseHypervisor) 
-            {
-                AppleHV = true;
-            }
-            else if (OperatingSystem.IsIOS()) 
-            {
-                AppleHV = false;
-            } else {
-                AppleHV = options.UseHypervisor;
-            }
-
+            bool AppleHV = options.UseHypervisor;
+            
             HLEConfiguration configuration = new(_virtualFileSystem,
                 _libHacHorizonManager,
                 _contentManager,

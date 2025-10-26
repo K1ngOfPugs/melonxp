@@ -327,7 +327,7 @@ namespace Ryujinx.HLE.HOS.Services.Ro
             process.CpuMemory.Write(roStart, relocatableObject.Ro);
             process.CpuMemory.Write(dataStart, relocatableObject.Data);
 
-            MemoryHelper.FillWithZeros(process.CpuMemory, bssStart, (int)(bssEnd - bssStart));
+            // MemoryHelper.FillWithZeros(process.CpuMemory, bssStart, (int)(bssEnd - bssStart));
 
             Result result;
 

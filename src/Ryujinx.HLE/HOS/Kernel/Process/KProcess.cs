@@ -329,7 +329,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
 
             UserExceptionContextAddress = userExceptionContextAddress;
 
-            MemoryHelper.FillWithZeros(CpuMemory, userExceptionContextAddress, KTlsPageInfo.TlsEntrySize);
+            // MemoryHelper.FillWithZeros(CpuMemory, userExceptionContextAddress, KTlsPageInfo.TlsEntrySize);
 
             Name = creationInfo.Name;
 
@@ -447,7 +447,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
             {
                 pageInfo = new KTlsPageInfo(tlsPageVa, tlsPagePa);
 
-                MemoryHelper.FillWithZeros(CpuMemory, tlsPageVa, KPageTableBase.PageSize);
+                // MemoryHelper.FillWithZeros(CpuMemory, tlsPageVa, KPageTableBase.PageSize);
             }
 
             return result;

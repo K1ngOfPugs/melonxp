@@ -142,6 +142,7 @@ namespace Ryujinx.Memory
 
         public virtual void MapForeign(ulong va, nuint hostPointer, ulong size)
         {
+            Console.WriteLine("");
             throw new NotSupportedException();
         }
 

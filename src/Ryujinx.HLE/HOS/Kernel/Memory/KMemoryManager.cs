@@ -39,26 +39,32 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
 
         private void IncrementOrDecrementPagesReferenceCount(ulong address, ulong pagesCount, bool increment)
         {
-            while (pagesCount != 0)
+            try
             {
-                var region = GetMemoryRegion(address);
-
-                ulong countToProcess = Math.Min(pagesCount, region.GetPageOffsetFromEnd(address));
-
-                lock (region)
+                while (pagesCount != 0)
                 {
-                    if (increment)
-                    {
-                        region.IncrementPagesReferenceCount(address, countToProcess);
-                    }
-                    else
-                    {
-                        region.DecrementPagesReferenceCount(address, countToProcess);
-                    }
-                }
+                    var region = GetMemoryRegion(address);
 
-                pagesCount -= countToProcess;
-                address += countToProcess * KPageTableBase.PageSize;
+                    ulong countToProcess = Math.Min(pagesCount, region.GetPageOffsetFromEnd(address));
+
+                    lock (region)
+                    {
+                        if (increment)
+                        {
+                            region.IncrementPagesReferenceCount(address, countToProcess);
+                        }
+                        else
+                        {
+                            region.DecrementPagesReferenceCount(address, countToProcess);
+                        }
+                    }
+
+                    pagesCount -= countToProcess;
+                    address += countToProcess * KPageTableBase.PageSize;
+                }
+            } catch (Exception ex)
+            {
+                // throw new InvalidOperationException($"Failed to {(increment ? "increment" : "decrement")} pages reference count at address 0x{address:X16} for {pagesCount} pages.", ex);
             }
         }
     }

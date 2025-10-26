@@ -112,21 +112,22 @@ class RumbleController {
     // MARK: - Public Rumble Control
 
     public func rumble(lowFreq: Float, highFreq: Float) {
-       
-        // Normalize SDL values (0-65535) to CoreHaptics range (0.0-1.0)
-        let normalizedLow = min(1.0, max(0.0, lowFreq * rumbleMultiplier / 65535.0))
-        let normalizedHigh = min(1.0, max(0.0, highFreq * rumbleMultiplier / 65535.0))
-        
-        // Create dynamic parameters to control intensity
-        let lowIntensityParameter = CHHapticDynamicParameter(parameterID: .hapticIntensityControl, value: normalizedLow, relativeTime: 0)
-        let highIntensityParameter = CHHapticDynamicParameter(parameterID: .hapticIntensityControl, value: normalizedHigh, relativeTime: 0)
-
-        // Send parameters to the players
-        do {
-            try lowHapticPlayer?.sendParameters([lowIntensityParameter], atTime: 0)
-            try highHapticPlayer?.sendParameters([highIntensityParameter], atTime: 0)
-        } catch {
-            // print("Error sending haptic parameters: \(error.localizedDescription)")
+        DispatchQueue.global(qos: .background).async { [self] in
+            // Normalize SDL values (0-65535) to CoreHaptics range (0.0-1.0)
+            let normalizedLow = min(1.0, max(0.0, lowFreq / 65535.0))
+            let normalizedHigh = min(1.0, max(0.0, highFreq / 65535.0))
+            
+            // Create dynamic parameters to control intensity
+            let lowIntensityParameter = CHHapticDynamicParameter(parameterID: .hapticIntensityControl, value: normalizedLow, relativeTime: 0)
+            let highIntensityParameter = CHHapticDynamicParameter(parameterID: .hapticIntensityControl, value: normalizedHigh, relativeTime: 0)
+            
+            // Send parameters to the players
+            do {
+                try lowHapticPlayer?.sendParameters([lowIntensityParameter], atTime: 0)
+                try highHapticPlayer?.sendParameters([highIntensityParameter], atTime: 0)
+            } catch {
+                // print("Error sending haptic parameters: \(error.localizedDescription)")
+            }
         }
     }
 }

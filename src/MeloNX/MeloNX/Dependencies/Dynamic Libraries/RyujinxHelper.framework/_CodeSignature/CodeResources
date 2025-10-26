@@ -4,21 +4,56 @@
 <dict>
 	<key>files</key>
 	<dict>
+		<key>Headers/RyujinxHelper-Swift.h</key>
+		<data>
+		bTp08Etqky++cUAhZpabqJtvNUQ=
+		</data>
 		<key>Headers/RyujinxHelper.h</key>
 		<data>
 		5P7GN4g050n199pV6/+SpfMBgJc=
 		</data>
 		<key>Info.plist</key>
 		<data>
-		B/4I+y7rZf8oB6L/DcI22vLLpSY=
+		6FuOOw2zjbDi665/Wax5E+zVS4U=
+		</data>
+		<key>Modules/RyujinxHelper.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo</key>
+		<data>
+		Auev10pVkQ47nrOUSyPSeX52tYU=
+		</data>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.abi.json</key>
+		<data>
+		9L6v980KtnIfI7QY47kfms4TMPk=
+		</data>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.private.swiftinterface</key>
+		<data>
+		xPUo7x0i1VxwvzvAd5mL+kk43RE=
+		</data>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.swiftdoc</key>
+		<data>
+		g4p5K+db8mE3dpBECvE/x9GkMrk=
+		</data>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.swiftinterface</key>
+		<data>
+		xPUo7x0i1VxwvzvAd5mL+kk43RE=
+		</data>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.swiftmodule</key>
+		<data>
+		dCW2ORuiDcoN2sK/KIW4qx3kXzo=
 		</data>
 		<key>Modules/module.modulemap</key>
 		<data>
-		JDij7psMD6pZZpigUfkSQldib+I=
+		JfDWB0qlCCrJeAVUm/Q7pgO5AZQ=
 		</data>
 	</dict>
 	<key>files2</key>
 	<dict>
+		<key>Headers/RyujinxHelper-Swift.h</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			ukN2V6076+bdDihhzxZ3Dv0JtgBafREAjfpOBpq+vxA=
+			</data>
+		</dict>
 		<key>Headers/RyujinxHelper.h</key>
 		<dict>
 			<key>hash2</key>
@@ -26,11 +61,53 @@
 			/yGmHq9NdBF/ruesISIj7vml0ySgoJkrFOcrw0vaIxQ=
 			</data>
 		</dict>
+		<key>Modules/RyujinxHelper.swiftmodule/Project/arm64-apple-ios.swiftsourceinfo</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			pl+X78S9/SvNsnsANxFpmYn5DQ/D7SZBRicnGybLUtk=
+			</data>
+		</dict>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.abi.json</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			7jzhhzNNkcApil5Jf6hgeoY+BPaFo+dYQFj4L7HiJko=
+			</data>
+		</dict>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.private.swiftinterface</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			fN+h7lXqnBe9oos/68iNhv+v5BIMday8RMA16GqqJDs=
+			</data>
+		</dict>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.swiftdoc</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			m2Y+vofaBfDcAHqhLM3W2MgU6MgOBAQWJI/OtpO+QA4=
+			</data>
+		</dict>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.swiftinterface</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			fN+h7lXqnBe9oos/68iNhv+v5BIMday8RMA16GqqJDs=
+			</data>
+		</dict>
+		<key>Modules/RyujinxHelper.swiftmodule/arm64-apple-ios.swiftmodule</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			UGXYVee54p6sSqk/AOvCb7QLx3CTuYcdki4ym984N1s=
+			</data>
+		</dict>
 		<key>Modules/module.modulemap</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			5t/lQcpkzC5bwJqFQqIf6h1ldlhHouYzDawRVrnUeyM=
+			HrmTWnctUIx83BXuhLMvsfsmw7xRYclCkHY7W1WApjY=
 			</data>
 		</dict>
 	</dict>

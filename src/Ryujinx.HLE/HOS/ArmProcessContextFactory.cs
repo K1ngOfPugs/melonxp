@@ -4,6 +4,7 @@ using Ryujinx.Cpu;
 using Ryujinx.Cpu.AppleHv;
 using Ryujinx.Cpu.Jit;
 using Ryujinx.Cpu.LightningJit;
+using Ryujinx.Cpu.Nce;
 using Ryujinx.Graphics.Gpu;
 using Ryujinx.HLE.HOS.Kernel;
 using Ryujinx.HLE.HOS.Kernel.Process;
@@ -43,19 +44,37 @@ namespace Ryujinx.HLE.HOS
             _codeSize = codeSize;
         }
 
+        public static NceCpuCodePatch CreateCodePatchForNce(KernelContext context, bool for64Bit, ReadOnlySpan<byte> textSection)
+        {
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 && for64Bit)
+            {
+                return NcePatcher.CreatePatch(textSection);
+            }
+
+            return null;
+        }
+
+
         public IProcessContext Create(KernelContext context, ulong pid, ulong addressSpaceSize, InvalidAccessHandler invalidAccessHandler, bool for64Bit)
         {
             IArmProcessContext processContext;
 
             bool isArm64Host = RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 
-            if ((OperatingSystem.IsMacOS() || (!OperatingSystem.IsIOSVersionAtLeast(16, 4))) && isArm64Host && for64Bit && context.Device.Configuration.UseHypervisor)
+            if ((OperatingSystem.IsMacOS() || !OperatingSystem.IsIOSVersionAtLeast(16, 4)) && isArm64Host && for64Bit && context.Device.Configuration.UseHypervisor)
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 var cpuEngine = new HvEngine(_tickSource);
                 var memoryManager = new HvMemoryManager(context.Memory, addressSpaceSize, invalidAccessHandler);
                 processContext = new ArmProcessContext<HvMemoryManager>(pid, cpuEngine, _gpu, memoryManager, addressSpaceSize, for64Bit);
+#pragma warning restore CA1416 
+            } else if (OperatingSystem.IsIOSVersionAtLeast(16, 4) && for64Bit && context.Device.Configuration.UseHypervisor)
+            {
+                var cpuEngine = new NceEngine(_tickSource);
+                var memoryManager = new MemoryManagerNative(context.Memory, addressSpaceSize, invalidAccessHandler);
+                processContext = new ArmProcessContext<MemoryManagerNative>(pid, cpuEngine, _gpu, memoryManager, addressSpaceSize, for64Bit);
             }
-            else
+            else 
             {
                 MemoryManagerMode mode = context.Device.Configuration.MemoryManagerMode;
 
@@ -66,9 +85,9 @@ namespace Ryujinx.HLE.HOS
                     mode = MemoryManagerMode.SoftwarePageTable;
                 }
 
-                ICpuEngine cpuEngine = isArm64Host && (mode == MemoryManagerMode.HostMapped || mode == MemoryManagerMode.HostMappedUnsafe)
+                ICpuEngine cpuEngine = OperatingSystem.IsIOS() //isArm64Host && (mode == MemoryManagerMode.HostMapped || mode == MemoryManagerMode.HostMappedUnsafe)
                     ? new LightningJitEngine(_tickSource)
-                    : new JitEngine(_tickSource);
+                    : isArm64Host && (mode == MemoryManagerMode.HostMapped || mode == MemoryManagerMode.HostMappedUnsafe) ? new LightningJitEngine(_tickSource) : new JitEngine(_tickSource);
 
                 AddressSpace addressSpace = null;
 

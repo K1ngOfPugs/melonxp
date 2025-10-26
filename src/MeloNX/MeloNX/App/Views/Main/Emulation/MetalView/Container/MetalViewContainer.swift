@@ -11,27 +11,18 @@ struct MetalViewContainer: View {
     @ObservedObject var ryujinx = Ryujinx.shared
     @AppStorage("OldView") var oldView = true
     @Environment(\.colorScheme) var colorScheme
+    static var height = 0
+    @AppStorage("performacehud") var performacehud: Bool = false
+    @AppStorage("On-ScreenControllerOpacity") var controllerOpacity: Double = 1.0
+    
     
     var body: some View {
         GeometryReader { geo in
             let containerSize = geo.size
-            if ryujinx.aspectRatio == .stretched || (ryujinx.aspectRatio == .fixed4x3 && isScreenAspectRatio(4, 3)) {
-                if ryujinx.aspectRatio == .stretched || (ryujinx.aspectRatio == .fixed4x3 && isScreenAspectRatio(4, 3)) {
-                    Color.clear
-                        .overlay(
-                            MetalView()
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .ignoresSafeArea(.all)
-                        )
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .ignoresSafeArea(.all)
-                }
+            if oldView {
+                oldViewLayout(containerSize: containerSize)
             } else {
-                if oldView {
-                    oldViewLayout(containerSize: containerSize)
-                } else {
-                    newViewLayout(containerSize: containerSize)
-                }
+                newViewLayout(containerSize: containerSize)
             }
         }
     }
@@ -145,15 +136,16 @@ struct MetalViewContainer: View {
             return CGSize(width: targetWidth, height: targetHeight)
         }
     }
-    
-    func isScreenAspectRatio(_ targetWidth: CGFloat, _ targetHeight: CGFloat, tolerance: CGFloat = 0.05) -> Bool {
-        let screenSize = UIScreen.main.bounds.size
-        let width = max(screenSize.width, screenSize.height)
-        let height = min(screenSize.width, screenSize.height)
+}
 
-        let actualRatio = width / height
-        let targetRatio = targetWidth / targetHeight
 
-        return abs(actualRatio - targetRatio) < tolerance
-    }
+func isScreenAspectRatio(_ targetWidth: CGFloat, _ targetHeight: CGFloat, tolerance: CGFloat = 0.05) -> Bool {
+    let screenSize = UIScreen.main.bounds.size
+    let width = max(screenSize.width, screenSize.height)
+    let height = min(screenSize.width, screenSize.height)
+
+    let actualRatio = width / height
+    let targetRatio = targetWidth / targetHeight
+
+    return abs(actualRatio - targetRatio) < tolerance
 }

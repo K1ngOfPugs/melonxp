@@ -30,7 +30,7 @@ class FileImporterManager: NSObject, ObservableObject, UIDocumentPickerDelegate 
             }
         }
         
-        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: types)
+        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: shouldAsCopy)
         documentPicker.delegate = self
         documentPicker.allowsMultipleSelection = allowMultiple
         documentPicker.modalPresentationStyle = .formSheet

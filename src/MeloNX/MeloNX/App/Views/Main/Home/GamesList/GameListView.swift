@@ -175,8 +175,6 @@ struct GameLibraryView: View {
                         
                         Button {
                             showingAccounts = true
-                            
-                    
                         } label: {
                             Label("Profile Manager", systemImage: "person.2")
                         }
@@ -185,6 +183,17 @@ struct GameLibraryView: View {
                         Label("Options", systemImage: "ellipsis.circle")
                             .labelStyle(.iconOnly)
                             .foregroundColor(.blue)
+                    }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    if (isInLiveContainer.0 || isInLiveContainer.1 != nil) && !isInLiveContainer.2 {
+                        Button {
+                            _ = relaunchLiveContainer()
+                        } label: {
+                            Label("Exit to LiveContainer", systemImage: "escape")
+                                .labelStyle(.iconOnly)
+                                .foregroundColor(.blue)
+                        }
                     }
                 }
             }

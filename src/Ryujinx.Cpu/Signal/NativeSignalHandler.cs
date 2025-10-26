@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Ryujinx.Cpu.Signal
 {
@@ -121,6 +122,21 @@ namespace Ryujinx.Cpu.Signal
             }
         }
 
+        public static void InstallUnixAlternateStackForCurrentThread(IntPtr stackPtr, ulong stackSize)
+        {
+            UnixSignalHandlerRegistration.RegisterAlternateStack(stackPtr, stackSize);
+        }
+
+        public static void UninstallUnixAlternateStackForCurrentThread()
+        {
+            UnixSignalHandlerRegistration.UnregisterAlternateStack();
+        }
+
+        public static void InstallUnixSignalHandler(int sigNum, IntPtr action)
+        {
+            UnixSignalHandlerRegistration.RegisterExceptionHandler(sigNum, action);
+        }
+
         private static IntPtr MapCode(ReadOnlySpan<byte> code)
         {
             ulong codeSizeAligned = BitUtils.AlignUp((ulong)code.Length, MemoryBlock.GetPageSize());
@@ -189,22 +205,10 @@ namespace Ryujinx.Cpu.Signal
             return false;
         }
 
-        public static void ClearAllTrackedRegions()
-        {
-            Span<SignalHandlerRange> ranges = GetConfigRef().Ranges;
-
-            for (int i = 0; i < NativeSignalHandlerGenerator.MaxTrackedRanges; i++)
-            {
-                ranges[i].IsActive = 0;
-                ranges[i].RangeAddress = 0;
-                ranges[i].RangeEndAddress = 0;
-                ranges[i].ActionPointer = IntPtr.Zero;
-            }
-        }
-
         public static bool SupportsFaultAddressPatching()
         {
             return NativeSignalHandlerGenerator.SupportsFaultAddressPatchingForHost();
         }
     }
 }
+

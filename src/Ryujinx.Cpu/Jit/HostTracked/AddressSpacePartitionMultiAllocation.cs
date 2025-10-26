@@ -8,6 +8,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
     {
         private readonly AddressSpacePartitionAllocation _baseMemory;
         private AddressSpacePartitionAllocation _baseMemoryRo;
+        private AddressSpacePartitionAllocation _baseMemoryRx;
         private AddressSpacePartitionAllocation _baseMemoryNone;
 
         public AddressSpacePartitionMultiAllocation(AddressSpacePartitionAllocation baseMemory)
@@ -24,12 +25,27 @@ namespace Ryujinx.Cpu.Jit.HostTracked
                 _baseMemoryRo.MapView(srcBlock, srcOffset, dstOffset, size);
                 _baseMemoryRo.Reprotect(dstOffset, size, MemoryPermission.Read, false);
             }
+
+            if (_baseMemoryRx.IsValid)
+            {
+                _baseMemoryRx.MapView(srcBlock, srcOffset, dstOffset, size);
+                _baseMemoryRx.Reprotect(dstOffset, size, MemoryPermission.ReadAndExecute, false);
+            }
         }
 
         public void LateMapView(MemoryBlock srcBlock, ulong srcOffset, ulong dstOffset, ulong size)
         {
-            _baseMemoryRo.MapView(srcBlock, srcOffset, dstOffset, size);
-            _baseMemoryRo.Reprotect(dstOffset, size, MemoryPermission.Read, false);
+            if (_baseMemoryRo.IsValid)
+            {
+                _baseMemoryRo.MapView(srcBlock, srcOffset, dstOffset, size);
+                _baseMemoryRo.Reprotect(dstOffset, size, MemoryPermission.Read, false);
+            }
+
+            if (_baseMemoryRx.IsValid)
+            {
+                _baseMemoryRx.MapView(srcBlock, srcOffset, dstOffset, size);
+                _baseMemoryRx.Reprotect(dstOffset, size, MemoryPermission.ReadAndExecute, false);
+            }
         }
 
         public void UnmapView(MemoryBlock srcBlock, ulong offset, ulong size)
@@ -39,6 +55,11 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             if (_baseMemoryRo.IsValid)
             {
                 _baseMemoryRo.UnmapView(srcBlock, offset, size);
+            }
+
+            if (_baseMemoryRx.IsValid)
+            {
+                _baseMemoryRx.UnmapView(srcBlock, offset, size);
             }
         }
 
@@ -57,11 +78,16 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             if (permission == MemoryPermission.None && !_baseMemoryNone.IsValid)
             {
                 _baseMemoryNone = addressSpace.CreateAsPartitionAllocation(blockAddress, blockSize);
+                return true;
             }
             else if (permission == MemoryPermission.Read && !_baseMemoryRo.IsValid)
             {
                 _baseMemoryRo = addressSpace.CreateAsPartitionAllocation(blockAddress, blockSize);
-
+                return true;
+            }
+            else if (permission == MemoryPermission.ReadAndExecute && !_baseMemoryRx.IsValid)
+            {
+                _baseMemoryRx = addressSpace.CreateAsPartitionAllocation(blockAddress, blockSize);
                 return true;
             }
 
@@ -73,14 +99,19 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             AddressSpacePartitionAllocation allocation = permission switch
             {
                 MemoryPermission.ReadAndWrite => _baseMemory,
+                MemoryPermission.ReadAndExecute => _baseMemoryRx,
                 MemoryPermission.Read => _baseMemoryRo,
                 MemoryPermission.None => _baseMemoryNone,
                 _ => throw new ArgumentException($"Invalid protection \"{permission}\"."),
             };
 
             Debug.Assert(allocation.IsValid);
-
             return allocation.GetPointer(offset, size);
+        }
+
+        public bool HasProtectionMirrors()
+        {
+            return _baseMemoryRo.IsValid || _baseMemoryRx.IsValid || _baseMemoryNone.IsValid;
         }
 
         public void Dispose()
@@ -90,6 +121,11 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             if (_baseMemoryRo.IsValid)
             {
                 _baseMemoryRo.Dispose();
+            }
+
+            if (_baseMemoryRx.IsValid)
+            {
+                _baseMemoryRx.Dispose();
             }
 
             if (_baseMemoryNone.IsValid)

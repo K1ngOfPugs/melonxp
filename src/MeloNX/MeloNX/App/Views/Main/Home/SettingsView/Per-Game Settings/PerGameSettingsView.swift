@@ -369,9 +369,9 @@ struct PerGameSettingsView: View {
                     
                     Divider()
                     
-                    PerSettingsToggle(isOn: configBinding(\.enableTextureRecompression), icon: "rectangle.compress.vertical", label: "Texture Recompression")
+                    // PerSettingsToggle(isOn: configBinding(\.enableTextureRecompression), icon: "rectangle.compress.vertical", label: "Texture Recompression")
                     
-                    Divider()
+                    // Divider()
                     
                     PerSettingsToggle(isOn: configBinding(\.disableDockedMode), icon: "dock.rectangle", label: "Docked Mode")
                     
@@ -483,15 +483,13 @@ struct PerGameSettingsView: View {
                     
                     PerSettingsToggle(isOn: configBinding(\.disablePTC).reversed, icon: "cpu", label: "PTC")
                     
-                    if let gpuInfo = getGPUInfo(), gpuInfo.hasPrefix("Apple M") {
-                        Divider()
-                        
-                        if #available(iOS 16.4, *) {
-                            PerSettingsToggle(isOn: .constant(false), icon: "bolt", label: "Hypervisor")
-                                .disabled(true)
-                        } else if checkAppEntitlement("com.apple.private.hypervisor") {
-                            PerSettingsToggle(isOn: configBinding(\.hypervisor), icon: "bolt", label: "Hypervisor")
-                        }
+                    Divider()
+                    
+                    if checkAppEntitlement("com.apple.private.hypervisor") {
+                        PerSettingsToggle(isOn: configBinding(\.hypervisor), icon: "bolt", label: "Hypervisor")
+                    } else {
+                        PerSettingsToggle(isOn: configBinding(\.hypervisor), icon: "bolt", label: "NCE")
+                            .disabled(true)
                     }
                 }
             }

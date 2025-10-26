@@ -11,6 +11,7 @@ import GameController
 import MetalKit
 import Metal
 import Darwin
+import NavigationStackBackport
 
 
 struct iOSNav<Content: View>: View {
@@ -18,11 +19,9 @@ struct iOSNav<Content: View>: View {
 
     var body: some View {
         if #available(iOS 16, *) {
-            NavigationStack(root: content)
+            SwiftUI.NavigationStack(root: content)
         } else {
-            NavigationView(content: content)
-                .navigationViewStyle(StackNavigationViewStyle())
-                .navigationViewStyle(.stack)
+            NavigationStackBackport.NavigationStack(root: content)
         }
     }
 }
@@ -642,15 +641,14 @@ class Ryujinx : ObservableObject {
         if !config.inputids.isEmpty {
             config.inputids.prefix(8).enumerated().forEach { index, inputId in
                 // controllerType
-                if let controller = controllerManager.controllerTypes[index], controller == .handheld {
+                if let controller = controllerManager.selectedControllers[index] as? BaseController, controller.type == .handheld {
                     args.append(contentsOf: ["--input-id-handheld", inputId])
-                    // args.append(contentsOf: ["\(index == 0 ? "--input-id-handheld" : "--input-id-\(index + 1)")", inputId])
                 } else {
                     args.append(contentsOf: ["--input-id-\(index + 1)", inputId])
                 }
                 
-                if let controller = controllerManager.controllerTypes[index] {
-                    args.append(contentsOf: ["--controller-type-\(index + 1)", controller.rawValue])
+                if let controller = controllerManager.selectedControllers[index] as? BaseController {
+                    args.append(contentsOf: ["--controller-type-\(index + 1)", controller.type.rawValue])
                 }
             }
         }

@@ -65,6 +65,14 @@ struct ContentView: View {
     @State private var isAnimating = false
     @State var isLoading = true
     
+    var showFullScreen: Binding<Bool> {
+        Binding(
+            get: { game != nil && (ryujinx.jitenabled || ignoreJIT) && (showProfileonGame ? choosedProfile : true) },
+            set: { print($0) }
+        )
+    }
+    
+    @State private var presentGame = false
     
     // MARK: - CORE
     @StateObject var ryujinx = Ryujinx.shared
@@ -78,13 +86,18 @@ struct ContentView: View {
             MoltenVKSettings(string: "MVK_USE_METAL_PRIVATE_API", value: "1"),
             MoltenVKSettings(string: "MVK_CONFIG_USE_METAL_PRIVATE_API", value: "1"),
             MoltenVKSettings(string: "MVK_DEBUG", value: "0"),
-            // MoltenVKSettings(string: "MVK_CONFIG_LOG_LEVEL", value: "3"),
+            // MoltenVKSettings(string: "MVK_CONFIG_LOG_LEVEL", value: "2"),
             MoltenVKSettings(string: "MVK_CONFIG_PREFILL_METAL_COMMAND_BUFFERS", value: "0"),
             MoltenVKSettings(string: "MVK_CONFIG_MAX_ACTIVE_METAL_COMMAND_BUFFERS_PER_QUEUE", value: "512"),
+            MoltenVKSettings(string: "DOTNET_DefaultStackSize", value: "200000") // probably doesn't work on NativeAOT
         ]
         
-        if #available(iOS 19, *) {
+        let regex = #"^(Mac|MacBook|iMac|Mac\s?Pro)"#
+        let isMac = UIDevice.modelName.range(of: regex, options: .regularExpression) != nil
+        
+        if #available(iOS 19, *), !ProcessInfo.processInfo.isiOSAppOnMac, !isMac {
             setenv("HAS_TXM", ProcessInfo.processInfo.hasTXM ? "1" : "0", 1)
+            // setenv("HAS_TXM", "1", 1)
         } else {
             setenv("HAS_TXM", "0", 1)
         }
@@ -96,11 +109,22 @@ struct ContentView: View {
     
     // MARK: - Body
     var body: some View {
-        if game != nil && (ryujinx.jitenabled || ignoreJIT) && (showProfileonGame ? choosedProfile : true) {
-            gameView
-        } else if game != nil && !ryujinx.jitenabled {
-            jitErrorView
-        } else {
+        Group {
+            if showFullScreen.wrappedValue {
+                gameView
+            } else if game != nil && !ryujinx.jitenabled {
+                jitErrorView
+            } else {
+                mainMenu
+            }
+        }
+    }
+     
+    
+    // MARK: - View Components
+    
+    private var mainMenu: some View {
+        Group {
             mainMenuView
                 .halfScreenSheet(isPresented: $showSheet) {
                     AccountSelector() { cool in
@@ -118,8 +142,6 @@ struct ContentView: View {
                 }
         }
     }
-    
-    // MARK: - View Components
     
     private var gameView: some View {
         ZStack {
@@ -336,7 +358,7 @@ struct ContentView: View {
     }
 
     private func setupEmulation() {
-        isVCA = (controllerManager.currentControllers.first(where: { $0.isVirtualController }) != nil)
+        isVCA = controllerManager.selectedControllers.contains(where: { $0.virtual })
         
         DispatchQueue.main.async {
             start(displayid: 1)
@@ -355,19 +377,13 @@ struct ContentView: View {
             config = customgame
         }
         
-        
-        for index in controllerManager.currentControllers.indices {
-            ControllerManager.shared.controllerTypes[index] = controllerManager.currentControllers[index].controllerType
-        }
-        
-        print("\(controllerManager.currentControllers), \(Array(Set(controllerManager.currentControllers.map(\.id))))")
+        controllerManager.registerMotionAndControllerTypeForMatchingControllers()
         
         config.gamepath = game.fileURL.path
-        config.inputids = Array(Set(controllerManager.currentControllers.map(\.id)))
+        config.inputids = Array(Set(controllerManager.selectedControllers.map(\.id)))
+        
         
         configureEnvironmentVariables()
-        
-        controllerManager.registerMotionForMatchingControllers()
         
         config.inputids.isEmpty ? config.inputids.append("0") : ()
         
@@ -397,6 +413,18 @@ struct ContentView: View {
             setenv("DUAL_MAPPED_JIT", "1", 1)
         } else {
             setenv("DUAL_MAPPED_JIT", "0", 1)
+        }
+        
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "1", 1)
+            return
+        }
+        
+        let tier = device.argumentBuffersSupport
+        if tier.rawValue >= MTLArgumentBuffersTier.tier2.rawValue {
+            setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "1", 1)
+        } else {
+            setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "0", 1)
         }
     }
     

@@ -267,6 +267,8 @@ struct SettingsViewNew: View {
     
     @AppStorage("showBatteryPercentage") var showBatteryPercentage: Bool = false
     
+    @AppStorage("horizontalorvertical") var horizontalorvertical: Bool = false
+    
     let totalMemory = ProcessInfo.processInfo.physicalMemory
     
     @AppStorage("lockInApp") var restartApp = false
@@ -279,6 +281,7 @@ struct SettingsViewNew: View {
     @State private var showAnisotropicInfo = false
     @State private var showControllerInfo = false
     @State private var showAppIconSwitcher = false
+    @State private var isShowingGameController = false
     @State private var searchText = ""
     @AppStorage("portal") var gamepo = false
     @StateObject var ryujinx = Ryujinx.shared
@@ -352,12 +355,27 @@ struct SettingsViewNew: View {
                                         Circle()
                                             .fill(ryujinx.jitenabled ? Color.green : Color.red)
                                             .frame(width: 12, height: 12)
+                                        if !checkAppEntitlement("get-task-allow") && !checkAppEntitlement("com.apple.security.cs.allow-jit") && !checkAppEntitlement("dynamic-codesigning") && !ryujinx.jitenabled {
+                                            Text("No JIT Support. (no get-task-allow)")
+                                                .font(.subheadline.weight(.medium))
+                                                .foregroundColor(.red)
+                                        } else {
+                                            Text(ryujinx.jitenabled ? "JIT Enabled" : "JIT Not Acquired")
+                                                .font(.subheadline.weight(.medium))
+                                                .foregroundColor(ryujinx.jitenabled ? .green : .red)
+                                        }
                                         
-                                        Text(ryujinx.jitenabled ? "JIT Enabled" : "JIT Not Acquired")
-                                            .font(.subheadline.weight(.medium))
-                                            .foregroundColor(ryujinx.jitenabled ? .green : .red)
+                                        if isInLiveContainer.0, isInLiveContainer.1 == nil {
+                                            Text("LiveContainer")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.indigo)
+                                        }
                                         
                                         Spacer()
+                                        
+                                        Text("v\(appVersion)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
                                         
                                         let memoryText = ProcessInfo.processInfo.isiOSAppOnMac
                                             ? String(format: "%.0f GB", Double(totalMemory) / (1024 * 1024 * 1024))
@@ -403,6 +421,22 @@ struct SettingsViewNew: View {
                                         icon: "memorychip.fill",
                                         color: .orange
                                     )
+                                    
+                                    if let cool = isInLiveContainer.1, !isInLiveContainer.2 {
+                                        InfoCard(
+                                            title: "LiveContainer",
+                                            value: "v\(cool.infoDictionary?["CFBundleShortVersionString"] as? String ?? (cool.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown")) \(cool.infoDictionary?["LCVersionInfo"] as? String ?? "")",
+                                            icon: "app.fill",
+                                            color: .indigo
+                                        )
+                                    } else if isInLiveContainer.2 {
+                                        InfoCard(
+                                            title: "LiveContainer",
+                                            value: "Multitask",
+                                            icon: "app.fill",
+                                            color: .indigo
+                                        )
+                                    }
                                 }
                                 .padding()
                                 
@@ -529,7 +563,7 @@ struct SettingsViewNew: View {
             .onAppear {
                 mVKPreFillBuffer = false
                 
-                if let configs = SettingsManager.loadSettings() {
+                if let _ = SettingsManager.loadSettings() {
                     settingsManager.loadSettings()
                 } else {
                     settingsManager.saveSettings()
@@ -544,14 +578,36 @@ struct SettingsViewNew: View {
         VStack(spacing: 16) {
             // JIT Status indicator
             HStack {
-                Circle()
-                    .fill(ryujinx.jitenabled ? Color.green : Color.red)
-                    .frame(width: 12, height: 12)
-                
-                Text(ryujinx.jitenabled ? "JIT Enabled" : "JIT Not Acquired")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(ryujinx.jitenabled ? .green : .red)
-                
+                VStack {
+                    HStack {
+                        Circle()
+                            .fill(ryujinx.jitenabled ? Color.green : Color.red)
+                            .frame(width: 12, height: 12)
+                        if !checkAppEntitlement("get-task-allow") && !checkAppEntitlement("com.apple.security.cs.allow-jit") && !checkAppEntitlement("dynamic-codesigning") && !ryujinx.jitenabled {
+                            Text("No JIT Support. (no get-task-allow)")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.red)
+                        } else {
+                            Text(ryujinx.jitenabled ? "JIT Enabled" : "JIT Not Acquired")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(ryujinx.jitenabled ? .green : .red)
+                        }
+                        
+                        if isInLiveContainer.0, isInLiveContainer.1 == nil {
+                            Spacer()
+                        }
+                    }
+                    if isInLiveContainer.0, isInLiveContainer.1 == nil {
+                        HStack {
+                            Text("Installed With LiveContainer")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.cyan)
+                            
+                            
+                            Spacer()
+                        }
+                    }
+                }
                 Spacer()
                 
                 let memoryText = ProcessInfo.processInfo.isiOSAppOnMac
@@ -575,6 +631,7 @@ struct SettingsViewNew: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
+                
                 
                 Text("Version \(appVersion)")
                     .font(.subheadline)
@@ -604,6 +661,22 @@ struct SettingsViewNew: View {
                         icon: "memorychip.fill",
                         color: .orange
                     )
+                    
+                    if let cool = isInLiveContainer.1, !isInLiveContainer.2 {
+                        InfoCard(
+                            title: "LiveContainer",
+                            value: "v\(cool.infoDictionary?["CFBundleShortVersionString"] as? String ?? (cool.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown")) \(cool.infoDictionary?["LCVersionInfo"] as? String ?? "")",
+                            icon: "app.fill",
+                            color: .indigo
+                        )
+                    } else if isInLiveContainer.2 {
+                        InfoCard(
+                            title: "LiveContainer",
+                            value: "Multitask",
+                            icon: "app.fill",
+                            color: .indigo
+                        )
+                    }
                 }
             } else {
                 VStack(spacing: 16) {
@@ -627,6 +700,22 @@ struct SettingsViewNew: View {
                         icon: "memorychip.fill",
                         color: .orange
                     )
+                    
+                    if let cool = isInLiveContainer.1, !isInLiveContainer.2 {
+                        InfoCard(
+                            title: "LiveContainer",
+                            value: "v\(cool.infoDictionary?["CFBundleShortVersionString"] as? String ?? (cool.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown")) \(cool.infoDictionary?["LCVersionInfo"] as? String ?? "")",
+                            icon: "app.fill",
+                            color: .indigo
+                        )
+                    } else if isInLiveContainer.2 {
+                        InfoCard(
+                            title: "LiveContainer",
+                            value: "Multitask",
+                            icon: "app.fill",
+                            color: .indigo
+                        )
+                    }
                 }
             }
         }
@@ -761,19 +850,31 @@ struct SettingsViewNew: View {
                     
                     Divider()
                     
-                    SettingsToggle(isOn: config.enableTextureRecompression, icon: "rectangle.compress.vertical", label: "Texture Recompression")
+                    // SettingsToggle(isOn: config.enableTextureRecompression, icon: "rectangle.compress.vertical", label: "Texture Recompression")
                     
-                    Divider()
+                    // Divider()
                     
                     SettingsToggle(isOn: config.disableDockedMode, icon: "dock.rectangle", label: "Docked Mode")
                     
                     Divider()
                     
                     SettingsToggle(isOn: config.macroHLE, icon: "gearshape", label: "Macro HLE")
+                }
+            }
+            
+            SettingsCard {
+                VStack(spacing: 4) {
+                    SettingsToggle(isOn: $performacehud, icon: "speedometer", label: "Performance Overlay")
+                    
+                    if performacehud {
+                        Divider()
+                        
+                        SettingsToggle(isOn: $showBatteryPercentage, icon: "battery.100percent.bolt", label: "Show Battery Percentage")
+                    }
                     
                     Divider()
                     
-                    SettingsToggle(isOn: $performacehud, icon: "speedometer", label: "Performance Overlay")
+                    SettingsToggle(isOn: $horizontalorvertical, icon: "rotate.right", label: "Horizontal Performance Overlay")
                 }
             }
             
@@ -825,7 +926,7 @@ struct SettingsViewNew: View {
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    if controllerManager.currentControllers.isEmpty {
+                    if controllerManager.allControllers.isEmpty {
                         emptyControllersView
                     } else {
                         controllerListView
@@ -841,10 +942,6 @@ struct SettingsViewNew: View {
             // On-screen controls card
             SettingsCard {
                 VStack(spacing: 4) {
-                    SettingsToggle(isOn: $stickButton, icon: "l.joystick.press.down", label: "Show Stick Buttons")
-                    
-                    Divider()
-                    
                     SettingsToggle(isOn: $ryuDemo, icon: "hand.draw", label: "On-Screen Controller (Demo)")
                         .disabled(true)
                     
@@ -857,9 +954,30 @@ struct SettingsViewNew: View {
             // Controller scale card
             SettingsCard {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("On-Screen Controller")
+                    Text("Global On-Screen Controller Configuation")
                         .font(.headline)
                         .foregroundColor(.primary)
+                    
+                    
+                    Button {
+                        isShowingGameController = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "formfitting.gamecontroller")
+                                .foregroundColor(.blue)
+                            Text("On-Screen Controller Layout")
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding(.vertical, 8)
+                    }
+                    .padding(.horizontal)
+                    .fullScreenCover(isPresented: $isShowingGameController) {
+                        ControllerView(isEditing: $isShowingGameController, gameId: nil)
+                    }
+                    
+                    Divider()
+                        .padding(.horizontal)
                     
                     Group {
                         HStack {
@@ -904,6 +1022,7 @@ struct SettingsViewNew: View {
                             }
                         }
                     }
+                    .padding(.horizontal)
                     
                     Divider()
                     
@@ -950,6 +1069,12 @@ struct SettingsViewNew: View {
                             }
                         }
                     }
+                    .padding(.horizontal)
+                    
+                    Divider()
+                    
+                    SettingsToggle(isOn: $stickButton, icon: "l.joystick.press.down", label: "Show Stick Buttons")
+                    
                 }
             }
         }
@@ -958,7 +1083,9 @@ struct SettingsViewNew: View {
     // MARK: - Controller Selection Components
 
     private var hasAvailableControllers: Bool {
-        !controllerManager.nativeControllers.map(\.ryujinxController).filter { !contains(controllerManager.currentControllers, value: $0) }.isEmpty
+        !ControllerManager.shared.allControllers
+            .filter { !contains(ControllerManager.shared.selectedControllers, value: $0) }
+            .isEmpty
     }
 
     private var emptyControllersView: some View {
@@ -975,8 +1102,8 @@ struct SettingsViewNew: View {
         VStack(spacing: 0) {
             Divider()
             
-            ForEach(controllerManager.currentControllers.indices, id: \.self) { index in
-                let controller = controllerManager.currentControllers[index]
+            ForEach(ControllerManager.shared.selectedControllers.indices, id: \.self) { index in
+                let controller = ControllerManager.shared.selectedControllers[index]
                 
                 VStack(spacing: 0) {
                     HStack {
@@ -989,7 +1116,7 @@ struct SettingsViewNew: View {
                         Spacer()
                         
                         Button {
-                            toggleController(controllerManager.currentControllers[index])
+                            ControllerManager.shared.toggleController(controller)
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.secondary)
@@ -997,27 +1124,24 @@ struct SettingsViewNew: View {
                         .buttonStyle(.plain)
                     }
                     .padding(.vertical, 8)
-                    .onAppear() {
-                        print(controllerManager.currentControllers)
-                    }
                     
-                    if index < controllerManager.currentControllers.count - 1 {
+                    if index < ControllerManager.shared.selectedControllers.count - 1 {
                         Divider()
                     }
                 }
                 .contextMenu {
                     ForEach(ControllerType.allCases) { type in
-                        if controllerManager.currentControllers[index].controllerType == type {
+                        if controller.type == type {
                             Button {
-                                controllerManager.currentControllers[index].controllerType = type
-                                controllerManager.controllerTypes[index] = controller.controllerType
+                                ControllerManager.shared.selectedControllers[index].type = type
+                                ControllerManager.shared.controllerTypes[index] = type
                             } label: {
                                 Label(type.rawValue, systemImage: "checkmark")
                             }
                         } else {
                             Button(type.rawValue) {
-                                controllerManager.currentControllers[index].controllerType = type
-                                controllerManager.controllerTypes[index] = controller.controllerType
+                                ControllerManager.shared.selectedControllers[index].type = type
+                                ControllerManager.shared.controllerTypes[index] = type
                             }
                             .tag(type)
                         }
@@ -1025,24 +1149,22 @@ struct SettingsViewNew: View {
                 }
             }
             .onAppear {
-                
-                for (index, controller) in controllerManager.currentControllers.enumerated() {
-                    if controller.isVirtualController {
-                        controllerManager.currentControllers[index].controllerType = controllerManager.controllerTypes[index] ?? .joyconPair
+                for (index, controller) in ControllerManager.shared.selectedControllers.enumerated() {
+                    if controller.virtual {
+                        controller.type = ControllerManager.shared.controllerTypes[index] ?? .joyconPair
                     } else {
-                        controllerManager.currentControllers[index].controllerType = controllerManager.controllerTypes[index] ?? .proController
+                        controller.type = ControllerManager.shared.controllerTypes[index] ?? .proController
                     }
                 }
-
             }
         }
     }
 
     private var addControllerButton: some View {
         Menu {
-            ForEach(controllerManager.nativeControllers.map(\.ryujinxController).filter { !contains(controllerManager.currentControllers, value: $0) }) { controller in
+            ForEach(ControllerManager.shared.allControllers.filter({ !contains(ControllerManager.shared.selectedControllers, value: $0) })) { controller in
                 Button {
-                    controllerManager.currentControllers.append(controller)
+                    ControllerManager.shared.selectedControllers.append(controller)
                 } label: {
                     Text(controller.name)
                 }
@@ -1054,14 +1176,9 @@ struct SettingsViewNew: View {
                 .padding(.vertical, 6)
         }
     }
-    
-    func contains(_ cool: [Controller], value: Controller) -> Bool {
-        for item in cool {
-            if item.name == value.name && item.id == value.id {
-                return true
-            }
-        }
-        return false
+
+    func contains(_ array: [BaseController], value: BaseController) -> Bool {
+        array.contains { $0 === value }
     }
     
     // MARK: - System Settings
@@ -1133,15 +1250,13 @@ struct SettingsViewNew: View {
                     
                     SettingsToggle(isOn: config.disablePTC.reversed, icon: "cpu", label: "PTC")
                     
-                    if let gpuInfo = getGPUInfo(), gpuInfo.hasPrefix("Apple M") {
-                        Divider()
+                    Divider()
+                    
+                    if checkAppEntitlement("com.apple.private.hypervisor") {
                         
-                        if #available(iOS 16.4, *) {
-                            SettingsToggle(isOn: .constant(false), icon: "bolt", label: "Hypervisor")
-                                .disabled(true)
-                        } else if checkAppEntitlement("com.apple.private.hypervisor") {
-                            SettingsToggle(isOn: config.hypervisor, icon: "bolt", label: "Hypervisor")
-                        }
+                        SettingsToggle(isOn: config.hypervisor, icon: "bolt", label: "Hypervisor")
+                    } else {
+                        SettingsToggle(isOn: config.hypervisor, icon: "bolt", label: "NCE")
                     }
                 }
             }
@@ -1355,10 +1470,6 @@ struct SettingsViewNew: View {
                         Divider()
                     }
             
-                    SettingsToggle(isOn: $showBatteryPercentage, icon: "battery.100percent.bolt", label: "Show Battery Percentage (in-game)")
-                    
-                    Divider()
-                
                     // Disable Touch card
                     SettingsToggle(isOn: $disableTouch, icon: "rectangle.and.hand.point.up.left.filled", label: "Disable Touch")
                     
@@ -1381,6 +1492,7 @@ struct SettingsViewNew: View {
                         }
                         .padding(.vertical, 8)
                     }
+                    .padding(.horizontal)
                     .sheet(isPresented: $showAppIconSwitcher) {
                         AppIconSwitcherView()
                     }
@@ -1463,9 +1575,9 @@ struct SettingsViewNew: View {
                     
                     Divider()
                     
-                    if #available(iOS 19, *), !ProcessInfo.processInfo.isiOSAppOnMac {
+                    if ProcessInfo.processInfo.hasTXM, !ProcessInfo.processInfo.isiOSAppOnMac {
                         SettingsToggle(isOn: $dualMapped, icon: "light.strip.2", label: "Dual Mapped JIT")
-                            .disabled(true)
+                            // .disabled(true)
                     } else {
                         SettingsToggle(isOn: $dualMapped, icon: "light.strip.2", label: "Dual Mapped JIT")
                     }
@@ -1488,20 +1600,13 @@ struct SettingsViewNew: View {
                         }
                         .padding(.vertical, 8)
                     }
+                    .padding(.horizontal)
                 }
             }
         }
     }
     
     // MARK: - Helper Functions
-    
-    private func toggleController(_ controller: Controller) {
-        if controllerManager.currentControllers.contains(where: { $0.id == controller.id }) {
-            controllerManager.currentControllers.removeAll(where: { $0.id == controller.id })
-        } else {
-            controllerManager.currentControllers.append(controller)
-        }
-    }
     
     
     func getGPUInfo() -> String? {
@@ -1723,9 +1828,13 @@ struct SettingsToggle: View {
                     
                     Spacer()
                     
-                    
-                    Text(isOn ? "ON" : "Off")
-                        .foregroundStyle(isOn ? (toggleGreen ? .green : .blue) : .blue)
+                    if disabled {
+                        Text("OFF")
+                            .foregroundStyle(.gray)
+                    } else {
+                        Text(isOn ? "ON" : "Off")
+                            .foregroundStyle(isOn ? (toggleGreen ? .green : .blue) : .blue)
+                    }
                 }
                 .padding()
                 .onTapGesture {

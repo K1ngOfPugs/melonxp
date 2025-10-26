@@ -9,7 +9,6 @@ import SwiftUI
 import MetalKit
 
 struct MetalView: UIViewRepresentable {
-    
     var airplay: Bool = Air.shared.connected // just in case :3
     
     func makeUIView(context: Context) -> UIView {
@@ -36,9 +35,11 @@ struct MetalView: UIViewRepresentable {
         if Double(UIDevice.current.systemVersion)! < 17.0 {
             
             let uiview = MTKView()
+            
             let layer = Ryujinx.shared.metalLayer!
             
             layer.frame = uiview.bounds
+            
             
             uiview.layer.addSublayer(layer)
             
