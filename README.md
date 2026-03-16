@@ -9,7 +9,7 @@
     MeloNX enables Nintendo Switch game emulation on iOS using Ryujinx as a base.
   </p>
   <p align="center">
-    MeloNX is an iOS Nintendo Switch emulator based on Ryujinx, written primarily in C#. Designed to bring accurate performance and a user-friendly interface to iOS, MeloNX makes Switch games accessible on Apple devices.
+    MeloNX is an iOS Nintendo Switch emulator based on Ryujinx, written primarily in C# and Swift. Designed to bring accurate performance and a user-friendly interface to iOS, MeloNX makes Switch games accessible on Apple devices.
     Developed from the ground up, MeloNX is open-source and available on Github under the <a href="LICENSE.txt" target="_blank">GPLv3 license</a>.
   </p>
 </body>
@@ -33,11 +33,11 @@ Once you have hacked your Switch, backed up your keys and dumped your firmware, 
 [Firmware](https://git.ryujinx.app/ryubing/ryujinx/-/wikis/Dumping/Firmware)
 
 # Info
-- A Paid Developer account may be needed for specific devices (Read about Entitlements below)
+- A Paid Developer account or [TrollStore](https://github.com/opa334/TrollStore) may be needed for specific devices (Read about Entitlements below)
 - MeloNX **REQUIRES** JIT and CANNOT run without it.
-- Recommended iPhone: iPhone 15 Pro+ 
-- Recommended iPad: iPad Pro 1TB
-- Lowest Compatible Device (Paid Developer Account): iPhone 6s 
+- Recommended iPhone: iPhone 15 Pro+ (8/12GB RAM both have the same memory limit of 6GB)
+- Recommended iPad: iPad Pro 5th+ 128GB+ (8GB RAM) / 1TB+ (16GB RAM) or iPad Air 5+ (8GB RAM)
+- Lowest Compatible Device (Paid Developer Account): iPhone 6s (iOS 15)
 - Lowest Compatible Device (Free Developer Account): iPhone 12
 
 # Entitlements
@@ -51,7 +51,7 @@ MeloNX can use **2** Entitlements:
 
 **Extended Virtual Addressing**:<br>
 \- This allows MeloNX to be able to ask iOS for more memory / RAM then actually available.<br>
-\- Extended Virtual Addressing is a **PAID** entitlement 
+\- Extended Virtual Addressing is a **PAID** entitlement, [TrollStore](https://github.com/opa334/TrollStore) also gives this entitlement.
 
 Increased Memory Limit is required for **all devices**.
 
