@@ -71,7 +71,8 @@ We have a discord server!
 
 > [SideStore](https://sidestore.io/) is recommended (optional) for an on-device Sideloader, and should be installed prior performing this install.
 
-**Make sure to read the FAQ and Info before continuing.**
+#### **Make sure to read the FAQ and Info before continuing.**
+
 #### 1. Sideload Application
 Download and install MeloNX using [PlumeImpactor](https://github.com/khcrysalis/PlumeImpactor/releases) on a computer.
 - [Download **MeloNX** From Releases](https://git.ryujinx.app/melonx/emu/-/releases)
@@ -81,6 +82,7 @@ Download and install MeloNX using [PlumeImpactor](https://github.com/khcrysalis/
 - Plug in your iDevice.
 - Select your iDevice from the dropdown at the top of the window.
 - Click Install.
+
 #### 2. Load Into SideStore (Optional)
 To have MeloNX show inside SideStore (or AltStore), You must re-install it:
 - Open **SideStore** on your iDevice
@@ -88,25 +90,30 @@ To have MeloNX show inside SideStore (or AltStore), You must re-install it:
 - Select the **MeloNX** .ipa (You may need to download it again.)
 - Wait for it to Sideload, then it should show up Inside **SideStore**.
 - Now You can Refresh **MeloNX** and Update it without needing a computer.
+
 #### 4. Setup Files
 - Add Encryption Keys and Firmware using the file picker inside MeloNX,
-- Information for where to get these files are here
+- Information for where to get these files are [here](#how-can-i-dump-my-firmwaregameskeys)
+
 #### 5. Enable JIT
 - Enable JIT using your preferred method, on iOS 26 [StikDebug](https://github.com/StephenDev0/StikDebug) is required.
   
 
 ### Paid Developer Account (Legacy)
 
-**Make sure to read the FAQ and Info before continuing.**
+#### **Make sure to read the FAQ and Info before continuing.**
+
 #### 1. Sideload MeloNX
 Download and install MeloNX using your preferred Apple ID (NOT CERT) sideloader:
 - [Download MeloNX from Releases](https://git.ryujinx.app/melonx/emu/-/releases)
+
 #### 2. Enable Memory Entitlement
 - Visit [Apple Developer Identifiers](https://developer.apple.com/account/resources/identifiers).
 - Locate **MeloNX** and enable the following entitlements:
 - `Increased Memory Limit`
 - `Extended Virtual Addressing`
 - `Increased Debugging Memory Limit`
+
 #### 3. Reinstall MeloNX
 - Delete existing MeloNX installation
 - Sideload MeloNX again
@@ -114,14 +121,16 @@ Download and install MeloNX using your preferred Apple ID (NOT CERT) sideloader:
 
 #### 4. Setup Files
 - Add Encryption Keys and Firmware using the file picker inside MeloNX
+- Information for where to get these files are [here](#how-can-i-dump-my-firmwaregameskeys)
+
 #### 5. Enable JIT
 - Enable JIT using your preferred method, on iOS 26 [StikDebug](https://github.com/StephenDev0/StikDebug) is required.
 
 ### Free Developer Account (Legacy, On-Device)
 
-**Make sure to read the FAQ and Info before continuing.**
-
 > [SideStore](https://sidestore.io/) is recommended to Sideload MeloNX.
+
+#### **Make sure to read the FAQ and Info before continuing.**
 
 ***The Entitlement App is **NOT** needed for AltStore Classic***
 - You may skip Step 2 and Step 3
@@ -133,18 +142,21 @@ Download and install both apps using your preferred **APPLE ID** sideloader:
 #### 2. Enable Memory Entitlement
 
 > If the Entitlement / GetMoreRam app isn't working correctly, then try the new Plumeimpactor method.
-
 - Open the **Entitlement app** > **Settings**
 - Sign in with the same Apple ID you used to Sideload MeloNX.
 - Go to **App IDs** > tap **Refresh**
 - Select **MeloNX** (e.g., "com.stossy11.MeloNX.XXXXXX")
 - Tap **Add Increased Memory Limit**
+
 #### 3. Reinstall MeloNX
 - Delete existing MeloNX installation
 - Sideload MeloNX again
 - Verify **Increased Memory Limit** is enabled in app
+
 #### 4. Setup Files
 - Add Encryption Keys and Firmware using the file picker inside MeloNX
+- Information for where to get these files are [here](#how-can-i-dump-my-firmwaregameskeys)
+
 #### 5. Enable JIT
 - Enable JIT using your preferred method. We recommend [StikDebug](https://apps.apple.com/us/app/stikdebug/id6744045754).
 
