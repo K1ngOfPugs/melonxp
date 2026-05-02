@@ -14,7 +14,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstF2fR op = context.GetOp<InstF2fR>();
 
-            var src = UnpackReg(context, op.SrcFmt, op.Sh, op.SrcB);
+            Operand src = UnpackReg(context, op.SrcFmt, op.Sh, op.SrcB);
 
             EmitF2F(context, op.SrcFmt, op.DstFmt, op.RoundMode, src, op.Dest, op.AbsB, op.NegB, op.Sat);
         }
@@ -23,7 +23,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstF2fI op = context.GetOp<InstF2fI>();
 
-            var src = UnpackImm(context, op.SrcFmt, op.Sh, Imm20ToFloat(op.Imm20));
+            Operand src = UnpackImm(context, op.SrcFmt, op.Sh, Imm20ToFloat(op.Imm20));
 
             EmitF2F(context, op.SrcFmt, op.DstFmt, op.RoundMode, src, op.Dest, op.AbsB, op.NegB, op.Sat);
         }
@@ -32,7 +32,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstF2fC op = context.GetOp<InstF2fC>();
 
-            var src = UnpackCbuf(context, op.SrcFmt, op.Sh, op.CbufSlot, op.CbufOffset);
+            Operand src = UnpackCbuf(context, op.SrcFmt, op.Sh, op.CbufSlot, op.CbufOffset);
 
             EmitF2F(context, op.SrcFmt, op.DstFmt, op.RoundMode, src, op.Dest, op.AbsB, op.NegB, op.Sat);
         }
@@ -41,7 +41,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstF2iR op = context.GetOp<InstF2iR>();
 
-            var src = UnpackReg(context, op.SrcFmt, op.Sh, op.SrcB);
+            Operand src = UnpackReg(context, op.SrcFmt, op.Sh, op.SrcB);
 
             EmitF2I(context, op.SrcFmt, op.IDstFmt, op.RoundMode, src, op.Dest, op.AbsB, op.NegB);
         }
@@ -50,7 +50,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstF2iI op = context.GetOp<InstF2iI>();
 
-            var src = UnpackImm(context, op.SrcFmt, op.Sh, Imm20ToFloat(op.Imm20));
+            Operand src = UnpackImm(context, op.SrcFmt, op.Sh, Imm20ToFloat(op.Imm20));
 
             EmitF2I(context, op.SrcFmt, op.IDstFmt, op.RoundMode, src, op.Dest, op.AbsB, op.NegB);
         }
@@ -59,7 +59,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstF2iC op = context.GetOp<InstF2iC>();
 
-            var src = UnpackCbuf(context, op.SrcFmt, op.Sh, op.CbufSlot, op.CbufOffset);
+            Operand src = UnpackCbuf(context, op.SrcFmt, op.Sh, op.CbufSlot, op.CbufOffset);
 
             EmitF2I(context, op.SrcFmt, op.IDstFmt, op.RoundMode, src, op.Dest, op.AbsB, op.NegB);
         }
@@ -68,7 +68,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstI2fR op = context.GetOp<InstI2fR>();
 
-            var src = GetSrcReg(context, op.SrcB);
+            Operand src = GetSrcReg(context, op.SrcB);
 
             EmitI2F(context, op.ISrcFmt, op.DstFmt, src, op.ByteSel, op.Dest, op.AbsB, op.NegB);
         }
@@ -77,7 +77,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstI2fI op = context.GetOp<InstI2fI>();
 
-            var src = GetSrcImm(context, Imm20ToSInt(op.Imm20));
+            Operand src = GetSrcImm(context, Imm20ToSInt(op.Imm20));
 
             EmitI2F(context, op.ISrcFmt, op.DstFmt, src, op.ByteSel, op.Dest, op.AbsB, op.NegB);
         }
@@ -86,7 +86,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstI2fC op = context.GetOp<InstI2fC>();
 
-            var src = GetSrcCbuf(context, op.CbufSlot, op.CbufOffset);
+            Operand src = GetSrcCbuf(context, op.CbufSlot, op.CbufOffset);
 
             EmitI2F(context, op.ISrcFmt, op.DstFmt, src, op.ByteSel, op.Dest, op.AbsB, op.NegB);
         }
@@ -95,7 +95,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstI2iR op = context.GetOp<InstI2iR>();
 
-            var src = GetSrcReg(context, op.SrcB);
+            Operand src = GetSrcReg(context, op.SrcB);
 
             EmitI2I(context, op.ISrcFmt, op.IDstFmt, src, op.ByteSel, op.Dest, op.AbsB, op.NegB, op.Sat, op.WriteCC);
         }
@@ -104,7 +104,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstI2iI op = context.GetOp<InstI2iI>();
 
-            var src = GetSrcImm(context, Imm20ToSInt(op.Imm20));
+            Operand src = GetSrcImm(context, Imm20ToSInt(op.Imm20));
 
             EmitI2I(context, op.ISrcFmt, op.IDstFmt, src, op.ByteSel, op.Dest, op.AbsB, op.NegB, op.Sat, op.WriteCC);
         }
@@ -113,7 +113,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
         {
             InstI2iC op = context.GetOp<InstI2iC>();
 
-            var src = GetSrcCbuf(context, op.CbufSlot, op.CbufOffset);
+            Operand src = GetSrcCbuf(context, op.CbufSlot, op.CbufOffset);
 
             EmitI2I(context, op.ISrcFmt, op.IDstFmt, src, op.ByteSel, op.Dest, op.AbsB, op.NegB, op.Sat, op.WriteCC);
         }
@@ -179,8 +179,8 @@ namespace Ryujinx.Graphics.Shader.Instructions
 
             Instruction fpType = srcType.ToInstFPType();
 
-            bool isSignedInt = dstType == IDstFmt.S16 || dstType == IDstFmt.S32 || dstType == IDstFmt.S64;
-            bool isSmallInt = dstType == IDstFmt.U16 || dstType == IDstFmt.S16;
+            bool isSignedInt = dstType is IDstFmt.S16 or IDstFmt.S32 or IDstFmt.S64;
+            bool isSmallInt = dstType is IDstFmt.U16 or IDstFmt.S16;
 
             Operand srcB = context.FPAbsNeg(src, absolute, negate, fpType);
 
@@ -242,15 +242,15 @@ namespace Ryujinx.Graphics.Shader.Instructions
             bool negate)
         {
             bool isSignedInt =
-                srcType == ISrcFmt.S8 ||
-                srcType == ISrcFmt.S16 ||
-                srcType == ISrcFmt.S32 ||
-                srcType == ISrcFmt.S64;
+                srcType is ISrcFmt.S8 or
+                ISrcFmt.S16 or
+                ISrcFmt.S32 or
+                ISrcFmt.S64;
             bool isSmallInt =
-                srcType == ISrcFmt.U16 ||
-                srcType == ISrcFmt.S16 ||
-                srcType == ISrcFmt.U8 ||
-                srcType == ISrcFmt.S8;
+                srcType is ISrcFmt.U16 or
+                ISrcFmt.S16 or
+                ISrcFmt.U8 or
+                ISrcFmt.S8;
 
             // TODO: Handle S/U64.
 
@@ -258,7 +258,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
 
             if (isSmallInt)
             {
-                int size = srcType == ISrcFmt.U16 || srcType == ISrcFmt.S16 ? 16 : 8;
+                int size = srcType is ISrcFmt.U16 or ISrcFmt.S16 ? 16 : 8;
 
                 srcB = isSignedInt
                     ? context.BitfieldExtractS32(srcB, Const((int)byteSelection * 8), Const(size))
@@ -302,22 +302,22 @@ namespace Ryujinx.Graphics.Shader.Instructions
             }
 
             bool srcIsSignedInt =
-                srcType == ISrcDstFmt.S8 ||
-                srcType == ISrcDstFmt.S16 ||
-                srcType == ISrcDstFmt.S32;
+                srcType is ISrcDstFmt.S8 or
+                ISrcDstFmt.S16 or
+                ISrcDstFmt.S32;
             bool dstIsSignedInt =
-                dstType == ISrcDstFmt.S8 ||
-                dstType == ISrcDstFmt.S16 ||
-                dstType == ISrcDstFmt.S32;
+                dstType is ISrcDstFmt.S8 or
+                ISrcDstFmt.S16 or
+                ISrcDstFmt.S32;
             bool srcIsSmallInt =
-                srcType == ISrcDstFmt.U16 ||
-                srcType == ISrcDstFmt.S16 ||
-                srcType == ISrcDstFmt.U8 ||
-                srcType == ISrcDstFmt.S8;
+                srcType is ISrcDstFmt.U16 or
+                ISrcDstFmt.S16 or
+                ISrcDstFmt.U8 or
+                ISrcDstFmt.S8;
 
             if (srcIsSmallInt)
             {
-                int size = srcType == ISrcDstFmt.U16 || srcType == ISrcDstFmt.S16 ? 16 : 8;
+                int size = srcType is ISrcDstFmt.U16 or ISrcDstFmt.S16 ? 16 : 8;
 
                 src = srcIsSignedInt
                     ? context.BitfieldExtractS32(src, Const((int)byteSelection * 8), Const(size))

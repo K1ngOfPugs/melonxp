@@ -22,7 +22,7 @@ using ApplicationId = LibHac.Ncm.ApplicationId;
 
 namespace Ryujinx.HLE.HOS.Services.Am.AppletOE.ApplicationProxyService.ApplicationProxy
 {
-    partial class IApplicationFunctions : IpcService
+    class IApplicationFunctions : IpcService
     {
         private long _defaultSaveDataSize = 200000000;
         private long _defaultJournalSaveDataSize = 200000000;
@@ -37,8 +37,6 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletOE.ApplicationProxyService.Applicati
         private int _friendInvitationStorageChannelEventHandle;
         private int _notificationStorageChannelEventHandle;
         private int _healthWarningDisappearedSystemEventHandle;
-        // Thank you Ryubing!
-        // https://git.ryujinx.app/ryubing/ryujinx/-/commit/7a5f430b59e4609137194375b7cea073c2ac7a12
         private int _unknownEventHandle;
 
         private bool _gamePlayRecordingState;
@@ -652,8 +650,8 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletOE.ApplicationProxyService.Applicati
 
             return ResultCode.Success;
         }
-
-        [CommandCmif(210)]
+        
+        [CommandCmif(210)] // 20.0.0+
         // GetUnknownEvent() -> handle<copy>
         public ResultCode GetUnknownEvent(ServiceCtx context)
         {
@@ -667,11 +665,8 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletOE.ApplicationProxyService.Applicati
 
             context.Response.HandleDesc = IpcHandleDesc.MakeCopy(_unknownEventHandle);
 
-            Logger.Stub?.PrintStub(LogClass.ServiceAm);
-
             return ResultCode.Success;
         }
-
 
         [CommandCmif(1001)] // 10.0.0+
         // PrepareForJit()
@@ -684,7 +679,7 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletOE.ApplicationProxyService.Applicati
 
                 if (string.IsNullOrWhiteSpace(filePath))
                 {
-                    throw new InvalidSystemResourceException("JIT (010000000000003B) system title not found! The JIT will not work, provide the system archive to fix this error. (See https://github.com/Ryujinx/Ryujinx#requirements for more information)");
+                    throw new InvalidSystemResourceException("JIT (010000000000003B) system title not found! The JIT will not work, provide the system archive to fix this error.");
                 }
 
                 context.Device.LoadNca(filePath);

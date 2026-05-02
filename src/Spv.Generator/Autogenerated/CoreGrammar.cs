@@ -26,6 +26,7 @@
 // IN THE MATERIALS.
 #endregion
 
+using System;
 using static Spv.Specification;
 
 namespace Spv.Generator
@@ -84,10 +85,12 @@ namespace Spv.Generator
             {
                 result.AddOperand(file);
             }
+
             if (source != null)
             {
                 result.AddOperand(source);
             }
+
             AddDebug(result);
 
             return result;
@@ -192,7 +195,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction Decorate(Instruction target, Decoration decoration, params IOperand[] parameters)
+        public Instruction Decorate(Instruction target, Decoration decoration, params ReadOnlySpan<IOperand> parameters)
         {
             Instruction result = NewInstruction(Op.OpDecorate);
 
@@ -229,7 +232,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction MemberDecorate(Instruction structureType, LiteralInteger member, Decoration decoration, params IOperand[] parameters)
+        public Instruction MemberDecorate(Instruction structureType, LiteralInteger member, Decoration decoration, params ReadOnlySpan<IOperand> parameters)
         {
             Instruction result = NewInstruction(Op.OpMemberDecorate);
 
@@ -251,7 +254,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction GroupDecorate(Instruction decorationGroup, params Instruction[] targets)
+        public Instruction GroupDecorate(Instruction decorationGroup, params ReadOnlySpan<Instruction> targets)
         {
             Instruction result = NewInstruction(Op.OpGroupDecorate);
 
@@ -262,7 +265,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction GroupMemberDecorate(Instruction decorationGroup, params IOperand[] targets)
+        public Instruction GroupMemberDecorate(Instruction decorationGroup, params ReadOnlySpan<IOperand> targets)
         {
             Instruction result = NewInstruction(Op.OpGroupMemberDecorate);
 
@@ -273,7 +276,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction DecorateId(Instruction target, Decoration decoration, params IOperand[] parameters)
+        public Instruction DecorateId(Instruction target, Decoration decoration, params ReadOnlySpan<IOperand> parameters)
         {
             Instruction result = NewInstruction(Op.OpDecorateId);
 
@@ -285,7 +288,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction DecorateString(Instruction target, Decoration decoration, params IOperand[] parameters)
+        public Instruction DecorateString(Instruction target, Decoration decoration, params ReadOnlySpan<IOperand> parameters)
         {
             Instruction result = NewInstruction(Op.OpDecorateString);
 
@@ -297,7 +300,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction DecorateStringGOOGLE(Instruction target, Decoration decoration, params IOperand[] parameters)
+        public Instruction DecorateStringGOOGLE(Instruction target, Decoration decoration, params ReadOnlySpan<IOperand> parameters)
         {
             Instruction result = NewInstruction(Op.OpDecorateStringGOOGLE);
 
@@ -309,7 +312,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction MemberDecorateString(Instruction structType, LiteralInteger member, Decoration decoration, params IOperand[] parameters)
+        public Instruction MemberDecorateString(Instruction structType, LiteralInteger member, Decoration decoration, params ReadOnlySpan<IOperand> parameters)
         {
             Instruction result = NewInstruction(Op.OpMemberDecorateString);
 
@@ -322,7 +325,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction MemberDecorateStringGOOGLE(Instruction structType, LiteralInteger member, Decoration decoration, params IOperand[] parameters)
+        public Instruction MemberDecorateStringGOOGLE(Instruction structType, LiteralInteger member, Decoration decoration, params ReadOnlySpan<IOperand> parameters)
         {
             Instruction result = NewInstruction(Op.OpMemberDecorateStringGOOGLE);
 
@@ -413,6 +416,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(accessQualifier);
             }
+
             AddTypeDeclaration(result, forceIdAllocation);
 
             return result;
@@ -458,7 +462,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction TypeStruct(bool forceIdAllocation, params Instruction[] parameters)
+        public Instruction TypeStruct(bool forceIdAllocation, params ReadOnlySpan<Instruction> parameters)
         {
             Instruction result = NewInstruction(Op.OpTypeStruct);
 
@@ -489,7 +493,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction TypeFunction(Instruction returnType, bool forceIdAllocation, params Instruction[] parameters)
+        public Instruction TypeFunction(Instruction returnType, bool forceIdAllocation, params ReadOnlySpan<Instruction> parameters)
         {
             Instruction result = NewInstruction(Op.OpTypeFunction);
 
@@ -605,7 +609,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction ConstantComposite(Instruction resultType, params Instruction[] constituents)
+        public Instruction ConstantComposite(Instruction resultType, params ReadOnlySpan<Instruction> constituents)
         {
             Instruction result = NewInstruction(Op.OpConstantComposite, Instruction.InvalidId, resultType);
 
@@ -664,7 +668,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction SpecConstantComposite(Instruction resultType, params Instruction[] constituents)
+        public Instruction SpecConstantComposite(Instruction resultType, params ReadOnlySpan<Instruction> constituents)
         {
             Instruction result = NewInstruction(Op.OpSpecConstantComposite, GetNewId(), resultType);
 
@@ -695,6 +699,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(initializer);
             }
+
             return result;
         }
 
@@ -719,6 +724,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(memoryAccess);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -734,6 +740,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(memoryAccess);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -749,10 +756,12 @@ namespace Spv.Generator
             {
                 result.AddOperand(memoryAccess0);
             }
+
             if (memoryAccess1 != (MemoryAccessMask)int.MaxValue)
             {
                 result.AddOperand(memoryAccess1);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -769,10 +778,12 @@ namespace Spv.Generator
             {
                 result.AddOperand(memoryAccess0);
             }
+
             if (memoryAccess1 != (MemoryAccessMask)int.MaxValue)
             {
                 result.AddOperand(memoryAccess1);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -814,7 +825,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction AccessChain(Instruction resultType, Instruction baseObj, params Instruction[] indexes)
+        public Instruction AccessChain(Instruction resultType, Instruction baseObj, params ReadOnlySpan<Instruction> indexes)
         {
             Instruction result = NewInstruction(Op.OpAccessChain, GetNewId(), resultType);
 
@@ -825,7 +836,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction InBoundsAccessChain(Instruction resultType, Instruction baseObj, params Instruction[] indexes)
+        public Instruction InBoundsAccessChain(Instruction resultType, Instruction baseObj, params ReadOnlySpan<Instruction> indexes)
         {
             Instruction result = NewInstruction(Op.OpInBoundsAccessChain, GetNewId(), resultType);
 
@@ -836,7 +847,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction PtrAccessChain(Instruction resultType, Instruction baseObj, Instruction element, params Instruction[] indexes)
+        public Instruction PtrAccessChain(Instruction resultType, Instruction baseObj, Instruction element, params ReadOnlySpan<Instruction> indexes)
         {
             Instruction result = NewInstruction(Op.OpPtrAccessChain, GetNewId(), resultType);
 
@@ -869,7 +880,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction InBoundsPtrAccessChain(Instruction resultType, Instruction baseObj, Instruction element, params Instruction[] indexes)
+        public Instruction InBoundsPtrAccessChain(Instruction resultType, Instruction baseObj, Instruction element, params ReadOnlySpan<Instruction> indexes)
         {
             Instruction result = NewInstruction(Op.OpInBoundsPtrAccessChain, GetNewId(), resultType);
 
@@ -949,7 +960,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction FunctionCall(Instruction resultType, Instruction function, params Instruction[] parameters)
+        public Instruction FunctionCall(Instruction resultType, Instruction function, params ReadOnlySpan<Instruction> parameters)
         {
             Instruction result = NewInstruction(Op.OpFunctionCall, GetNewId(), resultType);
 
@@ -973,7 +984,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction ImageSampleImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleImplicitLod, GetNewId(), resultType);
 
@@ -983,16 +994,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSampleExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleExplicitLod, GetNewId(), resultType);
 
@@ -1003,12 +1016,13 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSampleDrefImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleDrefImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleDrefImplicitLod, GetNewId(), resultType);
 
@@ -1019,16 +1033,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSampleDrefExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleDrefExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleDrefExplicitLod, GetNewId(), resultType);
 
@@ -1040,12 +1056,13 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSampleProjImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleProjImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleProjImplicitLod, GetNewId(), resultType);
 
@@ -1055,16 +1072,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSampleProjExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleProjExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleProjExplicitLod, GetNewId(), resultType);
 
@@ -1075,12 +1094,13 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSampleProjDrefImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleProjDrefImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleProjDrefImplicitLod, GetNewId(), resultType);
 
@@ -1091,16 +1111,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSampleProjDrefExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleProjDrefExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleProjDrefExplicitLod, GetNewId(), resultType);
 
@@ -1112,12 +1134,13 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageFetch(Instruction resultType, Instruction image, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageFetch(Instruction resultType, Instruction image, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageFetch, GetNewId(), resultType);
 
@@ -1127,16 +1150,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageGather(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction component, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageGather(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction component, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageGather, GetNewId(), resultType);
 
@@ -1147,16 +1172,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageDrefGather(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageDrefGather(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageDrefGather, GetNewId(), resultType);
 
@@ -1167,16 +1194,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageRead(Instruction resultType, Instruction image, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageRead(Instruction resultType, Instruction image, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageRead, GetNewId(), resultType);
 
@@ -1186,16 +1215,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageWrite(Instruction image, Instruction coordinate, Instruction texel, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageWrite(Instruction image, Instruction coordinate, Instruction texel, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageWrite);
 
@@ -1206,10 +1237,12 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -1297,7 +1330,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction ImageSparseSampleImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseSampleImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseSampleImplicitLod, GetNewId(), resultType);
 
@@ -1307,16 +1340,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseSampleExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseSampleExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseSampleExplicitLod, GetNewId(), resultType);
 
@@ -1327,12 +1362,13 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseSampleDrefImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseSampleDrefImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseSampleDrefImplicitLod, GetNewId(), resultType);
 
@@ -1343,16 +1379,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseSampleDrefExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseSampleDrefExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseSampleDrefExplicitLod, GetNewId(), resultType);
 
@@ -1364,12 +1402,13 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseSampleProjImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseSampleProjImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseSampleProjImplicitLod, GetNewId(), resultType);
 
@@ -1379,16 +1418,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseSampleProjExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseSampleProjExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseSampleProjExplicitLod, GetNewId(), resultType);
 
@@ -1399,12 +1440,13 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseSampleProjDrefImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseSampleProjDrefImplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseSampleProjDrefImplicitLod, GetNewId(), resultType);
 
@@ -1415,16 +1457,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseSampleProjDrefExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseSampleProjDrefExplicitLod(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseSampleProjDrefExplicitLod, GetNewId(), resultType);
 
@@ -1436,12 +1480,13 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseFetch(Instruction resultType, Instruction image, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseFetch(Instruction resultType, Instruction image, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseFetch, GetNewId(), resultType);
 
@@ -1451,16 +1496,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseGather(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction component, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseGather(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction component, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseGather, GetNewId(), resultType);
 
@@ -1471,16 +1518,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSparseDrefGather(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseDrefGather(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction dRef, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseDrefGather, GetNewId(), resultType);
 
@@ -1491,10 +1540,12 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -1510,7 +1561,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction ImageSparseRead(Instruction resultType, Instruction image, Instruction coordinate, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSparseRead(Instruction resultType, Instruction image, Instruction coordinate, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSparseRead, GetNewId(), resultType);
 
@@ -1520,16 +1571,18 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
         }
 
-        public Instruction ImageSampleFootprintNV(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction granularity, Instruction coarse, ImageOperandsMask imageOperands, params Instruction[] imageOperandIds)
+        public Instruction ImageSampleFootprintNV(Instruction resultType, Instruction sampledImage, Instruction coordinate, Instruction granularity, Instruction coarse, ImageOperandsMask imageOperands, params ReadOnlySpan<Instruction> imageOperandIds)
         {
             Instruction result = NewInstruction(Op.OpImageSampleFootprintNV, GetNewId(), resultType);
 
@@ -1541,10 +1594,12 @@ namespace Spv.Generator
             {
                 result.AddOperand(imageOperands);
             }
+
             if (imageOperands != (ImageOperandsMask)int.MaxValue)
             {
                 result.AddOperand(imageOperandIds);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -1738,7 +1793,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction VectorShuffle(Instruction resultType, Instruction vector1, Instruction vector2, params LiteralInteger[] components)
+        public Instruction VectorShuffle(Instruction resultType, Instruction vector1, Instruction vector2, params ReadOnlySpan<LiteralInteger> components)
         {
             Instruction result = NewInstruction(Op.OpVectorShuffle, GetNewId(), resultType);
 
@@ -1750,7 +1805,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction CompositeConstruct(Instruction resultType, params Instruction[] constituents)
+        public Instruction CompositeConstruct(Instruction resultType, params ReadOnlySpan<Instruction> constituents)
         {
             Instruction result = NewInstruction(Op.OpCompositeConstruct, GetNewId(), resultType);
 
@@ -1760,7 +1815,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction CompositeExtract(Instruction resultType, Instruction composite, params LiteralInteger[] indexes)
+        public Instruction CompositeExtract(Instruction resultType, Instruction composite, params ReadOnlySpan<LiteralInteger> indexes)
         {
             Instruction result = NewInstruction(Op.OpCompositeExtract, GetNewId(), resultType);
 
@@ -1771,7 +1826,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction CompositeInsert(Instruction resultType, Instruction obj, Instruction composite, params LiteralInteger[] indexes)
+        public Instruction CompositeInsert(Instruction resultType, Instruction obj, Instruction composite, params ReadOnlySpan<LiteralInteger> indexes)
         {
             Instruction result = NewInstruction(Op.OpCompositeInsert, GetNewId(), resultType);
 
@@ -2752,7 +2807,7 @@ namespace Spv.Generator
 
         // Control-Flow
 
-        public Instruction Phi(Instruction resultType, params Instruction[] parameters)
+        public Instruction Phi(Instruction resultType, params ReadOnlySpan<Instruction> parameters)
         {
             Instruction result = NewInstruction(Op.OpPhi, GetNewId(), resultType);
 
@@ -2802,7 +2857,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction BranchConditional(Instruction condition, Instruction trueLabel, Instruction falseLabel, params LiteralInteger[] branchweights)
+        public Instruction BranchConditional(Instruction condition, Instruction trueLabel, Instruction falseLabel, params ReadOnlySpan<LiteralInteger> branchweights)
         {
             Instruction result = NewInstruction(Op.OpBranchConditional);
 
@@ -2815,7 +2870,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction Switch(Instruction selector, Instruction defaultObj, params IOperand[] target)
+        public Instruction Switch(Instruction selector, Instruction defaultObj, params ReadOnlySpan<IOperand> target)
         {
             Instruction result = NewInstruction(Op.OpSwitch);
 
@@ -3678,7 +3733,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction EnqueueKernel(Instruction resultType, Instruction queue, Instruction flags, Instruction nDRange, Instruction numEvents, Instruction waitEvents, Instruction retEvent, Instruction invoke, Instruction param, Instruction paramSize, Instruction paramAlign, params Instruction[] localSize)
+        public Instruction EnqueueKernel(Instruction resultType, Instruction queue, Instruction flags, Instruction nDRange, Instruction numEvents, Instruction waitEvents, Instruction retEvent, Instruction invoke, Instruction param, Instruction paramSize, Instruction paramAlign, params ReadOnlySpan<Instruction> localSize)
         {
             Instruction result = NewInstruction(Op.OpEnqueueKernel, GetNewId(), resultType);
 
@@ -4301,6 +4356,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4317,6 +4373,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4333,6 +4390,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4349,6 +4407,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4365,6 +4424,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4381,6 +4441,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4397,6 +4458,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4413,6 +4475,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4429,6 +4492,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4445,6 +4509,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4461,6 +4526,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4477,6 +4543,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4493,6 +4560,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4509,6 +4577,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4525,6 +4594,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4541,6 +4611,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(clusterSize);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4876,6 +4947,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(memoryAccess);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -4893,6 +4965,7 @@ namespace Spv.Generator
             {
                 result.AddOperand(memoryAccess);
             }
+
             AddToFunctionDefinitions(result);
 
             return result;
@@ -5108,7 +5181,7 @@ namespace Spv.Generator
             return result;
         }
 
-        public Instruction LoopControlINTEL(params LiteralInteger[] loopControlParameters)
+        public Instruction LoopControlINTEL(params ReadOnlySpan<LiteralInteger> loopControlParameters)
         {
             Instruction result = NewInstruction(Op.OpLoopControlINTEL);
 
@@ -5310,6 +5383,5 @@ namespace Spv.Generator
 
             return result;
         }
-
     }
 }

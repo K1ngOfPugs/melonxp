@@ -5,7 +5,7 @@ using GameCardHandle = System.UInt32;
 
 namespace Ryujinx.HLE.HOS.Services.Fs
 {
-    partial class IDeviceOperator : DisposableIpcService
+    class IDeviceOperator : DisposableIpcService
     {
         private SharedRef<LibHac.FsSrv.Sf.IDeviceOperator> _baseOperator;
 

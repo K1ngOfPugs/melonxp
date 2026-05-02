@@ -28,8 +28,8 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
         /// <inheritdoc/>
         protected override void GetPhysicalRegions(ulong va, ulong size, KPageList pageList)
         {
-            var ranges = _cpuMemory.GetPhysicalRegions(va, size);
-            foreach (var range in ranges)
+            IEnumerable<MemoryRange> ranges = _cpuMemory.GetPhysicalRegions(va, size);
+            foreach (MemoryRange range in ranges)
             {
                 pageList.AddRange(range.Address + DramMemoryMap.DramBase, range.Size / PageSize);
             }
@@ -126,7 +126,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
                 Context.MemoryManager.IncrementPagesReferenceCount(srcPa, pagesCount);
             }
 
-            if (shouldFillPages && (!OperatingSystem.IsIOS() || !flags.HasFlag(MemoryMapFlags.Private) || fillValue != 0))
+            if (shouldFillPages)
             {
                 _cpuMemory.Fill(dstVa, size, fillValue);
             }
@@ -143,11 +143,11 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
             bool shouldFillPages,
             byte fillValue)
         {
-            using var scopedPageList = new KScopedPageList(Context.MemoryManager, pageList);
+            using KScopedPageList scopedPageList = new(Context.MemoryManager, pageList);
 
             ulong currentVa = address;
 
-            foreach (var pageNode in pageList)
+            foreach (KPageNode pageNode in pageList)
             {
                 ulong addr = pageNode.Address - DramMemoryMap.DramBase;
                 ulong size = pageNode.PagesCount * PageSize;
@@ -156,7 +156,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
 
                 _cpuMemory.Map(currentVa, addr, size, flags);
 
-                if (shouldFillPages && (!OperatingSystem.IsIOS() || !flags.HasFlag(MemoryMapFlags.Private) || fillValue != 0))
+                if (shouldFillPages)
                 {
                     _cpuMemory.Fill(currentVa, size, fillValue);
                 }
@@ -188,16 +188,16 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
                 }
             }
 
-            using var scopedPageList = new KScopedPageList(Context.MemoryManager, pageList);
+            using KScopedPageList scopedPageList = new(Context.MemoryManager, pageList);
 
-            foreach (var pageNode in pageList)
+            foreach (KPageNode pageNode in pageList)
             {
                 Context.CommitMemory(pageNode.Address - DramMemoryMap.DramBase, pageNode.PagesCount * PageSize);
             }
 
             ulong offset = 0;
 
-            foreach (var region in regions)
+            foreach (HostMemoryRange region in regions)
             {
                 _cpuMemory.MapForeign(va + offset, region.Address, region.Size);
 
@@ -214,9 +214,9 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
         {
             KPageList pagesToClose = new();
 
-            var regions = _cpuMemory.GetPhysicalRegions(address, pagesCount * PageSize);
+            IEnumerable<MemoryRange> regions = _cpuMemory.GetPhysicalRegions(address, pagesCount * PageSize);
 
-            foreach (var region in regions)
+            foreach (MemoryRange region in regions)
             {
                 ulong pa = region.Address + DramMemoryMap.DramBase;
                 if (DramMemoryMap.IsHeapPhysicalAddress(pa))

@@ -40,7 +40,7 @@ namespace Ryujinx.Audio.Backends.Common
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual ulong GetSampleCount(int dataSize)
+        protected ulong GetSampleCount(int dataSize)
         {
             return (ulong)BackendHelper.GetSampleCount(RequestedSampleFormat, (int)RequestedChannelCount, dataSize);
         }

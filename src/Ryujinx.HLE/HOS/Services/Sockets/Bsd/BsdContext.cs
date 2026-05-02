@@ -3,20 +3,21 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading;
 
 namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd
 {
-    class BsdContext
+    class BsdContext : IDisposable
     {
         private static readonly ConcurrentDictionary<ulong, BsdContext> _registry = new();
 
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
 
         private readonly List<IFileDescriptor> _fds;
 
         private BsdContext()
         {
-            _fds = new List<IFileDescriptor>();
+            _fds = [];
         }
 
         public ISocket RetrieveSocket(int socketFd)
@@ -46,7 +47,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd
 
         public List<IFileDescriptor> RetrieveFileDescriptorsFromMask(ReadOnlySpan<byte> mask)
         {
-            List<IFileDescriptor> fds = new();
+            List<IFileDescriptor> fds = [];
 
             for (int i = 0; i < mask.Length; i++)
             {
@@ -157,6 +158,20 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd
             return LinuxError.SUCCESS;
         }
 
+        public void Dispose()
+        {
+            int count;
+
+            lock (_lock)
+            {
+                count = _fds.Count;
+            }
+
+            for (int fd = 0; fd < count; fd++) {
+                CloseFileDescriptor(fd);
+            }
+        }
+
         public static BsdContext GetOrRegister(ulong processId)
         {
             BsdContext context = GetContext(processId);
@@ -173,12 +188,15 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd
 
         public static BsdContext GetContext(ulong processId)
         {
-            if (!_registry.TryGetValue(processId, out BsdContext processContext))
-            {
-                return null;
-            }
+            return _registry.GetValueOrDefault(processId);
+        }
 
-            return processContext;
+        public static void DeleteContext(ulong processId)
+        {
+            if (_registry.Remove(processId, out BsdContext context))
+            {
+                context.Dispose();
+            }
         }
     }
 }

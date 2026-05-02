@@ -5,12 +5,12 @@ namespace ARMeilleure.Decoders
     class OpCode32SimdMemPair : OpCode32, IOpCode32Simd
     {
         private static readonly int[] _regsMap =
-        {
+        [
             1, 1, 4, 2,
             1, 1, 3, 1,
             1, 1, 2, 1,
-            1, 1, 1, 1,
-        };
+            1, 1, 1, 1
+        ];
 
         public int Vd { get; }
         public int Rn { get; }
@@ -40,7 +40,7 @@ namespace ARMeilleure.Decoders
             Rn = (opCode >> 16) & 0xf;
 
             WBack = Rm != RegisterAlias.Aarch32Pc;
-            RegisterIndex = Rm != RegisterAlias.Aarch32Pc && Rm != RegisterAlias.Aarch32Sp;
+            RegisterIndex = Rm is not RegisterAlias.Aarch32Pc and not RegisterAlias.Aarch32Sp;
 
             Regs = _regsMap[(opCode >> 8) & 0xf];
 

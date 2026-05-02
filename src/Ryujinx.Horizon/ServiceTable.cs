@@ -33,11 +33,11 @@ namespace Ryujinx.Horizon
 
         public IEnumerable<ServiceEntry> GetServices(HorizonOptions options)
         {
-            List<ServiceEntry> entries = new();
+            List<ServiceEntry> entries = [];
 
             void RegisterService<T>() where T : IService
             {
-                entries.Add(new ServiceEntry(T.Main, this, options));
+                entries.Add(new ServiceEntry(T.Main, this, options, typeof(T).Name));
             }
 
             RegisterService<ArpMain>();

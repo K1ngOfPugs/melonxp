@@ -22,9 +22,9 @@ namespace Ryujinx.Horizon.Bcat.Ipc
         [CmifCommand(0)]
         public Result CreateFileService(out IDeliveryCacheFileService service)
         {
-            using var libHacService = new SharedRef<LibHac.Bcat.Impl.Ipc.IDeliveryCacheFileService>();
+            using SharedRef<LibHac.Bcat.Impl.Ipc.IDeliveryCacheFileService> libHacService = new();
 
-            var resultCode = _libHacService.Get.CreateFileService(ref libHacService.Ref);
+            LibHac.Result resultCode = _libHacService.Get.CreateFileService(ref libHacService.Ref);
 
             if (resultCode.IsSuccess())
             {
@@ -35,15 +35,15 @@ namespace Ryujinx.Horizon.Bcat.Ipc
                 service = null;
             }
 
-            return resultCode.ToHorizonResult();
+            return resultCode.Horizon;
         }
 
         [CmifCommand(1)]
         public Result CreateDirectoryService(out IDeliveryCacheDirectoryService service)
         {
-            using var libHacService = new SharedRef<LibHac.Bcat.Impl.Ipc.IDeliveryCacheDirectoryService>();
+            using SharedRef<LibHac.Bcat.Impl.Ipc.IDeliveryCacheDirectoryService> libHacService = new();
 
-            var resultCode = _libHacService.Get.CreateDirectoryService(ref libHacService.Ref);
+            LibHac.Result resultCode = _libHacService.Get.CreateDirectoryService(ref libHacService.Ref);
 
             if (resultCode.IsSuccess())
             {
@@ -54,13 +54,13 @@ namespace Ryujinx.Horizon.Bcat.Ipc
                 service = null;
             }
 
-            return resultCode.ToHorizonResult();
+            return resultCode.Horizon;
         }
 
         [CmifCommand(10)]
         public Result EnumerateDeliveryCacheDirectory(out int count, [Buffer(HipcBufferFlags.Out | HipcBufferFlags.MapAlias)] Span<DirectoryName> directoryNames)
         {
-            return _libHacService.Get.EnumerateDeliveryCacheDirectory(out count, directoryNames).ToHorizonResult();
+            return _libHacService.Get.EnumerateDeliveryCacheDirectory(out count, directoryNames).Horizon;
         }
 
         public void Dispose()

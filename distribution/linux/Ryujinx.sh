@@ -2,8 +2,8 @@
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-if [ -f "$SCRIPT_DIR/Ryujinx.Headless.SDL2" ]; then
-    RYUJINX_BIN="Ryujinx.Headless.SDL2"
+if [ -f "$SCRIPT_DIR/Ryujinx.Headless.SDL3" ]; then
+    RYUJINX_BIN="Ryujinx.Headless.SDL3"
 fi
 
 if [ -f "$SCRIPT_DIR/Ryujinx" ]; then
@@ -14,7 +14,7 @@ if [ -z "$RYUJINX_BIN" ]; then
     exit 1
 fi
 
-COMMAND="env DOTNET_EnableAlternateStackCheck=1"
+COMMAND="env LANG=C.UTF-8 DOTNET_EnableAlternateStackCheck=1"
 
 if command -v gamemoderun > /dev/null 2>&1; then
     COMMAND="$COMMAND gamemoderun"

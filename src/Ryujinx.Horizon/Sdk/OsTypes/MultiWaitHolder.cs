@@ -1,6 +1,6 @@
 namespace Ryujinx.Horizon.Sdk.OsTypes
 {
-    public class MultiWaitHolder : MultiWaitHolderBase
+    class MultiWaitHolder : MultiWaitHolderBase
     {
         public object UserData { get; set; }
 

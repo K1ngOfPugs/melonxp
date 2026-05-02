@@ -12,13 +12,14 @@ namespace Ryujinx.HLE.HOS.Services.Ldn.UserServiceCreator.LdnMitm
     /// </summary>
     internal class LdnMitmClient : INetworkClient
     {
+        public ProxyConfig Config { get; }
         public bool NeedsRealId => false;
 
         public event EventHandler<NetworkChangeEventArgs> NetworkChange;
 
         private readonly LanDiscovery _lanDiscovery;
 
-        public LdnMitmClient(HLEConfiguration config)
+        public LdnMitmClient(HleConfiguration config)
         {
             UnicastIPAddressInformation localIpInterface = NetworkHelpers.GetLocalInterface(config.MultiplayerLanInterfaceId).Item2;
 
@@ -84,7 +85,7 @@ namespace Ryujinx.HLE.HOS.Services.Ldn.UserServiceCreator.LdnMitm
             _lanDiscovery.SetAdvertiseData(data);
         }
 
-        public void SetGameVersion(byte[] versionString)
+        public void SetGameVersion(ReadOnlySpan<byte> versionString)
         {
             // NOTE: This method is not implemented in ldn_mitm
             Logger.Stub?.PrintMsg(LogClass.ServiceLdn, "LdnMitmClient SetGameVersion");

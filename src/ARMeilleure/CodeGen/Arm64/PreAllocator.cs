@@ -112,7 +112,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
             if (src1.Kind == OperandKind.Constant)
             {
-                if (!src1.Type.IsInteger())
+                if (!src1.Type.IsInteger)
                 {
                     // Handle non-integer types (FP32, FP64 and V128).
                     // For instructions without an immediate operand, we do the following:
@@ -161,7 +161,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
             if (src2.Kind == OperandKind.Constant)
             {
-                if (!src2.Type.IsInteger())
+                if (!src2.Type.IsInteger)
                 {
                     src2 = AddFloatConstantCopy(constants, nodes, node, src2);
 
@@ -191,7 +191,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
                 if (src.Kind == OperandKind.Constant)
                 {
-                    if (!src.Type.IsInteger())
+                    if (!src.Type.IsInteger)
                     {
                         src = AddFloatConstantCopy(constants, nodes, node, src);
 
@@ -261,10 +261,10 @@ namespace ARMeilleure.CodeGen.Arm64
 
             Operand dest = operation.Destination;
 
-            List<Operand> sources = new()
-            {
-                operation.GetSource(0),
-            };
+            List<Operand> sources =
+            [
+                operation.GetSource(0)
+            ];
 
             int argsCount = operation.SourcesCount - 1;
 
@@ -282,7 +282,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
                 bool passOnReg;
 
-                if (source.Type.IsInteger())
+                if (source.Type.IsInteger)
                 {
                     passOnReg = intCount < intMax;
                 }
@@ -309,7 +309,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
                 if (passOnReg)
                 {
-                    Operand argReg = source.Type.IsInteger()
+                    Operand argReg = source.Type.IsInteger
                         ? Gpr(CallingConvention.GetIntArgumentRegister(intCount++), source.Type)
                         : Xmm(CallingConvention.GetVecArgumentRegister(vecCount++), source.Type);
 
@@ -327,7 +327,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
                     InsertConstantRegCopies(constants, nodes, nodes.AddBefore(node, spillOp));
 
-                    stackOffset += source.Type.GetSizeInBytes();
+                    stackOffset += source.Type.ByteSize;
                 }
             }
 
@@ -345,7 +345,7 @@ namespace ARMeilleure.CodeGen.Arm64
                 }
                 else
                 {
-                    Operand retReg = dest.Type.IsInteger()
+                    Operand retReg = dest.Type.IsInteger
                         ? Gpr(CallingConvention.GetIntReturnRegister(), dest.Type)
                         : Xmm(CallingConvention.GetVecReturnRegister(), dest.Type);
 
@@ -365,10 +365,10 @@ namespace ARMeilleure.CodeGen.Arm64
             Operation node,
             Operation operation)
         {
-            List<Operand> sources = new()
-            {
-                operation.GetSource(0),
-            };
+            List<Operand> sources =
+            [
+                operation.GetSource(0)
+            ];
 
             int argsCount = operation.SourcesCount - 1;
 
@@ -385,7 +385,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
                 bool passOnReg;
 
-                if (source.Type.IsInteger())
+                if (source.Type.IsInteger)
                 {
                     passOnReg = intCount + 1 < intMax;
                 }
@@ -408,7 +408,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
                 if (passOnReg)
                 {
-                    Operand argReg = source.Type.IsInteger()
+                    Operand argReg = source.Type.IsInteger
                         ? Gpr(CallingConvention.GetIntArgumentRegister(intCount++), source.Type)
                         : Xmm(CallingConvention.GetVecArgumentRegister(vecCount++), source.Type);
 
@@ -468,8 +468,8 @@ namespace ARMeilleure.CodeGen.Arm64
 
                 // Update the sources and destinations with split 64-bit halfs of the whole 128-bit values.
                 // We also need a additional registers that will be used to store temporary information.
-                operation.SetDestinations(new[] { actualLow, actualHigh, Local(OperandType.I64), Local(OperandType.I64) });
-                operation.SetSources(new[] { address, expectedLow, expectedHigh, desiredLow, desiredHigh });
+                operation.SetDestinations([actualLow, actualHigh, Local(OperandType.I64), Local(OperandType.I64)]);
+                operation.SetSources([address, expectedLow, expectedHigh, desiredLow, desiredHigh]);
 
                 // Add some dummy uses of the input operands, as the CAS operation will be a loop,
                 // so they can't be used as destination operand.
@@ -486,7 +486,7 @@ namespace ARMeilleure.CodeGen.Arm64
             else
             {
                 // We need a additional register where the store result will be written to.
-                node.SetDestinations(new[] { node.Destination, Local(OperandType.I32) });
+                node.SetDestinations([node.Destination, Local(OperandType.I32)]);
 
                 // Add some dummy uses of the input operands, as the CAS operation will be a loop,
                 // so they can't be used as destination operand.
@@ -521,7 +521,7 @@ namespace ARMeilleure.CodeGen.Arm64
             }
             else
             {
-                Operand retReg = source.Type.IsInteger()
+                Operand retReg = source.Type.IsInteger
                     ? Gpr(CallingConvention.GetIntReturnRegister(), source.Type)
                     : Xmm(CallingConvention.GetVecReturnRegister(), source.Type);
 
@@ -551,7 +551,7 @@ namespace ARMeilleure.CodeGen.Arm64
             {
                 OperandType argType = cctx.FuncArgTypes[cIndex];
 
-                if (argType.IsInteger())
+                if (argType.IsInteger)
                 {
                     intCount++;
                 }
@@ -567,7 +567,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
             bool passOnReg;
 
-            if (source.Type.IsInteger())
+            if (source.Type.IsInteger)
             {
                 passOnReg = intCount < CallingConvention.GetArgumentsOnRegsCount();
             }
@@ -606,7 +606,7 @@ namespace ARMeilleure.CodeGen.Arm64
                     {
                         Operand pArg = Local(dest.Type);
 
-                        Operand argReg = dest.Type.IsInteger()
+                        Operand argReg = dest.Type.IsInteger
                             ? Gpr(CallingConvention.GetIntArgumentRegister(intCount), dest.Type)
                             : Xmm(CallingConvention.GetVecArgumentRegister(vecCount), dest.Type);
 
@@ -736,19 +736,19 @@ namespace ARMeilleure.CodeGen.Arm64
         {
             IntrinsicInfo info = IntrinsicTable.GetInfo(intrinsic & ~(Intrinsic.Arm64VTypeMask | Intrinsic.Arm64VSizeMask));
 
-            return info.Type == IntrinsicType.ScalarBinaryRd ||
-                   info.Type == IntrinsicType.ScalarTernaryFPRdByElem ||
-                   info.Type == IntrinsicType.ScalarTernaryShlRd ||
-                   info.Type == IntrinsicType.ScalarTernaryShrRd ||
-                   info.Type == IntrinsicType.Vector128BinaryRd ||
-                   info.Type == IntrinsicType.VectorBinaryRd ||
-                   info.Type == IntrinsicType.VectorInsertByElem ||
-                   info.Type == IntrinsicType.VectorTernaryRd ||
-                   info.Type == IntrinsicType.VectorTernaryRdBitwise ||
-                   info.Type == IntrinsicType.VectorTernaryFPRdByElem ||
-                   info.Type == IntrinsicType.VectorTernaryRdByElem ||
-                   info.Type == IntrinsicType.VectorTernaryShlRd ||
-                   info.Type == IntrinsicType.VectorTernaryShrRd;
+            return info.Type is IntrinsicType.ScalarBinaryRd or
+                   IntrinsicType.ScalarTernaryFPRdByElem or
+                   IntrinsicType.ScalarTernaryShlRd or
+                   IntrinsicType.ScalarTernaryShrRd or
+                   IntrinsicType.Vector128BinaryRd or
+                   IntrinsicType.VectorBinaryRd or
+                   IntrinsicType.VectorInsertByElem or
+                   IntrinsicType.VectorTernaryRd or
+                   IntrinsicType.VectorTernaryRdBitwise or
+                   IntrinsicType.VectorTernaryFPRdByElem or
+                   IntrinsicType.VectorTernaryRdByElem or
+                   IntrinsicType.VectorTernaryShlRd or
+                   IntrinsicType.VectorTernaryShrRd;
         }
 
         private static bool HasConstSrc1(Operation node, ulong value)
@@ -847,9 +847,9 @@ namespace ARMeilleure.CodeGen.Arm64
 
                         Debug.Assert(comp.Kind == OperandKind.Constant);
 
-                        var compType = (Comparison)comp.AsInt32();
+                        Comparison compType = (Comparison)comp.AsInt32();
 
-                        return compType == Comparison.Equal || compType == Comparison.NotEqual;
+                        return compType is Comparison.Equal or Comparison.NotEqual;
                     }
             }
 
@@ -871,9 +871,9 @@ namespace ARMeilleure.CodeGen.Arm64
                 IntrinsicInfo info = IntrinsicTable.GetInfo(intrinsic & ~(Intrinsic.Arm64VTypeMask | Intrinsic.Arm64VSizeMask));
 
                 // Those have integer inputs that don't support consts.
-                return info.Type != IntrinsicType.ScalarFPConvGpr &&
-                       info.Type != IntrinsicType.ScalarFPConvFixedGpr &&
-                       info.Type != IntrinsicType.SetRegister;
+                return info.Type is not IntrinsicType.ScalarFPConvGpr and
+                       not IntrinsicType.ScalarFPConvFixedGpr and
+                       not IntrinsicType.SetRegister;
             }
 
             return false;

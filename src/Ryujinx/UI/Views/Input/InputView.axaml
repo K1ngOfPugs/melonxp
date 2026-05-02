@@ -2,7 +2,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
-    xmlns:locale="clr-namespace:Ryujinx.Ava.Common.Locale"
+    xmlns:ext="clr-namespace:Ryujinx.Ava.Common.Markup"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:Ryujinx.Ava.UI.Models"
@@ -35,28 +35,26 @@
             Margin="0 0 0 5"
             Orientation="Vertical"
             Spacing="5">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+            <Grid ColumnDefinitions="*,10,*">
                 <!-- Player Selection -->
                 <Grid
                     Grid.Column="0"
                     Margin="2"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Center">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
+                    VerticalAlignment="Center" ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel 
+                        Orientation="Vertical"   
                         Margin="5,0,10,0"
-                        Width="90"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Text="{locale:Locale ControllerSettingsPlayer}" />
+                        Width="90">
+                        <TextBlock
+                            Text="{ext:Locale ControllerSettingsPlayer}" />
+                         <TextBlock                        
+                            Classes="pending" 
+                            Text ="{ext:Locale ControllerSettingsModifiedNotification}"
+                            IsVisible="{Binding IsModified}"/>
+                    </StackPanel>
                     <ComboBox
                         Grid.Column="1"
                         Name="PlayerIndexBox"
@@ -71,33 +69,39 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
+                    <Button
+                        Grid.Column="2"
+                            MinWidth="0"
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="{ext:Locale ControllerSettingsCancelCurrentChangesToolTip}"
+                            Command="{Binding RevertChanges}">
+                        <ui:SymbolIcon
+                            Symbol="Undo"
+                            FontSize="15"
+                            Height="20" />
+                    </Button>
                 </Grid>
                 <!-- Profile Selection -->
                 <Grid
                     Grid.Column="2"
                     Margin="2"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Center">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                    VerticalAlignment="Center" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                     <TextBlock
                         Margin="5,0,10,0"
                         Width="90"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Text="{locale:Locale ControllerSettingsProfile}" />
+                        Text="{ext:Locale ControllerSettingsProfile}" />
                     <ui:FAComboBox
                         Grid.Column="1"
                         IsEditable="True"
                         Name="ProfileBox"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Center"
-                        SelectedIndex="0"
+                        SelectedItem="{Binding ChosenProfile, Mode=TwoWay}"
+                        SelectionChanged="ComboBox_SelectionChanged"
                         ItemsSource="{Binding ProfilesList}"
                         Text="{Binding ProfileName, Mode=TwoWay}" />
                     <Button
@@ -105,10 +109,10 @@
                         MinWidth="0"
                         Margin="5,0,0,0"
                         VerticalAlignment="Center"
-                        ToolTip.Tip="{locale:Locale ControllerSettingsLoadProfileToolTip}"
-                        Command="{Binding LoadProfile}">
+                        ToolTip.Tip="{ext:Locale ControllerSettingsLoadProfileToolTip}"
+                        Command="{Binding LoadProfileButton}">
                         <ui:SymbolIcon
-                            Symbol="Upload"
+                            Symbol="View"
                             FontSize="15"
                             Height="20" />
                     </Button>
@@ -117,7 +121,7 @@
                             MinWidth="0"
                             Margin="5,0,0,0"
                             VerticalAlignment="Center"
-                            ToolTip.Tip="{locale:Locale ControllerSettingsSaveProfileToolTip}"
+                            ToolTip.Tip="{ext:Locale ControllerSettingsSaveProfileToolTip}"
                             Command="{Binding SaveProfile}">
                         <ui:SymbolIcon
                             Symbol="Save"
@@ -129,7 +133,7 @@
                             MinWidth="0"
                             Margin="5,0,0,0"
                             VerticalAlignment="Center"
-                            ToolTip.Tip="{locale:Locale ControllerSettingsRemoveProfileToolTip}"
+                            ToolTip.Tip="{ext:Locale ControllerSettingsRemoveProfileToolTip}"
                             Command="{Binding RemoveProfile}">
                         <ui:SymbolIcon
                             Symbol="Delete"
@@ -139,29 +143,19 @@
                 </Grid>
             </Grid>
             <Separator />
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+            <Grid ColumnDefinitions="*,10,*">
                 <!-- Input Device -->
                 <Grid
                     Grid.Column="0"
                     Margin="2"
-                    HorizontalAlignment="Stretch">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                    HorizontalAlignment="Stretch" ColumnDefinitions="Auto,*,Auto">
                     <TextBlock
                         Grid.Column="0"
                         Margin="5,0,10,0"
                         Width="90"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Text="{locale:Locale ControllerSettingsInputDevice}" />
+                        Text="{ext:Locale ControllerSettingsInputDevice}" />
                     <ComboBox
                         Grid.Column="1"
                         Name="DeviceBox"
@@ -174,7 +168,7 @@
                         MinWidth="0"
                         Margin="5,0,0,0"
                         VerticalAlignment="Center"
-                        Command="{Binding LoadDevices}">
+                        Command="{Binding LoadDevice}">
                         <ui:SymbolIcon
                             Symbol="Refresh"
                             FontSize="15"
@@ -186,17 +180,13 @@
                     Grid.Column="2"
                     Margin="2"
                     HorizontalAlignment="Stretch"
-                    VerticalAlignment="Center">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                    VerticalAlignment="Center" ColumnDefinitions="Auto,*">
                     <TextBlock
                         Margin="5,0,10,0"
                         Width="90"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Text="{locale:Locale ControllerSettingsControllerType}" />
+                        Text="{ext:Locale ControllerSettingsControllerType}" />
                     <ComboBox
                         Grid.Column="1"
                         HorizontalAlignment="Stretch"
@@ -211,15 +201,36 @@
                 </Grid>
             </Grid>
         </StackPanel>
-        <ContentControl Content="{Binding ConfigViewModel}" IsVisible="{Binding ShowSettings}">
-            <ContentControl.DataTemplates>
-                <DataTemplate DataType="viewModels:ControllerInputViewModel">
-                    <views:ControllerInputView />
-                </DataTemplate>
-                <DataTemplate DataType="viewModels:KeyboardInputViewModel">
-                    <views:KeyboardInputView />
-                </DataTemplate>
-            </ContentControl.DataTemplates>
+        <ContentControl IsVisible="{Binding NotificationIsVisible}">
+            <ContentControl.Content>
+                <StackPanel>
+                    <TextBlock 
+                        Margin="5,20,0,0"
+                        Text="{Binding NotificationText}" />       
+                    <Button
+                        MinWidth="0"
+                        Width="90"
+                        Height="27"
+                        Margin="0,10,0,0"
+                        VerticalAlignment="Center"
+                        Command="{Binding UnlinkDevice}">
+                        <TextBlock
+                            Text="{ext:Locale ControllerSettingsUnlink}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center" />
+                    </Button>
+                </StackPanel>
+            </ContentControl.Content>
         </ContentControl>
+            <ContentControl Content="{Binding ConfigViewModel}" IsVisible="{Binding ShowSettings}">        
+                <ContentControl.DataTemplates>
+                    <DataTemplate DataType="viewModels:ControllerInputViewModel">
+                        <views:ControllerInputView />
+                    </DataTemplate>
+                    <DataTemplate DataType="viewModels:KeyboardInputViewModel">
+                        <views:KeyboardInputView />
+                    </DataTemplate>
+                </ContentControl.DataTemplates>
+            </ContentControl>
     </StackPanel>
 </UserControl>

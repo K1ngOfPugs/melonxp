@@ -2,7 +2,7 @@ using Ryujinx.Common.Logging;
 
 namespace Ryujinx.HLE.HOS.Services.Nfc.NfcManager
 {
-    partial class INfc : IpcService
+    class INfc : IpcService
     {
         private readonly NfcPermissionLevel _permissionLevel;
         private State _state;

@@ -48,7 +48,7 @@ namespace Ryujinx.Audio.Output
         /// <summary>
         /// THe lock of the parent.
         /// </summary>
-        private readonly object _parentLock;
+        private readonly Lock _parentLock;
 
         /// <summary>
         /// The dispose state.
@@ -62,7 +62,7 @@ namespace Ryujinx.Audio.Output
         /// <param name="parentLock">The lock of the manager</param>
         /// <param name="deviceSession">The hardware device session</param>
         /// <param name="bufferEvent">The buffer release event of the audio output</param>
-        public AudioOutputSystem(AudioOutputManager manager, object parentLock, IHardwareDeviceSession deviceSession, IWritableEvent bufferEvent)
+        public AudioOutputSystem(AudioOutputManager manager, Lock parentLock, IHardwareDeviceSession deviceSession, IWritableEvent bufferEvent)
         {
             _manager = manager;
             _parentLock = parentLock;
@@ -91,12 +91,12 @@ namespace Ryujinx.Audio.Output
                 return ResultCode.DeviceNotFound;
             }
 
-            if (configuration.SampleRate != 0 && configuration.SampleRate != Constants.TargetSampleRate)
+            if (configuration.SampleRate is not 0 and not Constants.TargetSampleRate)
             {
                 return ResultCode.UnsupportedSampleRate;
             }
 
-            if (configuration.ChannelCount != 0 && configuration.ChannelCount != 1 && configuration.ChannelCount != 2 && configuration.ChannelCount != 6)
+            if (configuration.ChannelCount is not 0 and not 1 and not 2 and not 6)
             {
                 return ResultCode.UnsupportedChannelConfiguration;
             }

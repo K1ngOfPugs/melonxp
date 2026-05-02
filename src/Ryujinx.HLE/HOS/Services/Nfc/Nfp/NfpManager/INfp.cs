@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
 {
-    partial class INfp : IpcService
+    class INfp : IpcService
     {
 #pragma warning disable IDE0052 // Remove unread private member
         private ulong _appletResourceUserId;
@@ -78,7 +78,6 @@ namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
             if (_state == State.Initialized)
             {
                 _cancelTokenSource?.Cancel();
-
                 // NOTE: All events are destroyed here.
                 context.Device.System.NfpDevices.Clear();
 
@@ -135,11 +134,6 @@ namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
                 return resultCode;
             }
 
-            if (OperatingSystem.IsIOS())
-            {
-                return ResultCode.Success;
-            }
-
             uint deviceHandle = (uint)context.RequestData.ReadUInt64();
 
             for (int i = 0; i < context.Device.System.NfpDevices.Count; i++)
@@ -153,7 +147,6 @@ namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
             }
 
             _cancelTokenSource = new CancellationTokenSource();
-
             Task.Run(() =>
             {
                 while (true)
@@ -165,7 +158,6 @@ namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
 
                     for (int i = 0; i < context.Device.System.NfpDevices.Count; i++)
                     {
-                        // TODO: figure out why there is a deadlock here.
                         if (context.Device.System.NfpDevices[i].State == NfpDeviceState.TagFound)
                         {
                             context.Device.System.NfpDevices[i].SignalActivate();
@@ -235,7 +227,6 @@ namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
             }
 
             // TODO: Found how the MountTarget is handled.
-
             for (int i = 0; i < context.Device.System.NfpDevices.Count; i++)
             {
                 if (context.Device.System.NfpDevices[i].Handle == (PlayerIndex)deviceHandle)
@@ -494,14 +485,12 @@ namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
 #pragma warning disable IDE0059 // Remove unnecessary value assignment
             uint deviceHandle = (uint)context.RequestData.ReadUInt64();
 #pragma warning restore IDE0059
-
             if (context.Device.System.NfpDevices.Count == 0)
             {
                 return ResultCode.DeviceNotFound;
             }
 
             // NOTE: Since we handle amiibo through VirtualAmiibo, we don't have to flush anything in our case.
-
             return ResultCode.Success;
         }
 
@@ -614,7 +603,7 @@ namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
                     }
                     else
                     {
-                        if (context.Device.System.NfpDevices[i].State == NfpDeviceState.TagMounted || context.Device.System.NfpDevices[i].State == NfpDeviceState.TagFound)
+                        if (context.Device.System.NfpDevices[i].State is NfpDeviceState.TagMounted or NfpDeviceState.TagFound)
                         {
                             byte[] uuid = VirtualAmiibo.GenerateUuid(context.Device.System.NfpDevices[i].AmiiboId, context.Device.System.NfpDevices[i].UseRandomUuid);
 
@@ -986,7 +975,7 @@ namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
         {
             // TODO: Find the differencies between IUser and ISystem/IDebug.
 
-            if (_permissionLevel == NfpPermissionLevel.Debug || _permissionLevel == NfpPermissionLevel.System)
+            if (_permissionLevel is NfpPermissionLevel.Debug or NfpPermissionLevel.System)
             {
                 return GetRegisterInfo(context);
             }

@@ -15,8 +15,8 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
 
         public static MultiBlock DecodeMulti(CpuPreset cpuPreset, IMemoryManager memoryManager, ulong address)
         {
-            List<Block> blocks = new();
-            List<ulong> branchTargets = new();
+            List<Block> blocks = [];
+            List<ulong> branchTargets = [];
 
             RegisterMask useMask = RegisterMask.Zero;
 
@@ -72,7 +72,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
                 case InstName.Cbz:
                 case InstName.Tbnz:
                 case InstName.Tbz:
-                    if (name == InstName.Tbnz || name == InstName.Tbz)
+                    if (name is InstName.Tbnz or InstName.Tbz)
                     {
                         originalOffset = ImmUtils.ExtractSImm14Times4(encoding);
                     }
@@ -238,7 +238,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
         {
             ulong startAddress = address;
 
-            List<InstInfo> insts = new();
+            List<InstInfo> insts = [];
 
             uint gprUseMask = useMask.GprMask;
             uint fpSimdUseMask = useMask.FpSimdMask;
@@ -257,7 +257,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
 
                 (name, flags, AddressForm addressForm) = InstTable.GetInstNameAndFlags(encoding, cpuPreset.Version, cpuPreset.Features);
 
-                if (name.IsPrivileged() || (name == InstName.Sys && IsPrivilegedSys(encoding)))
+                if (name.IsPrivileged || (name == InstName.Sys && IsPrivilegedSys(encoding)))
                 {
                     name = InstName.UdfPermUndef;
                     flags = InstFlags.None;
@@ -267,7 +267,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
                 (uint instGprReadMask, uint instFpSimdReadMask) = RegisterUtils.PopulateReadMasks(name, flags, encoding);
                 (uint instGprWriteMask, uint instFpSimdWriteMask) = RegisterUtils.PopulateWriteMasks(name, flags, encoding);
 
-                if (name.IsCall())
+                if (name.IsCall)
                 {
                     instGprWriteMask |= 1u << RegisterUtils.LrIndex;
                 }
@@ -310,12 +310,12 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
                 fpSimdUseMask |= instFpSimdReadMask | instFpSimdWriteMask;
                 pStateUseMask |= instPStateReadMask | instPStateWriteMask;
 
-                if (name.IsSystemOrCall() && !hasHostCall)
+                if (name.IsSystemOrCall && !hasHostCall)
                 {
-                    hasHostCall = name.IsCall() || InstEmitSystem.NeedsCall(encoding);
+                    hasHostCall = name.IsCall || InstEmitSystem.NeedsCall(encoding);
                 }
 
-                isControlFlow = name.IsControlFlowOrException();
+                isControlFlow = name.IsControlFlowOrException;
 
                 RegisterUse registerUse = new(
                     instGprReadMask,
@@ -339,7 +339,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
 
             useMask = new(gprUseMask, fpSimdUseMask, pStateUseMask);
 
-            return new(startAddress, address, insts, !isTruncated && !name.IsException(), isTruncated, isLoopEnd);
+            return new(startAddress, address, insts, !isTruncated && !name.IsException, isTruncated, isLoopEnd);
         }
 
         private static bool IsPrivilegedSys(uint encoding)
@@ -369,7 +369,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
                 case InstName.Cbz:
                 case InstName.Tbnz:
                 case InstName.Tbz:
-                    int imm = name == InstName.Tbnz || name == InstName.Tbz
+                    int imm = name is InstName.Tbnz or InstName.Tbz
                         ? ImmUtils.ExtractSImm14Times4(encoding)
                         : ImmUtils.ExtractSImm19Times4(encoding);
 

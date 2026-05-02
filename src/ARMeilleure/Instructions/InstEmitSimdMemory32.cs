@@ -87,7 +87,7 @@ namespace ARMeilleure.Instructions
                         {
                             if (op.Replicate)
                             {
-                                var regs = (count > 1) ? 1 : op.Increment;
+                                int regs = (count > 1) ? 1 : op.Increment;
                                 for (int reg = 0; reg < regs; reg++)
                                 {
                                     int dreg = reg + d;
@@ -110,6 +110,7 @@ namespace ARMeilleure.Instructions
                             EmitStoreSimd(context, address, d >> 1, index, op.Size);
                         }
                     }
+
                     offset += eBytes;
                     d += op.Increment;
                 }

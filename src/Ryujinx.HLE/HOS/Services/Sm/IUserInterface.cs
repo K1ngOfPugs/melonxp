@@ -2,7 +2,6 @@ using Ryujinx.Common.Logging;
 using Ryujinx.HLE.HOS.Ipc;
 using Ryujinx.HLE.HOS.Kernel;
 using Ryujinx.HLE.HOS.Kernel.Ipc;
-using Ryujinx.HLE.HOS.Services.Apm;
 using Ryujinx.Horizon.Common;
 using System;
 using System.Collections.Generic;
@@ -15,16 +14,24 @@ namespace Ryujinx.HLE.HOS.Services.Sm
 {
     partial class IUserInterface : IpcService
     {
+        private static readonly Dictionary<string, Type> _services;
 
         private readonly SmRegistry _registry;
-        private readonly ServerBase _commonServer;
+        private ServerBase _commonServer;
 
         private bool _isInitialized;
 
-        public IUserInterface(KernelContext context, SmRegistry registry)
+        public IUserInterface(KernelContext context, SmRegistry registry) : base(registerTipc: true)
         {
-            _commonServer = new ServerBase(context, "CommonServer");
             _registry = registry;
+        }
+
+        static IUserInterface()
+        {
+            _services = typeof(IUserInterface).Assembly.GetTypes()
+                .SelectMany(type => type.GetCustomAttributes(typeof(ServiceAttribute), true)
+                .Select(service => (((ServiceAttribute)service).Name, type)))
+                .ToDictionary(service => service.Name, service => service.type);
         }
 
         [CommandCmif(0)]
@@ -83,9 +90,17 @@ namespace Ryujinx.HLE.HOS.Services.Sm
             }
             else
             {
-
-                if (GetServiceInstance(name, context) is { } service)
+                if (_services.TryGetValue(name, out Type type))
                 {
+                    ServiceAttribute serviceAttribute = type.GetCustomAttributes<ServiceAttribute>().First(service => service.Name == name);
+
+                    IpcService service = GetServiceInstance(type, context, serviceAttribute.Parameter);
+
+                    if (_commonServer is null)
+                    {
+                        _commonServer = new ServerBase(context.Device.System.KernelContext, "Common");
+                    }
+                    
                     service.TrySetServer(_commonServer);
                     service.Server.AddSessionObj(session.ServerSession, service);
                 }
@@ -231,7 +246,7 @@ namespace Ryujinx.HLE.HOS.Services.Sm
             {
                 byte chr = context.RequestData.ReadByte();
 
-                if (chr >= 0x20 && chr < 0x7f)
+                if (chr is >= 0x20 and < 0x7f)
                 {
                     nameBuilder.Append((char)chr);
                 }
@@ -242,7 +257,7 @@ namespace Ryujinx.HLE.HOS.Services.Sm
 
         public override void DestroyAtExit()
         {
-            _commonServer.Dispose();
+            _commonServer?.Dispose();
 
             base.DestroyAtExit();
         }

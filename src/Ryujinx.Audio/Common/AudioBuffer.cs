@@ -1,5 +1,4 @@
 using Ryujinx.Audio.Integration;
-using System.Threading;
 
 namespace Ryujinx.Audio.Common
 {
@@ -8,18 +7,11 @@ namespace Ryujinx.Audio.Common
     /// </summary>
     public class AudioBuffer
     {
-        private static ulong UniqueIdGlobal = 0;
-
         /// <summary>
-        /// Unique tag of this buffer, from the guest.
+        /// Unique tag of this buffer.
         /// </summary>
         /// <remarks>Unique per session</remarks>
         public ulong BufferTag;
-
-        /// <summary>
-        /// Globally unique ID of the buffer on the host.
-        /// </summary>
-        public ulong HostTag = Interlocked.Increment(ref UniqueIdGlobal);
 
         /// <summary>
         /// Pointer to the user samples.

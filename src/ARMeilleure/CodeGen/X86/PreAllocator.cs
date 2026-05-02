@@ -66,6 +66,7 @@ namespace ARMeilleure.CodeGen.X86
                             {
                                 PreAllocatorSystemV.InsertCallCopies(block.Operations, node);
                             }
+
                             break;
 
                         case Instruction.ConvertToFPUI:
@@ -81,13 +82,15 @@ namespace ARMeilleure.CodeGen.X86
                             {
                                 nextNode = PreAllocatorSystemV.InsertLoadArgumentCopy(cctx, ref buffer, block.Operations, preservedArgs, node);
                             }
+
                             break;
 
                         case Instruction.Negate:
-                            if (!node.GetSource(0).Type.IsInteger())
+                            if (!node.GetSource(0).Type.IsInteger)
                             {
                                 GenerateNegate(block.Operations, node);
                             }
+
                             break;
 
                         case Instruction.Return:
@@ -99,6 +102,7 @@ namespace ARMeilleure.CodeGen.X86
                             {
                                 PreAllocatorSystemV.InsertReturnCopy(block.Operations, node);
                             }
+
                             break;
 
                         case Instruction.Tailcall:
@@ -110,6 +114,7 @@ namespace ARMeilleure.CodeGen.X86
                             {
                                 PreAllocatorSystemV.InsertTailcallCopies(block.Operations, node);
                             }
+
                             break;
 
                         case Instruction.VectorInsert8:
@@ -117,6 +122,7 @@ namespace ARMeilleure.CodeGen.X86
                             {
                                 GenerateVectorInsert8(block.Operations, node);
                             }
+
                             break;
 
                         case Instruction.Extended:
@@ -124,14 +130,15 @@ namespace ARMeilleure.CodeGen.X86
                             {
                                 int stackOffset = stackAlloc.Allocate(OperandType.I32);
 
-                                node.SetSources(new Operand[] { Const(stackOffset), node.GetSource(0) });
+                                node.SetSources([Const(stackOffset), node.GetSource(0)]);
                             }
                             else if (node.Intrinsic == Intrinsic.X86Stmxcsr)
                             {
                                 int stackOffset = stackAlloc.Allocate(OperandType.I32);
 
-                                node.SetSources(new Operand[] { Const(stackOffset) });
+                                node.SetSources([Const(stackOffset)]);
                             }
+
                             break;
                     }
                 }
@@ -152,7 +159,7 @@ namespace ARMeilleure.CodeGen.X86
 
             if (src1.Kind == OperandKind.Constant)
             {
-                if (!src1.Type.IsInteger())
+                if (!src1.Type.IsInteger)
                 {
                     // Handle non-integer types (FP32, FP64 and V128).
                     // For instructions without an immediate operand, we do the following:
@@ -201,7 +208,7 @@ namespace ARMeilleure.CodeGen.X86
 
             if (src2.Kind == OperandKind.Constant)
             {
-                if (!src2.Type.IsInteger())
+                if (!src2.Type.IsInteger)
                 {
                     src2 = AddXmmCopy(nodes, node, src2);
 
@@ -253,8 +260,8 @@ namespace ARMeilleure.CodeGen.X86
                             node = nodes.AddAfter(node, Operation(Instruction.VectorCreateScalar, dest, rax));
                             nodes.AddAfter(node, Operation(Instruction.VectorInsert, dest, dest, rdx, Const(1)));
 
-                            operation.SetDestinations(new Operand[] { rdx, rax });
-                            operation.SetSources(new Operand[] { operation.GetSource(0), rdx, rax, rcx, rbx });
+                            operation.SetDestinations([rdx, rax]);
+                            operation.SetSources([operation.GetSource(0), rdx, rax, rcx, rbx]);
                         }
                         else
                         {
@@ -274,7 +281,7 @@ namespace ARMeilleure.CodeGen.X86
 
                             nodes.AddBefore(node, Operation(Instruction.Copy, temp, newValue));
 
-                            node.SetSources(new Operand[] { node.GetSource(0), rax, temp });
+                            node.SetSources([node.GetSource(0), rax, temp]);
 
                             nodes.AddAfter(node, Operation(Instruction.Copy, dest, rax));
 
@@ -291,7 +298,7 @@ namespace ARMeilleure.CodeGen.X86
                         // - The dividend is always in RDX:RAX.
                         // - The result is always in RAX.
                         // - Additionally it also writes the remainder in RDX.
-                        if (dest.Type.IsInteger())
+                        if (dest.Type.IsInteger)
                         {
                             Operand src1 = node.GetSource(0);
 
@@ -303,7 +310,7 @@ namespace ARMeilleure.CodeGen.X86
 
                             nodes.AddAfter(node, Operation(Instruction.Copy, dest, rax));
 
-                            node.SetSources(new Operand[] { rdx, rax, node.GetSource(1) });
+                            node.SetSources([rdx, rax, node.GetSource(1)]);
                             node.Destination = rax;
                         }
 
@@ -312,9 +319,9 @@ namespace ARMeilleure.CodeGen.X86
 
                 case Instruction.Extended:
                     {
-                        bool isBlend = node.Intrinsic == Intrinsic.X86Blendvpd ||
-                                   node.Intrinsic == Intrinsic.X86Blendvps ||
-                                   node.Intrinsic == Intrinsic.X86Pblendvb;
+                        bool isBlend = node.Intrinsic is Intrinsic.X86Blendvpd or
+                                   Intrinsic.X86Blendvps or
+                                   Intrinsic.X86Pblendvb;
 
                         // BLENDVPD, BLENDVPS, PBLENDVB last operand is always implied to be XMM0 when VEX is not supported.
                         // SHA256RNDS2 always has an implied XMM0 as a last operand.
@@ -348,7 +355,7 @@ namespace ARMeilleure.CodeGen.X86
 
                         nodes.AddAfter(node, Operation(Instruction.Copy, dest, rdx));
 
-                        node.SetDestinations(new Operand[] { rdx, rax });
+                        node.SetDestinations([rdx, rax]);
 
                         break;
                     }
@@ -459,7 +466,7 @@ namespace ARMeilleure.CodeGen.X86
             Operand dest = node.Destination;
             Operand source = node.GetSource(0);
 
-            Debug.Assert(source.Type.IsInteger(), $"Invalid source type \"{source.Type}\".");
+            Debug.Assert(source.Type.IsInteger, $"Invalid source type \"{source.Type}\".");
 
             Operation currentNode = node;
 
@@ -513,8 +520,8 @@ namespace ARMeilleure.CodeGen.X86
             Operand dest = node.Destination;
             Operand source = node.GetSource(0);
 
-            Debug.Assert(dest.Type == OperandType.FP32 ||
-                         dest.Type == OperandType.FP64, $"Invalid destination type \"{dest.Type}\".");
+            Debug.Assert(dest.Type is OperandType.FP32 or
+                         OperandType.FP64, $"Invalid destination type \"{dest.Type}\".");
 
             Operation currentNode = node;
 
@@ -647,10 +654,10 @@ namespace ARMeilleure.CodeGen.X86
             switch (operation.Instruction)
             {
                 case Instruction.Add:
-                    return !HardwareCapabilities.SupportsVexEncoding && !operation.Destination.Type.IsInteger();
+                    return !HardwareCapabilities.SupportsVexEncoding && !operation.Destination.Type.IsInteger;
                 case Instruction.Multiply:
                 case Instruction.Subtract:
-                    return !HardwareCapabilities.SupportsVexEncoding || operation.Destination.Type.IsInteger();
+                    return !HardwareCapabilities.SupportsVexEncoding || operation.Destination.Type.IsInteger;
 
                 case Instruction.BitwiseAnd:
                 case Instruction.BitwiseExclusiveOr:
@@ -665,7 +672,7 @@ namespace ARMeilleure.CodeGen.X86
                     return true;
 
                 case Instruction.Divide:
-                    return !HardwareCapabilities.SupportsVexEncoding && !operation.Destination.Type.IsInteger();
+                    return !HardwareCapabilities.SupportsVexEncoding && !operation.Destination.Type.IsInteger;
 
                 case Instruction.VectorInsert:
                 case Instruction.VectorInsert16:
@@ -759,9 +766,9 @@ namespace ARMeilleure.CodeGen.X86
 
                         Debug.Assert(comp.Kind == OperandKind.Constant);
 
-                        var compType = (Comparison)comp.AsInt32();
+                        Comparison compType = (Comparison)comp.AsInt32();
 
-                        return compType == Comparison.Equal || compType == Comparison.NotEqual;
+                        return compType is Comparison.Equal or Comparison.NotEqual;
                     }
             }
 

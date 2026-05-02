@@ -1,10 +1,16 @@
 using LibHac;
 using LibHac.Common;
+using LibHac.Fs;
 using LibHac.Sf;
+using Ryujinx.Common;
+using Ryujinx.Common.Configuration;
+using Ryujinx.Common.Logging;
+using Ryujinx.Memory;
+using System.Threading;
 
 namespace Ryujinx.HLE.HOS.Services.Fs.FileSystemProxy
 {
-    partial class IStorage : DisposableIpcService
+    class IStorage : DisposableIpcService
     {
         private SharedRef<LibHac.FsSrv.Sf.IStorage> _baseStorage;
 
@@ -12,6 +18,10 @@ namespace Ryujinx.HLE.HOS.Services.Fs.FileSystemProxy
         {
             _baseStorage = SharedRef<LibHac.FsSrv.Sf.IStorage>.CreateMove(ref baseStorage);
         }
+
+        private const string Xc2JpTitleId = "0100f3400332c000";
+        private const string Xc2GlobalTitleId = "0100e95004038000";
+        private static bool IsXc2 => TitleIDs.CurrentApplication.Value.OrDefault() is Xc2GlobalTitleId or Xc2JpTitleId;
 
         [CommandCmif(0)]
         // Read(u64 offset, u64 length) -> buffer<u8, 0x46, 0> buffer
@@ -31,8 +41,27 @@ namespace Ryujinx.HLE.HOS.Services.Fs.FileSystemProxy
                     size = bufferLen;
                 }
 
-                using var region = context.Memory.GetWritableRegion(bufferAddress, (int)bufferLen, true);
-                Result result = _baseStorage.Get.Read((long)offset, new OutBuffer(region.Memory.Span), (long)size);
+                using WritableRegion region = context.Memory.GetWritableRegion(bufferAddress, (int)bufferLen, true);
+                Result result;
+
+                try
+                {
+                    result = _baseStorage.Get.Read((long)offset, new OutBuffer(region.Memory.Span), (long)size);
+                }
+                catch (HorizonResultException hre) when (hre.IsOfResultType(ResultFs.NonRealDataVerificationFailed))
+                {
+                    Logger.Error?.Print(LogClass.ServiceFs, 
+                        $"Encountered corrupted data in filesystem storage @ offset 0x{offset:X8}, size 0x{size:X8}. " +
+                        "Please redump the current game and/or update from your console.");
+                    result = ResultFs.NonRealDataVerificationFailed;
+                }
+
+                if (context.Device.DirtyHacks.IsEnabled(DirtyHack.Xc2MenuSoftlockFix) && IsXc2)
+                {
+                    // Add a load-bearing sleep to avoid XC2 softlock
+                    // https://web.archive.org/web/20240728045136/https://github.com/Ryujinx/Ryujinx/issues/2357
+                    Thread.Sleep(2);
+                }
 
                 return (ResultCode)result.Value;
             }

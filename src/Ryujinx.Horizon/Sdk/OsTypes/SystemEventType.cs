@@ -1,6 +1,6 @@
 namespace Ryujinx.Horizon.Sdk.OsTypes
 {
-    public struct SystemEventType
+    struct SystemEventType
     {
         public enum InitializationState : byte
         {

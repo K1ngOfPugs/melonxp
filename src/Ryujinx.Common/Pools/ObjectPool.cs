@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Threading;
 
 namespace Ryujinx.Common
 {
@@ -29,7 +28,7 @@ namespace Ryujinx.Common
                 _items.Add(obj);
             }
         }
-
+        
         public void Clear() => _items.Clear();
     }
 }

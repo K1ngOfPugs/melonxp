@@ -1,6 +1,7 @@
 using ARMeilleure.CodeGen.Linking;
 using ARMeilleure.CodeGen.RegisterAllocators;
 using ARMeilleure.IntermediateRepresentation;
+using Microsoft.IO;
 using Ryujinx.Common.Memory;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace ARMeilleure.CodeGen.Arm64
         private const int CbnzInstLength = 4;
         private const int LdrLitInstLength = 4;
 
-        private readonly Stream _stream;
+        private readonly RecyclableMemoryStream _stream;
 
         public int StreamOffset => (int)_stream.Length;
 
@@ -42,7 +43,7 @@ namespace ARMeilleure.CodeGen.Arm64
             {
                 Offset = offset;
                 Symbol = symbol;
-                LdrOffsets = new List<(Operand, int)>();
+                LdrOffsets = [];
             }
         }
 
@@ -91,7 +92,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
             long target = _stream.Position;
 
-            if (_pendingBranches.TryGetValue(block, out var list))
+            if (_pendingBranches.TryGetValue(block, out List<(ArmCondition Condition, long BranchPos)> list))
             {
                 foreach ((ArmCondition condition, long branchPos) in list)
                 {
@@ -119,7 +120,7 @@ namespace ARMeilleure.CodeGen.Arm64
             }
             else
             {
-                if (!_pendingBranches.TryGetValue(target, out var list))
+                if (!_pendingBranches.TryGetValue(target, out List<(ArmCondition Condition, long BranchPos)> list))
                 {
                     list = new List<(ArmCondition, long)>();
                     _pendingBranches.Add(target, list);
@@ -266,7 +267,7 @@ namespace ARMeilleure.CodeGen.Arm64
             }
             else
             {
-                relocInfo = new RelocInfo(Array.Empty<RelocEntry>());
+                relocInfo = new RelocInfo([]);
             }
 
             return (code, relocInfo);

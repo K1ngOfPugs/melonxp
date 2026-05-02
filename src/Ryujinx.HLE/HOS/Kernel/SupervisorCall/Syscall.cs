@@ -105,7 +105,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
 
             KProcess process = new(_context);
 
-            using var _ = new OnScopeExit(process.DecrementReferenceCount);
+            using OnScopeExit _ = new(process.DecrementReferenceCount);
 
             KResourceLimit resourceLimit;
 
@@ -137,6 +137,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                 capabilities,
                 resourceLimit,
                 memRegion,
+                _context.Device.Configuration.MemoryConfiguration,
                 contextFactory,
                 customThreadStart);
 
@@ -150,7 +151,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
             return handleTable.GenerateHandle(process, out handle);
         }
 
-        public Result StartProcess(int handle, int priority, int cpuCore, ulong mainThreadStackSize)
+        public static Result StartProcess(int handle, int priority, int cpuCore, ulong mainThreadStackSize)
         {
             KProcess process = KernelStatic.GetCurrentProcess().HandleTable.GetObject<KProcess>(handle);
 
@@ -888,7 +889,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
         [Svc(1)]
         public Result SetHeapSize([PointerSized] out ulong address, [PointerSized] ulong size)
         {
-            if ((size & 0xfffffffe001fffff) != 0)
+            if ((size & 0xfffffffc001fffff) != 0)
             {
                 address = 0;
 
@@ -1071,7 +1072,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
             return result;
         }
 
-        public Result QueryMemory(out MemoryInfo info, out ulong pageInfo, ulong address)
+        public static Result QueryMemory(out MemoryInfo info, out ulong pageInfo, ulong address)
         {
             KProcess process = KernelStatic.GetCurrentProcess();
 
@@ -1199,7 +1200,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                 return KernelResult.InvalidMemState;
             }
 
-            if (permission > KMemoryPermission.ReadAndWrite || permission == KMemoryPermission.Write)
+            if (permission is > KMemoryPermission.ReadAndWrite or KMemoryPermission.Write)
             {
                 return KernelResult.InvalidPermission;
             }
@@ -1261,7 +1262,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                 return KernelResult.InvalidMemState;
             }
 
-            if (permission > KMemoryPermission.ReadAndWrite || permission == KMemoryPermission.Write)
+            if (permission is > KMemoryPermission.ReadAndWrite or KMemoryPermission.Write)
             {
                 return KernelResult.InvalidPermission;
             }
@@ -1425,7 +1426,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
 
             KCodeMemory codeMemory = new(_context);
 
-            using var _ = new OnScopeExit(codeMemory.DecrementReferenceCount);
+            using OnScopeExit _ = new(codeMemory.DecrementReferenceCount);
 
             KProcess currentProcess = KernelStatic.GetCurrentProcess();
 
@@ -1485,7 +1486,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                         return KernelResult.InvalidMemRange;
                     }
 
-                    if (permission != KMemoryPermission.Read && permission != KMemoryPermission.ReadAndExecute)
+                    if (permission is not KMemoryPermission.Read and not KMemoryPermission.ReadAndExecute)
                     {
                         return KernelResult.InvalidPermission;
                     }
@@ -1540,10 +1541,10 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                 return KernelResult.InvalidSize;
             }
 
-            if (permission != KMemoryPermission.None &&
-                permission != KMemoryPermission.Read &&
-                permission != KMemoryPermission.ReadAndWrite &&
-                permission != KMemoryPermission.ReadAndExecute)
+            if (permission is not KMemoryPermission.None and
+                not KMemoryPermission.Read and
+                not KMemoryPermission.ReadAndWrite and
+                not KMemoryPermission.ReadAndExecute)
             {
                 return KernelResult.InvalidPermission;
             }
@@ -1893,6 +1894,9 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                     return;
                 }
 
+                Logger.Error?.Print(LogClass.KernelSvc, "The guest program broke execution!");
+                Logger.Flush();
+
                 // TODO: Debug events.
                 currentThread.Owner.TerminateCurrentProcess();
 
@@ -2009,6 +2013,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                                 {
                                     value = process.MemoryManager.GetMmUsedPages() * KPageTableBase.PageSize;
                                 }
+
                                 break;
 
                             case InfoType.ProgramId:
@@ -2040,12 +2045,14 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                                 {
                                     value = 0;
                                 }
+
                                 break;
 
                             case InfoType.AliasRegionExtraSize:
                                 value = process.MemoryManager.AliasRegionExtraSize;
                                 break;
                         }
+
                         break;
                     }
 
@@ -2093,6 +2100,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
 
                             value = (uint)resLimHandle;
                         }
+
                         break;
                     }
 
@@ -2134,7 +2142,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
 
                 case InfoType.ThreadTickCount:
                     {
-                        if (subId < -1 || subId > 3)
+                        if (subId is < (-1) or > 3)
                         {
                             return KernelResult.InvalidCombination;
                         }
@@ -2174,6 +2182,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
 
                             value = (ulong)KTimeManager.ConvertHostTicksToTicks(totalTimeRunning);
                         }
+
                         break;
                     }
 
@@ -2683,7 +2692,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
                     return KernelResult.InvalidCombination;
                 }
 
-                if ((uint)preferredCore > 3)
+                if ((uint)preferredCore > KScheduler.CpuCoresCount - 1)
                 {
                     if ((preferredCore | 2) != -1)
                     {
@@ -2854,7 +2863,7 @@ namespace Ryujinx.HLE.HOS.Kernel.SupervisorCall
 
             KThread currentThread = KernelStatic.GetCurrentThread();
 
-            var syncObjs = new Span<KSynchronizationObject>(currentThread.WaitSyncObjects)[..handles.Length];
+            Span<KSynchronizationObject> syncObjs = new Span<KSynchronizationObject>(currentThread.WaitSyncObjects)[..handles.Length];
 
             if (handles.Length != 0)
             {

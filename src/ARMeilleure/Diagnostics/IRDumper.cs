@@ -9,7 +9,7 @@ namespace ARMeilleure.Diagnostics
 {
     class IRDumper
     {
-        private const string Indentation = " ";
+        private const char Indentation = ' ';
 
         private int _indentLevel;
 
@@ -30,14 +30,11 @@ namespace ARMeilleure.Diagnostics
 
         private void Indent()
         {
-            _builder.EnsureCapacity(_builder.Capacity + _indentLevel * Indentation.Length);
+            if (_indentLevel == 0)
+                return;
 
-            for (int index = 0; index < _indentLevel; index++)
-            {
-#pragma warning disable CA1834 // Use StringBuilder.Append(char) for single character strings
-                _builder.Append(Indentation);
-#pragma warning restore CA1834
-            }
+            _builder.EnsureCapacity(_builder.Capacity + _indentLevel);
+            _builder.Append(Indentation, _indentLevel);
         }
 
         private void IncreaseIndentation()
@@ -141,7 +138,7 @@ namespace ARMeilleure.Diagnostics
                     break;
 
                 case OperandKind.Memory:
-                    var memOp = operand.GetMemory();
+                    MemoryOperand memOp = operand.GetMemory();
 
                     _builder.Append('[');
 
@@ -235,8 +232,8 @@ namespace ARMeilleure.Diagnostics
                     {
                         _builder.Append('.').Append(operation.Intrinsic);
                     }
-                    else if (operation.Instruction == Instruction.BranchIf ||
-                             operation.Instruction == Instruction.Compare)
+                    else if (operation.Instruction is Instruction.BranchIf or
+                             Instruction.Compare)
                     {
                         comparison = true;
                     }
@@ -262,6 +259,7 @@ namespace ARMeilleure.Diagnostics
                             DumpOperand(source);
                         }
                     }
+
                     break;
             }
 
@@ -285,7 +283,7 @@ namespace ARMeilleure.Diagnostics
 
         public static string GetDump(ControlFlowGraph cfg)
         {
-            var dumper = new IRDumper(1);
+            IRDumper dumper = new(1);
 
             for (BasicBlock block = cfg.Blocks.First; block != null; block = block.ListNext)
             {

@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 namespace Ryujinx.HLE.HOS.Services.Hid
 {
     [Service("hid")]
-    partial class IHidServer : IpcService
+    class IHidServer : IpcService
     {
         private readonly KEvent _xpadIdEvent;
         private readonly KEvent _palmaOperationCompleteEvent;
@@ -124,6 +124,26 @@ namespace Ryujinx.HLE.HOS.Services.Hid
             for (int entry = 0; entry < Hid.SharedMemEntryCount; entry++)
             {
                 context.Device.Hid.Mouse.Update(0, 0);
+            }
+
+            Logger.Stub?.PrintStub(LogClass.ServiceHid, new { appletResourceUserId });
+
+            return ResultCode.Success;
+        }
+
+        [CommandCmif(26)]
+        // ActivateDebugMouse(nn::applet::AppletResourceUserId)
+        public ResultCode ActivateDebugMouse(ServiceCtx context)
+        {
+            long appletResourceUserId = context.RequestData.ReadInt64();
+
+            context.Device.Hid.DebugMouse.Active = true;
+
+            // Initialize entries to avoid issues with some games.
+
+            for (int entry = 0; entry < Hid.SharedMemEntryCount; entry++)
+            {
+                context.Device.Hid.DebugMouse.Update();
             }
 
             Logger.Stub?.PrintStub(LogClass.ServiceHid, new { appletResourceUserId });
@@ -561,7 +581,7 @@ namespace Ryujinx.HLE.HOS.Services.Hid
 
             context.ResponseData.Write((int)_gyroscopeZeroDriftMode);
 
-            // Logger.Stub?.PrintStub(LogClass.ServiceHid, new { appletResourceUserId, sixAxisSensorHandle, _gyroscopeZeroDriftMode });
+            Logger.Stub?.PrintStub(LogClass.ServiceHid, new { appletResourceUserId, sixAxisSensorHandle, _gyroscopeZeroDriftMode });
 
             return ResultCode.Success;
         }
@@ -623,7 +643,7 @@ namespace Ryujinx.HLE.HOS.Services.Hid
             context.ResponseData.Write(_isFirmwareUpdateAvailableForSixAxisSensor);
 
             Logger.Stub?.PrintStub(LogClass.ServiceHid, new { appletResourceUserId, sixAxisSensorHandle, _isFirmwareUpdateAvailableForSixAxisSensor });
-
+            
             return ResultCode.Success;
         }
 
@@ -693,6 +713,18 @@ namespace Ryujinx.HLE.HOS.Services.Hid
             int unknown0 = context.RequestData.ReadInt32();
 
             Logger.Stub?.PrintStub(LogClass.ServiceHid, new { appletResourceUserId, unknown0 });
+
+            return ResultCode.Success;
+        }
+
+        [CommandCmif(92)]
+        // SetGestureOutputRanges(pid, ushort Unknown0)
+        public ResultCode SetGestureOutputRanges(ServiceCtx context)
+        {
+            ulong pid = context.Request.HandleDesc.PId;
+            ushort unknown0 = context.RequestData.ReadUInt16();
+
+            Logger.Stub?.PrintStub(LogClass.ServiceHid, new { pid, unknown0 });
 
             return ResultCode.Success;
         }
@@ -854,8 +886,8 @@ namespace Ryujinx.HLE.HOS.Services.Hid
 
             // Initialize entries to avoid issues with some games.
 
-            List<GamepadInput> emptyGamepadInputs = new();
-            List<SixAxisInput> emptySixAxisInputs = new();
+            List<GamepadInput> emptyGamepadInputs = [];
+            List<SixAxisInput> emptySixAxisInputs = [];
 
             for (int player = 0; player < NpadDevices.MaxControllers; player++)
             {
@@ -1143,59 +1175,54 @@ namespace Ryujinx.HLE.HOS.Services.Hid
             NpadStyleIndex deviceType = (NpadStyleIndex)deviceHandle.DeviceType;
             NpadIdType npadIdType = (NpadIdType)deviceHandle.PlayerId;
 
-            if (deviceType < NpadStyleIndex.System || deviceType >= NpadStyleIndex.FullKey)
+            if (!HidUtils.IsValidNpadIdType(npadIdType))
             {
-                if (!HidUtils.IsValidNpadIdType(npadIdType))
-                {
-                    return ResultCode.InvalidNpadIdType;
-                }
-
-                if (deviceHandle.Position > 1)
-                {
-                    return ResultCode.InvalidDeviceIndex;
-                }
-
-                VibrationDeviceType vibrationDeviceType = VibrationDeviceType.None;
-
-                if (Enum.IsDefined(deviceType))
-                {
-                    vibrationDeviceType = VibrationDeviceType.LinearResonantActuator;
-                }
-                else if ((uint)deviceType == 8)
-                {
-                    vibrationDeviceType = VibrationDeviceType.GcErm;
-                }
-
-                VibrationDevicePosition vibrationDevicePosition = VibrationDevicePosition.None;
-
-                if (vibrationDeviceType == VibrationDeviceType.LinearResonantActuator)
-                {
-                    if (deviceHandle.Position == 0)
-                    {
-                        vibrationDevicePosition = VibrationDevicePosition.Left;
-                    }
-                    else if (deviceHandle.Position == 1)
-                    {
-                        vibrationDevicePosition = VibrationDevicePosition.Right;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"{nameof(deviceHandle.Position)} contains an invalid value: {deviceHandle.Position}");
-                    }
-                }
-
-                VibrationDeviceValue deviceInfo = new()
-                {
-                    DeviceType = vibrationDeviceType,
-                    Position = vibrationDevicePosition,
-                };
-
-                context.ResponseData.WriteStruct(deviceInfo);
-
-                return ResultCode.Success;
+                return ResultCode.InvalidNpadIdType;
             }
 
-            return ResultCode.InvalidNpadDeviceType;
+            if (deviceHandle.Position > 1)
+            {
+                return ResultCode.InvalidDeviceIndex;
+            }
+
+            VibrationDeviceType vibrationDeviceType = VibrationDeviceType.None;
+
+            if (Enum.IsDefined(deviceType))
+            {
+                vibrationDeviceType = VibrationDeviceType.LinearResonantActuator;
+            }
+            else if ((uint)deviceType == 8)
+            {
+                vibrationDeviceType = VibrationDeviceType.GcErm;
+            }
+
+            VibrationDevicePosition vibrationDevicePosition = VibrationDevicePosition.None;
+
+            if (vibrationDeviceType == VibrationDeviceType.LinearResonantActuator)
+            {
+                if (deviceHandle.Position == 0)
+                {
+                    vibrationDevicePosition = VibrationDevicePosition.Left;
+                }
+                else if (deviceHandle.Position == 1)
+                {
+                    vibrationDevicePosition = VibrationDevicePosition.Right;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"{nameof(deviceHandle.Position)} contains an invalid value: {deviceHandle.Position}");
+                }
+            }
+
+            VibrationDeviceValue deviceInfo = new()
+            {
+                DeviceType = vibrationDeviceType,
+                Position = vibrationDevicePosition,
+            };
+
+            context.ResponseData.WriteStruct(deviceInfo);
+
+            return ResultCode.Success;
         }
 
         [CommandCmif(201)]
@@ -1303,8 +1330,8 @@ namespace Ryujinx.HLE.HOS.Services.Hid
 
             context.Memory.Read(context.Request.PtrBuff[1].Position, vibrationValueBuffer);
 
-            Span<VibrationDeviceHandle> deviceHandles = MemoryMarshal.Cast<byte, VibrationDeviceHandle>(vibrationDeviceHandleBuffer);
-            Span<VibrationValue> vibrationValues = MemoryMarshal.Cast<byte, VibrationValue>(vibrationValueBuffer);
+            Span<VibrationDeviceHandle> deviceHandles = MemoryMarshal.Cast<byte, VibrationDeviceHandle>(new Span<byte>(vibrationDeviceHandleBuffer));
+            Span<VibrationValue> vibrationValues = MemoryMarshal.Cast<byte, VibrationValue>(new Span<byte>(vibrationValueBuffer));
 
             if (!deviceHandles.IsEmpty && vibrationValues.Length == deviceHandles.Length)
             {

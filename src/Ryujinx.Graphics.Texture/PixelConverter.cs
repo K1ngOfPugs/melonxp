@@ -1,7 +1,6 @@
 using Ryujinx.Common;
 using Ryujinx.Common.Memory;
 using System;
-using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;

@@ -17,12 +17,9 @@ using Ryujinx.HLE.HOS.Kernel.Common;
 using Ryujinx.HLE.HOS.Kernel.Memory;
 using Ryujinx.HLE.HOS.Kernel.Process;
 using Ryujinx.HLE.Loaders.Executables;
-using Ryujinx.HLE.Loaders.Processes.Extensions;
 using Ryujinx.Horizon.Common;
 using Ryujinx.Horizon.Sdk.Arp;
-using Ryujinx.Memory;
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
 using ApplicationId = LibHac.Ncm.ApplicationId;
 
@@ -46,12 +43,12 @@ namespace Ryujinx.HLE.Loaders.Processes
             {
                 Nca nca = partitionFileSystem.GetNca(device.FileSystem.KeySet, fileEntry.FullPath);
 
-                if (!nca.IsProgram())
+                if (!nca.IsProgram)
                 {
                     continue;
                 }
 
-                ulong currentMainProgramId = nca.GetProgramIdBase();
+                ulong currentMainProgramId = nca.ProgramIdBase;
 
                 if (applicationId == 0 && currentMainProgramId != 0)
                 {
@@ -68,7 +65,7 @@ namespace Ryujinx.HLE.Loaders.Processes
                     break;
                 }
 
-                hasIndex[nca.GetProgramIndex()] = true;
+                hasIndex[nca.ProgramIndex] = true;
             }
 
             if (programCount == 0)
@@ -181,16 +178,17 @@ namespace Ryujinx.HLE.Loaders.Processes
 
             KProcess process = new(context);
 
-            var processContextFactory = new ArmProcessContextFactory(
+            ArmProcessContextFactory processContextFactory = new(
                 context.Device.System.TickSource,
                 context.Device.Gpu,
                 string.Empty,
                 string.Empty,
                 false,
+                null,
                 codeAddress,
                 codeSize);
 
-            result = process.InitializeKip(creationInfo, kip.Capabilities, pageList, context.ResourceLimit, memoryRegion, processContextFactory);
+            result = process.InitializeKip(creationInfo, kip.Capabilities, pageList, context.ResourceLimit, memoryRegion, context.Device.Configuration.MemoryConfiguration, processContextFactory);
             if (result != Result.Success)
             {
                 Logger.Error?.Print(LogClass.Loader, $"Process initialization returned error \"{result}\".");
@@ -227,16 +225,17 @@ namespace Ryujinx.HLE.Loaders.Processes
             MetaLoader metaLoader,
             BlitStruct<ApplicationControlProperty> applicationControlProperties,
             bool diskCacheEnabled,
+            string diskCacheSelector,
             bool allowCodeMemoryForJit,
             string name,
             ulong programId,
             byte programIndex,
             byte[] arguments = null,
-            params IExecutable[] executables)
+            params ReadOnlySpan<IExecutable> executables)
         {
             context.Device.System.ServiceTable.WaitServicesReady();
 
-            LibHac.Result resultCode = metaLoader.GetNpdm(out var npdm);
+            LibHac.Result resultCode = metaLoader.GetNpdm(out LibHac.Loader.Npdm npdm);
 
             if (resultCode.IsFailure())
             {
@@ -245,19 +244,24 @@ namespace Ryujinx.HLE.Loaders.Processes
                 return ProcessResult.Failed;
             }
 
-            ref readonly var meta = ref npdm.Meta;
+            ref readonly Meta meta = ref npdm.Meta;
 
             ulong argsStart = 0;
             uint argsSize = 0;
             ulong codeStart = ((meta.Flags & 1) != 0 ? 0x8000000UL : 0x200000UL) + CodeStartOffset;
             uint codeSize = 0;
 
-            var buildIds = executables.Select(e => (e switch
+            string[] buildIds = new string[executables.Length];
+
+            for (int i = 0; i < executables.Length; i++)
             {
-                NsoExecutable nso => Convert.ToHexString(nso.BuildId.ItemsRo.ToArray()),
-                NroExecutable nro => Convert.ToHexString(nro.Header.BuildId),
-                _ => "",
-            }).ToUpper());
+                buildIds[i] = (executables[i] switch
+                {
+                    NsoExecutable nso => Convert.ToHexString(nso.BuildId),
+                    NroExecutable nro => Convert.ToHexString(nro.Header.BuildId),
+                    _ => string.Empty
+                }).ToUpper();
+            }
 
             ulong[] nsoBase = new ulong[executables.Length];
 
@@ -282,11 +286,8 @@ namespace Ryujinx.HLE.Loaders.Processes
                 }
 
                 nsoSize = BitUtils.AlignUp<uint>(nsoSize, KPageTableBase.PageSize);
-                bool for64Bit2 = ((ProcessCreationFlags)meta.Flags).HasFlag(ProcessCreationFlags.Is64Bit);
-                
 
                 nsoBase[index] = codeStart + codeSize;
-
 
                 codeSize += nsoSize;
 
@@ -363,7 +364,7 @@ namespace Ryujinx.HLE.Loaders.Processes
 
             string displayVersion;
 
-            if (metaLoader.GetProgramId() > 0x0100000000007FFF)
+            if (metaLoader.ProgramId > 0x0100000000007FFF)
             {
                 displayVersion = applicationControlProperties.Value.DisplayVersionString.ToString();
             }
@@ -372,12 +373,13 @@ namespace Ryujinx.HLE.Loaders.Processes
                 displayVersion = device.System.ContentManager.GetCurrentFirmwareVersion()?.VersionString ?? string.Empty;
             }
 
-            var processContextFactory = new ArmProcessContextFactory(
+            ArmProcessContextFactory processContextFactory = new(
                 context.Device.System.TickSource,
                 context.Device.Gpu,
                 $"{programId:x16}",
                 displayVersion,
                 diskCacheEnabled,
+                diskCacheSelector,
                 codeStart,
                 codeSize);
 
@@ -386,8 +388,8 @@ namespace Ryujinx.HLE.Loaders.Processes
                 MemoryMarshal.Cast<byte, uint>(npdm.KernelCapabilityData),
                 resourceLimit,
                 memoryRegion,
-                processContextFactory,
-                null);
+                context.Device.Configuration.MemoryConfiguration,
+                processContextFactory);
 
             if (result != Result.Success)
             {
@@ -395,10 +397,10 @@ namespace Ryujinx.HLE.Loaders.Processes
 
                 return ProcessResult.Failed;
             }
-                
+
             for (int index = 0; index < executables.Length; index++)
             {
-                Logger.Info?.Print(LogClass.Loader, $"Loading image {index} at 0x{nsoBase[index]:x16}");
+                Logger.Info?.Print(LogClass.Loader, $"Loading image {index} at 0x{nsoBase[index]:x16}...");
 
                 result = LoadIntoMemory(process, executables[index], nsoBase[index]);
                 if (result != Result.Success)
@@ -475,8 +477,8 @@ namespace Ryujinx.HLE.Loaders.Processes
             process.CpuMemory.Write(textStart, image.Text);
             process.CpuMemory.Write(roStart, image.Ro);
             process.CpuMemory.Write(dataStart, image.Data);
-            
-            // process.CpuMemory.Fill(bssStart, image.BssSize, 0);
+
+            process.CpuMemory.Fill(bssStart, image.BssSize, 0);
 
             Result SetProcessMemoryPermission(ulong address, ulong size, KMemoryPermission permission)
             {

@@ -15,7 +15,7 @@ namespace Ryujinx.HLE.HOS.Tamper
             context.CurrentOperations.Add(operation);
         }
 
-        public static void Emit(Type instruction, byte width, CompilationContext context, params object[] operands)
+        public static void Emit(Type instruction, byte width, CompilationContext context, params Object[] operands)
         {
             Emit((IOperation)Create(instruction, width, operands), context);
         }
@@ -44,11 +44,18 @@ namespace Ryujinx.HLE.HOS.Tamper
             };
         }
 
-        public static object Create(Type instruction, byte width, params object[] operands)
+        public static Object Create(Type instruction, byte width, params Object[] operands)
         {
-            return TamperOperationFactory.Create(instruction, width, operands);
+            Type realType = width switch
+            {
+                1 => instruction.MakeGenericType(typeof(byte)),
+                2 => instruction.MakeGenericType(typeof(ushort)),
+                4 => instruction.MakeGenericType(typeof(uint)),
+                8 => instruction.MakeGenericType(typeof(ulong)),
+                _ => throw new TamperCompilationException($"Invalid instruction width {width} in Atmosphere cheat"),
+            };
+            return Activator.CreateInstance(realType, operands);
         }
-
 
         public static ulong GetImmediate(byte[] instruction, int index, int nybbleCount)
         {
@@ -89,7 +96,7 @@ namespace Ryujinx.HLE.HOS.Tamper
             // Instructions are multi-word, with 32bit words. Split the raw instruction
             // and parse each word into individual nybbles of bits.
 
-            var words = rawInstruction.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            string[] words = rawInstruction.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
 
             byte[] instruction = new byte[WordSize * words.Length];
 

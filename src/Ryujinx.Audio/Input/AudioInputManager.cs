@@ -14,12 +14,12 @@ namespace Ryujinx.Audio.Input
     /// </summary>
     public class AudioInputManager : IDisposable
     {
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
 
         /// <summary>
         /// Lock used for session allocation.
         /// </summary>
-        private readonly object _sessionLock = new();
+        private readonly Lock _sessionLock = new();
 
         /// <summary>
         /// The session ids allocation table.
@@ -166,14 +166,14 @@ namespace Ryujinx.Audio.Input
         /// </summary>
         /// <param name="filtered">If true, filter disconnected devices</param>
         /// <returns>The list of all audio inputs name</returns>
-        public string[] ListAudioIns(bool filtered)
+        public static string[] ListAudioIns(bool filtered)
         {
             if (filtered)
             {
                 // TODO: Detect if the driver supports audio input
             }
 
-            return new[] { Constants.DefaultDeviceInputName };
+            return [Constants.DefaultDeviceInputName];
         }
 
         /// <summary>

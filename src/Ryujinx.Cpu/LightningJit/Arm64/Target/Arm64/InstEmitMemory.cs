@@ -13,7 +13,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
 
         public static void RewriteSysInstruction(int asBits, MemoryManagerType mmType, CodeWriter writer, RegisterAllocator regAlloc, uint encoding)
         {
-             // TODO: Handle IC instruction, it should invalidate the JIT cache.
+            // TODO: Handle IC instruction, it should invalidate the JIT cache.
 
             if (InstEmitSystem.IsCacheInstForbidden(encoding))
             {
@@ -55,7 +55,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
             ulong pc,
             uint encoding)
         {
-            if (name.IsPrefetchMemory() && mmType == MemoryManagerType.HostTrackedUnsafe)
+            if (name.IsPrefetchMemory && mmType == MemoryManagerType.HostTrackedUnsafe)
             {
                 // Prefetch to invalid addresses do not cause faults, so for memory manager
                 // types where we need to access the page table before doing the prefetch,
@@ -544,7 +544,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
         {
             Operand basePointer = new(regAlloc.FixedPageTableRegister, RegisterType.Integer, OperandType.I64);
 
-            if (mmType.IsHostTracked())
+            if (mmType.IsHostTracked)
             {
                 int tempRegister = regAlloc.AllocateTempGprRegister();
 
@@ -562,7 +562,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm64.Target.Arm64
 
                 regAlloc.FreeTempGprRegister(tempRegister);
             }
-            else if (mmType.IsHostMapped())
+            else if (mmType.IsHostMapped)
             {
                 if (mmType == MemoryManagerType.HostMapped)
                 {

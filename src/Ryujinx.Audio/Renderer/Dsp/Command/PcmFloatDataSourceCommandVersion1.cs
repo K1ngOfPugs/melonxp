@@ -45,7 +45,7 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
             ChannelIndex = channelIndex;
             ChannelCount = serverInfo.ChannelsCount;
             Pitch = serverInfo.Pitch;
-
+            
             Span<Server.Voice.WaveBuffer> waveBufferSpan = serverInfo.WaveBuffers.AsSpan();
 
             for (int i = 0; i < WaveBuffers.Length; i++)

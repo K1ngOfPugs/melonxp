@@ -16,7 +16,7 @@ namespace Ryujinx.HLE.HOS.Services.Ro
 {
     [Service("ldr:ro")]
     [Service("ro:1")] // 7.0.0+
-    partial class IRoInterface : DisposableIpcService
+    class IRoInterface : DisposableIpcService
     {
         private const int MaxNrr = 0x40;
         private const int MaxNro = 0x40;
@@ -64,7 +64,7 @@ namespace Ryujinx.HLE.HOS.Services.Ro
                 return ResultCode.InvalidSize;
             }
 
-            List<byte[]> hashes = new();
+            List<byte[]> hashes = [];
 
             for (int i = 0; i < header.HashesCount; i++)
             {
@@ -259,6 +259,7 @@ namespace Ryujinx.HLE.HOS.Services.Ro
                     return baseAddress + size + GuardPagesSize <= memInfo.Address + memInfo.Size;
                 }
             }
+
             return false;
         }
 
@@ -313,7 +314,7 @@ namespace Ryujinx.HLE.HOS.Services.Ro
             return ResultCode.Success;
         }
 
-        private Result SetNroMemoryPermissions(KProcess process, IExecutable relocatableObject, ulong baseAddress)
+        private Result SetNroMemoryPermissions(KProcess process, NroExecutable relocatableObject, ulong baseAddress)
         {
             ulong textStart = baseAddress + relocatableObject.TextOffset;
             ulong roStart = baseAddress + relocatableObject.RoOffset;

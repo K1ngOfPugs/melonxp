@@ -1,6 +1,5 @@
 using Ryujinx.Audio.Common;
 using Ryujinx.Audio.Renderer.Common;
-using Ryujinx.Audio.Renderer.Dsp;
 using Ryujinx.Audio.Renderer.Dsp.Command;
 using Ryujinx.Audio.Renderer.Dsp.State;
 using Ryujinx.Audio.Renderer.Parameter;
@@ -11,7 +10,6 @@ using Ryujinx.Audio.Renderer.Server.Sink;
 using Ryujinx.Audio.Renderer.Server.Splitter;
 using Ryujinx.Audio.Renderer.Server.Voice;
 using Ryujinx.Audio.Renderer.Utils;
-using Ryujinx.Common.Logging; 
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -77,6 +75,8 @@ namespace Ryujinx.Audio.Renderer.Server
                         if (mixId < _mixContext.GetCount() && mixId != Constants.UnusedSplitterIdInt)
                         {
                             ref MixInfo mix = ref _mixContext.GetState(mixId);
+                            
+                            // _commandBuffer.GenerateFillBuffer();
 
                             _commandBuffer.GenerateDepopPrepare(
                                 dspState,
@@ -315,7 +315,7 @@ namespace Ryujinx.Audio.Renderer.Server
         {
             int nodeId = voiceInfo.NodeId;
             uint channelsCount = voiceInfo.ChannelsCount;
-
+            
             Span<int> channelResourceIdsSpan = voiceInfo.ChannelResourceIds.AsSpan();
             Span<BiquadFilterParameter2> biquadFiltersSpan = voiceInfo.BiquadFilters.AsSpan();
 
@@ -533,15 +533,19 @@ namespace Ryujinx.Audio.Renderer.Server
 
             if (effect.IsEnabled)
             {
+                Span<float> volumesSpan = effect.Parameter.Volumes.AsSpan();
+                Span<byte> inputSpan = effect.Parameter.Input.AsSpan();
+                Span<byte> outputSpan = effect.Parameter.Output.AsSpan();
+                
                 for (int i = 0; i < effect.Parameter.MixesCount; i++)
                 {
-                    if (effect.Parameter.Volumes[i] != 0.0f)
+                    if (volumesSpan[i] != 0.0f)
                     {
                         _commandBuffer.GenerateMix(
-                            (uint)bufferOffset + effect.Parameter.Input[i],
-                            (uint)bufferOffset + effect.Parameter.Output[i],
+                            (uint)bufferOffset + inputSpan[i],
+                            (uint)bufferOffset + outputSpan[i],
                             nodeId,
-                            effect.Parameter.Volumes[i]);
+                            volumesSpan[i]);
                     }
                 }
             }
@@ -561,6 +565,10 @@ namespace Ryujinx.Audio.Renderer.Server
             {
                 int i = 0;
                 uint writeOffset = 0;
+                
+                Span<byte> inputSpan = effect.Parameter.Input.AsSpan();
+                Span<byte> outputSpan = effect.Parameter.Output.AsSpan();
+                
                 for (uint channelIndex = effect.Parameter.ChannelCount; channelIndex != 0; channelIndex--)
                 {
                     uint newUpdateCount = writeOffset + _commandBuffer.CommandList.SampleCount;
@@ -578,8 +586,8 @@ namespace Ryujinx.Audio.Renderer.Server
 
                     _commandBuffer.GenerateAuxEffect(
                         bufferOffset,
-                        effect.Parameter.Input[i],
-                        effect.Parameter.Output[i],
+                        inputSpan[i],
+                        outputSpan[i],
                         ref effect.State,
                         effect.IsEnabled,
                         effect.Parameter.BufferStorageSize,
@@ -626,7 +634,7 @@ namespace Ryujinx.Audio.Renderer.Server
         private void GenerateBiquadFilterEffect(uint bufferOffset, BiquadFilterEffect effect, int nodeId)
         {
             Debug.Assert(effect.Type == EffectType.BiquadFilter);
-
+            
             Span<byte> inputSpan = effect.Parameter.Input.AsSpan();
             Span<byte> outputSpan = effect.Parameter.Output.AsSpan();
 
@@ -711,6 +719,8 @@ namespace Ryujinx.Audio.Renderer.Server
             {
                 int i = 0;
                 uint writeOffset = 0;
+                
+                Span<byte> inputSpan = effect.Parameter.Input.AsSpan();
 
                 for (uint channelIndex = effect.Parameter.ChannelCount; channelIndex != 0; channelIndex--)
                 {
@@ -729,7 +739,7 @@ namespace Ryujinx.Audio.Renderer.Server
 
                     _commandBuffer.GenerateCaptureEffect(
                         bufferOffset,
-                        effect.Parameter.Input[i],
+                        inputSpan[i],
                         effect.State.SendBufferInfo,
                         effect.IsEnabled,
                         effect.Parameter.BufferStorageSize,
@@ -790,43 +800,37 @@ namespace Ryujinx.Audio.Renderer.Server
                 GeneratePerformance(ref performanceEntry, PerformanceCommand.Type.Start, nodeId);
             }
 
-            try
+            switch (effect.Type)
             {
-                switch (effect.Type)
-                {
-                    case EffectType.BufferMix:
-                        GenerateBufferMixerEffect((int)mix.BufferOffset, (BufferMixEffect)effect, nodeId);
-                        break;
-                    case EffectType.AuxiliaryBuffer:
-                        GenerateAuxEffect(mix.BufferOffset, (AuxiliaryBufferEffect)effect, nodeId);
-                        break;
-                    case EffectType.Delay:
-                        GenerateDelayEffect(mix.BufferOffset, (DelayEffect)effect, nodeId, _rendererContext.BehaviourInfo.IsNewEffectChannelMappingSupported());
-                        break;
-                    case EffectType.Reverb:
-                        GenerateReverbEffect(mix.BufferOffset, (ReverbEffect)effect, nodeId, mix.IsLongSizePreDelaySupported, _rendererContext.BehaviourInfo.IsNewEffectChannelMappingSupported());
-                        break;
-                    case EffectType.Reverb3d:
-                        GenerateReverb3dEffect(mix.BufferOffset, (Reverb3dEffect)effect, nodeId, _rendererContext.BehaviourInfo.IsNewEffectChannelMappingSupported());
-                        break;
-                    case EffectType.BiquadFilter:
-                        GenerateBiquadFilterEffect(mix.BufferOffset, (BiquadFilterEffect)effect, nodeId);
-                        break;
-                    case EffectType.Limiter:
-                        GenerateLimiterEffect(mix.BufferOffset, (LimiterEffect)effect, nodeId, effectId);
-                        break;
-                    case EffectType.CaptureBuffer:
-                        GenerateCaptureEffect(mix.BufferOffset, (CaptureBufferEffect)effect, nodeId);
-                        break;
-                    case EffectType.Compressor:
-                        GenerateCompressorEffect(mix.BufferOffset, (CompressorEffect)effect, nodeId, effectId);
-                        break;
-                    default:
-                        throw new NotImplementedException($"Unsupported effect type {effect.Type}");
-                }
-            } catch
-            {
-                Logger.Debug?.Print(LogClass.AudioRenderer, $"Error while generating effect of type {effect.Type} for mix {mix.MixId} at node {nodeId}");
+                case EffectType.BufferMix:
+                    GenerateBufferMixerEffect((int)mix.BufferOffset, (BufferMixEffect)effect, nodeId);
+                    break;
+                case EffectType.AuxiliaryBuffer:
+                    GenerateAuxEffect(mix.BufferOffset, (AuxiliaryBufferEffect)effect, nodeId);
+                    break;
+                case EffectType.Delay:
+                    GenerateDelayEffect(mix.BufferOffset, (DelayEffect)effect, nodeId, _rendererContext.BehaviourInfo.IsNewEffectChannelMappingSupported());
+                    break;
+                case EffectType.Reverb:
+                    GenerateReverbEffect(mix.BufferOffset, (ReverbEffect)effect, nodeId, mix.IsLongSizePreDelaySupported, _rendererContext.BehaviourInfo.IsNewEffectChannelMappingSupported());
+                    break;
+                case EffectType.Reverb3d:
+                    GenerateReverb3dEffect(mix.BufferOffset, (Reverb3dEffect)effect, nodeId, _rendererContext.BehaviourInfo.IsNewEffectChannelMappingSupported());
+                    break;
+                case EffectType.BiquadFilter:
+                    GenerateBiquadFilterEffect(mix.BufferOffset, (BiquadFilterEffect)effect, nodeId);
+                    break;
+                case EffectType.Limiter:
+                    GenerateLimiterEffect(mix.BufferOffset, (LimiterEffect)effect, nodeId, effectId);
+                    break;
+                case EffectType.CaptureBuffer:
+                    GenerateCaptureEffect(mix.BufferOffset, (CaptureBufferEffect)effect, nodeId);
+                    break;
+                case EffectType.Compressor:
+                    GenerateCompressorEffect(mix.BufferOffset, (CompressorEffect)effect, nodeId, effectId);
+                    break;
+                default:
+                    throw new NotImplementedException($"Unsupported effect type {effect.Type}");
             }
 
             if (performanceInitialized)
@@ -1070,11 +1074,11 @@ namespace Ryujinx.Audio.Renderer.Server
         {
             for (int id = 0; id < _mixContext.GetCount(); id++)
             {
-                ref MixInfo sortedState = ref _mixContext.GetSortedState(id);
+                ref MixInfo sortedInfo = ref _mixContext.GetSortedState(id);
 
-                if (sortedState.IsUsed && sortedState.MixId != Constants.FinalMixId)
+                if (sortedInfo.IsUsed && sortedInfo.MixId != Constants.FinalMixId)
                 {
-                    int nodeId = sortedState.NodeId;
+                    int nodeId = sortedInfo.NodeId;
 
                     PerformanceEntryAddresses performanceEntry = null;
 
@@ -1087,7 +1091,7 @@ namespace Ryujinx.Audio.Renderer.Server
                         GeneratePerformance(ref performanceEntry, PerformanceCommand.Type.Start, nodeId);
                     }
 
-                    GenerateSubMix(ref sortedState);
+                    GenerateSubMix(ref sortedInfo);
 
                     if (performanceInitialized)
                     {

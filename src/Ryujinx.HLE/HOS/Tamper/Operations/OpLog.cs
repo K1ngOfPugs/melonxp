@@ -15,9 +15,7 @@ namespace Ryujinx.HLE.HOS.Tamper.Operations
 
         public void Execute()
         {
-            T value = _source.Get<T>();
-            string hexValue = TypeSafeOperations.FormatHex(value);
-            Logger.Debug?.Print(LogClass.TamperMachine, $"Tamper debug log id={_logId} value={hexValue}");
+            Logger.Debug?.Print(LogClass.TamperMachine, $"Tamper debug log id={_logId} value={(dynamic)_source.Get<T>():X}");
         }
     }
 }

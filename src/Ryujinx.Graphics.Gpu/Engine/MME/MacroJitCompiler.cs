@@ -22,7 +22,8 @@ namespace Ryujinx.Graphics.Gpu.Engine.MME
         /// </summary>
         public MacroJitCompiler()
         {
-            _meth = new DynamicMethod("Macro", typeof(void), new Type[] { typeof(MacroJitContext), typeof(IDeviceState), typeof(int) });
+            _meth = new DynamicMethod("Macro", typeof(void), [typeof(MacroJitContext), typeof(IDeviceState), typeof(int)
+            ]);
             _ilGen = _meth.GetILGenerator();
             _gprs = new LocalBuilder[8];
 
@@ -289,6 +290,7 @@ namespace Ryujinx.Graphics.Gpu.Engine.MME
                             _ilGen.Emit(OpCodes.Shl);
                             break;
                     }
+
                     break;
 
                 case AluOperation.ReadImmediate:

@@ -25,26 +25,38 @@ cp "$PUBLISH_DIRECTORY"/*.dylib "$APP_BUNDLE_DIRECTORY/Contents/Frameworks"
 cp Info.plist "$APP_BUNDLE_DIRECTORY/Contents"
 cp Ryujinx.icns "$APP_BUNDLE_DIRECTORY/Contents/Resources/Ryujinx.icns"
 cp updater.sh "$APP_BUNDLE_DIRECTORY/Contents/Resources/updater.sh"
+cp Assets.car "$APP_BUNDLE_DIRECTORY/Contents/Resources/Assets.car"
 cp -r "$PUBLISH_DIRECTORY/THIRDPARTY.md" "$APP_BUNDLE_DIRECTORY/Contents/Resources"
 
 echo -n "APPL????" > "$APP_BUNDLE_DIRECTORY/Contents/PkgInfo"
 
 # Fixup libraries and executable
+echo "Running bundle fix up python script"
 python3 bundle_fix_up.py "$APP_BUNDLE_DIRECTORY" MacOS/Ryujinx
 
 # Now sign it
+echo "Starting signing process"
 if ! [ -x "$(command -v codesign)" ];
 then
     if ! [ -x "$(command -v rcodesign)" ];
     then
-        echo "Cannot find rcodesign on your system, please install rcodesign."
+        echo "Cannot find rcodesign on your system, please install rcodesign and ensure it is in your search path."
         exit 1
     fi
 
-    # cargo install apple-codesign
-    echo "Usign rcodesign for ad-hoc signing"
+    echo "Using rcodesign for ad-hoc signing"
+
+    echo "Resigning all frameworks dylib files as ad-hoc"
+    find "$APP_BUNDLE_DIRECTORY/Contents/Frameworks" -type f -name "*.dylib" -exec rcodesign sign {} \;
+
+    echo "Signing app bundle as ad-hoc"
     rcodesign sign --entitlements-xml-path "$ENTITLEMENTS_FILE_PATH" "$APP_BUNDLE_DIRECTORY"
 else
-    echo "Usign codesign for ad-hoc signing"
-    codesign --entitlements "$ENTITLEMENTS_FILE_PATH" -f --deep -s - "$APP_BUNDLE_DIRECTORY"
+    echo "Using codesign for ad-hoc signing"
+
+    echo "Resigning all frameworks dylib files as ad-hoc"
+    find "$APP_BUNDLE_DIRECTORY/Contents/Frameworks" -type f -name "*.dylib" -exec codesign --force --sign - {} \;
+
+    echo "Signing app bundle as ad-hoc"
+    codesign --entitlements "$ENTITLEMENTS_FILE_PATH" -f -s - "$APP_BUNDLE_DIRECTORY"
 fi

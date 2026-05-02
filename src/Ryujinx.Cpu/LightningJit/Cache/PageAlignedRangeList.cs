@@ -35,8 +35,8 @@ namespace Ryujinx.Cpu.LightningJit.Cache
         {
             _alignedRangeAction = alignedRangeAction;
             _alignedFunctionAction = alignedFunctionAction;
-            _pendingFunctions = new();
-            _ranges = new();
+            _pendingFunctions = [];
+            _ranges = [];
         }
 
         public bool Has(ulong address)
@@ -212,19 +212,6 @@ namespace Ryujinx.Cpu.LightningJit.Cache
                 Debug.Assert(range.Offset == alignedStart && range.Offset + range.Size == alignedEnd);
 
                 _ranges.RemoveAt(index--);
-            }
-        }
-
-        public void RemoveOverlaps(ulong guestAddress, ulong size)
-        {
-            for (int index = 0; index < _pendingFunctions.Count; index++)
-            {
-                (Range range, ulong address, TranslatedFunction function) = _pendingFunctions[index];
-                
-                if (address >= guestAddress && address < guestAddress + size)
-                {
-                    _pendingFunctions.RemoveAt(index--);
-                }
             }
         }
     }

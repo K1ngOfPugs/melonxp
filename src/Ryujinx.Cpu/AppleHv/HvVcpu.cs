@@ -4,7 +4,6 @@ using System.Runtime.Versioning;
 namespace Ryujinx.Cpu.AppleHv
 {
     [SupportedOSPlatform("macos")]
-    [SupportedOSPlatform("ios")]
     unsafe class HvVcpu
     {
         private const ulong InterruptIntervalNs = 16 * 1000000; // 16 ms
@@ -42,7 +41,7 @@ namespace Ryujinx.Cpu.AppleHv
             {
                 // Calculate our time delta in ticks based on the current clock frequency.
 
-                int result = TimeApi.mach_timebase_info(out var timeBaseInfo);
+                int result = TimeApi.mach_timebase_info(out MachTimebaseInfo timeBaseInfo);
 
                 Debug.Assert(result == 0);
 

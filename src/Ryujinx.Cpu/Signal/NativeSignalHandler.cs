@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Ryujinx.Cpu.Signal
 {
@@ -14,7 +15,7 @@ namespace Ryujinx.Cpu.Signal
         public int IsActive;
         public nuint RangeAddress;
         public nuint RangeEndAddress;
-        public IntPtr ActionPointer;
+        public nint ActionPointer;
     }
 
     [InlineArray(NativeSignalHandlerGenerator.MaxTrackedRanges)]
@@ -54,12 +55,12 @@ namespace Ryujinx.Cpu.Signal
 
     static class NativeSignalHandler
     {
-        private static readonly IntPtr _handlerConfig;
-        private static IntPtr _signalHandlerPtr;
+        private static readonly nint _handlerConfig;
+        private static nint _signalHandlerPtr;
 
         private static MemoryBlock _codeBlock;
 
-        private static readonly object _lock = new();
+        private static readonly Lock _lock = new();
         private static bool _initialized;
 
         static NativeSignalHandler()
@@ -70,7 +71,7 @@ namespace Ryujinx.Cpu.Signal
             config = new SignalHandlerConfig();
         }
 
-        public static void InitializeSignalHandler(Func<IntPtr, IntPtr, IntPtr> customSignalHandlerFactory = null)
+        public static void InitializeSignalHandler(Func<nint, nint, nint> customSignalHandlerFactory = null)
         {
             if (_initialized)
             {
@@ -88,7 +89,7 @@ namespace Ryujinx.Cpu.Signal
 
                 ref SignalHandlerConfig config = ref GetConfigRef();
 
-                if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+                if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
                 {
                     _signalHandlerPtr = MapCode(NativeSignalHandlerGenerator.GenerateUnixSignalHandler(_handlerConfig, rangeStructSize));
 
@@ -97,7 +98,7 @@ namespace Ryujinx.Cpu.Signal
                         _signalHandlerPtr = customSignalHandlerFactory(UnixSignalHandlerRegistration.GetSegfaultExceptionHandler().sa_handler, _signalHandlerPtr);
                     }
 
-                    var old = UnixSignalHandlerRegistration.RegisterExceptionHandler(_signalHandlerPtr);
+                    UnixSignalHandlerRegistration.SigAction old = UnixSignalHandlerRegistration.RegisterExceptionHandler(_signalHandlerPtr);
 
                     config.UnixOldSigaction = (nuint)(ulong)old.sa_handler;
                     config.UnixOldSigaction3Arg = old.sa_flags & 4;
@@ -111,7 +112,7 @@ namespace Ryujinx.Cpu.Signal
 
                     if (customSignalHandlerFactory != null)
                     {
-                        _signalHandlerPtr = customSignalHandlerFactory(IntPtr.Zero, _signalHandlerPtr);
+                        _signalHandlerPtr = customSignalHandlerFactory(nint.Zero, _signalHandlerPtr);
                     }
 
                     WindowsSignalHandlerRegistration.RegisterExceptionHandler(_signalHandlerPtr);
@@ -121,57 +122,17 @@ namespace Ryujinx.Cpu.Signal
             }
         }
 
-        /// <summary>
-        /// Installs a custom Unix signal handler for the specified signal.
-        /// </summary>
-        /// <param name="signal">The signal number (e.g., SIGINT = 2, SIGTERM = 15, SIGUSR1 = 10)</param>
-        /// <param name="handlerPtr">Pointer to the signal handler function</param>
-        /// <returns>The previous signal handler, or IntPtr.Zero on failure</returns>
-        public static IntPtr InstallUnixSignalHandler(int signal, IntPtr handlerPtr)
+        private static nint MapCode(ReadOnlySpan<byte> code)
         {
-            if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsIOS())
-            {
-                throw new PlatformNotSupportedException("InstallUnixSignalHandler is only supported on Unix-like systems.");
-            }
+            Debug.Assert(_codeBlock == null);
 
-            if (handlerPtr == IntPtr.Zero)
-            {
-                throw new ArgumentNullException(nameof(handlerPtr));
-            }
-
-            lock (_lock)
-            {
-                var old = UnixSignalHandlerRegistration.RegisterSignalHandler(signal, handlerPtr);
-                return old.sa_handler;
-            }
-        }
-
-        private static IntPtr MapCode(ReadOnlySpan<byte> code)
-        {
             ulong codeSizeAligned = BitUtils.AlignUp((ulong)code.Length, MemoryBlock.GetPageSize());
 
-            if (_codeBlock == null)
-            {
-                string dualMapped = Environment.GetEnvironmentVariable("DUAL_MAPPED_JIT");
-                _codeBlock = new MemoryBlock(codeSizeAligned, (dualMapped == "1") ? MemoryAllocationFlags.DualMapping : MemoryAllocationFlags.None);
-            }
-            else
-            {
-                // If the region exists, just overwrite the code and reprotect.
-                // Optionally, check if the size matches and handle resizing if needed.
-                if (_codeBlock.Size != codeSizeAligned)
-                {
-                    string dualMapped = Environment.GetEnvironmentVariable("DUAL_MAPPED_JIT");
-                    _codeBlock = new MemoryBlock(codeSizeAligned, (dualMapped == "1") ? MemoryAllocationFlags.DualMapping : MemoryAllocationFlags.None);
-                }
-            }
-
+            _codeBlock = new MemoryBlock(codeSizeAligned);
             _codeBlock.Write(0, code);
             _codeBlock.Reprotect(0, codeSizeAligned, MemoryPermission.ReadAndExecute);
 
-            _codeBlock.Detach();
-
-            return _codeBlock.RxPointer;
+            return _codeBlock.Pointer;
         }
 
         private static unsafe ref SignalHandlerConfig GetConfigRef()
@@ -179,7 +140,7 @@ namespace Ryujinx.Cpu.Signal
             return ref Unsafe.AsRef<SignalHandlerConfig>((void*)_handlerConfig);
         }
 
-        public static bool AddTrackedRegion(nuint address, nuint endAddress, IntPtr action)
+        public static bool AddTrackedRegion(nuint address, nuint endAddress, nint action)
         {
             Span<SignalHandlerRange> ranges = GetConfigRef().Ranges;
 
@@ -214,19 +175,6 @@ namespace Ryujinx.Cpu.Signal
             }
 
             return false;
-        }
-
-        public static void ClearAllTrackedRegions()
-        {
-            Span<SignalHandlerRange> ranges = GetConfigRef().Ranges;
-
-            for (int i = 0; i < NativeSignalHandlerGenerator.MaxTrackedRanges; i++)
-            {
-                ranges[i].IsActive = 0;
-                ranges[i].RangeAddress = 0;
-                ranges[i].RangeEndAddress = 0;
-                ranges[i].ActionPointer = IntPtr.Zero;
-            }
         }
 
         public static bool SupportsFaultAddressPatching()

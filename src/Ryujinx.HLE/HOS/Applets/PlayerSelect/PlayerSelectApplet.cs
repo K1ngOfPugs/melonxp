@@ -1,3 +1,4 @@
+using Microsoft.IO;
 using Ryujinx.Common.Memory;
 using Ryujinx.HLE.HOS.Services.Account.Acc;
 using Ryujinx.HLE.HOS.Services.Am.AppletAE;
@@ -27,8 +28,19 @@ namespace Ryujinx.HLE.HOS.Applets
             _normalSession = normalSession;
             _interactiveSession = interactiveSession;
 
-            // TODO(jduncanator): Parse PlayerSelectConfig from input data
-            _normalSession.Push(BuildResponse());
+            UserProfile selected = _system.Device.UIHandler.ShowPlayerSelectDialog();
+            if (selected == null)
+            {
+                _normalSession.Push(BuildResponse());
+            }
+            else if (selected.UserId == new UserId("00000000000000000000000000000080"))
+            {
+                _normalSession.Push(BuildGuestResponse());
+            }
+            else
+            {
+                _normalSession.Push(BuildResponse(selected));
+            }
 
             AppletStateChanged?.Invoke(this, null);
 
@@ -37,21 +49,34 @@ namespace Ryujinx.HLE.HOS.Applets
             return ResultCode.Success;
         }
 
-        public ResultCode GetResult()
+        private static byte[] BuildResponse(UserProfile selectedUser)
         {
-            return ResultCode.Success;
-        }
-
-        private byte[] BuildResponse()
-        {
-            UserProfile currentUser = _system.AccountManager.LastOpenedUser;
-
-            using MemoryStream stream = MemoryStreamManager.Shared.GetStream();
+            using RecyclableMemoryStream stream = MemoryStreamManager.Shared.GetStream();
             using BinaryWriter writer = new(stream);
 
             writer.Write((ulong)PlayerSelectResult.Success);
 
-            currentUser.UserId.Write(writer);
+            selectedUser.UserId.Write(writer);
+
+            return stream.ToArray();
+        }
+
+        private static byte[] BuildGuestResponse()
+        {
+            using RecyclableMemoryStream stream = MemoryStreamManager.Shared.GetStream();
+            using BinaryWriter writer = new(stream);
+
+            writer.Write(new byte());
+
+            return stream.ToArray();
+        }
+
+        private static byte[] BuildResponse()
+        {
+            using RecyclableMemoryStream stream = MemoryStreamManager.Shared.GetStream();
+            using BinaryWriter writer = new(stream);
+
+            writer.Write((ulong)PlayerSelectResult.Failure);
 
             return stream.ToArray();
         }

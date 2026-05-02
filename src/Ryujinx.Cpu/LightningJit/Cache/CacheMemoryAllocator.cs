@@ -24,18 +24,10 @@ namespace Ryujinx.Cpu.LightningJit.Cache
             }
         }
 
-        private readonly List<MemoryBlock> _blocks = new();
-        private readonly int _capacity;
-        private int _usedSize;
-
-        public int UsedSize => _usedSize;
-        public int Capacity => _capacity;
-        public int FreeSize => _capacity - _usedSize;
+        private readonly List<MemoryBlock> _blocks = [];
 
         public CacheMemoryAllocator(int capacity)
         {
-            _capacity = capacity;
-            _usedSize = 0;
             _blocks.Add(new MemoryBlock(0, capacity));
         }
 
@@ -48,13 +40,11 @@ namespace Ryujinx.Cpu.LightningJit.Cache
                 if (block.Size > size)
                 {
                     _blocks[i] = new(block.Offset + size, block.Size - size);
-                    _usedSize += size;
                     return block.Offset;
                 }
                 else if (block.Size == size)
                 {
                     _blocks.RemoveAt(i);
-                    _usedSize += size;
                     return block.Offset;
                 }
             }
@@ -73,6 +63,7 @@ namespace Ryujinx.Cpu.LightningJit.Cache
             }
 
             int endOffset = offset + size;
+
             MemoryBlock block = _blocks[index];
 
             Debug.Assert(block.Offset <= offset && block.Offset + block.Size >= endOffset);
@@ -94,14 +85,11 @@ namespace Ryujinx.Cpu.LightningJit.Cache
             {
                 _blocks.RemoveAt(index);
             }
-
-            _usedSize += size;
         }
 
         public void Free(int offset, int size)
         {
             Insert(new MemoryBlock(offset, size));
-            _usedSize -= size;
         }
 
         private void Insert(MemoryBlock block)
@@ -116,6 +104,7 @@ namespace Ryujinx.Cpu.LightningJit.Cache
             if (index < _blocks.Count)
             {
                 MemoryBlock next = _blocks[index];
+
                 int endOffs = block.Offset + block.Size;
 
                 if (next.Offset == endOffs)
@@ -142,7 +131,6 @@ namespace Ryujinx.Cpu.LightningJit.Cache
         public void Clear()
         {
             _blocks.Clear();
-            _usedSize = 0;
         }
     }
 }

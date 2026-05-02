@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace Ryujinx.HLE.HOS.Services
 {
-    abstract partial class DisposableIpcService : IpcService, IDisposable
+    abstract class DisposableIpcService : IpcService, IDisposable
     {
         private int _disposeState;
 

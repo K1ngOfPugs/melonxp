@@ -4,7 +4,6 @@ using System.Runtime.Versioning;
 namespace Ryujinx.Cpu.AppleHv
 {
     [SupportedOSPlatform("macos")]
-    [SupportedOSPlatform("ios")]
     class HvCpuContext : ICpuContext
     {
         private readonly ITickSource _tickSource;
@@ -33,7 +32,7 @@ namespace Ryujinx.Cpu.AppleHv
         {
         }
 
-        public IDiskCacheLoadState LoadDiskCache(string titleIdText, string displayVersion, bool enabled)
+        public IDiskCacheLoadState LoadDiskCache(string titleIdText, string displayVersion, bool enabled, string cacheSelector)
         {
             return new DummyDiskCacheLoadState();
         }

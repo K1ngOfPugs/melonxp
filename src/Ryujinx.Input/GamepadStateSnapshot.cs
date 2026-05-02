@@ -1,4 +1,5 @@
 using Ryujinx.Common.Memory;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace Ryujinx.Input
@@ -32,7 +33,6 @@ namespace Ryujinx.Input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsPressed(GamepadButtonInputId inputId) => _buttonsState[(int)inputId];
 
-
         /// <summary>
         /// Set the state of a given button.
         /// </summary>
@@ -49,7 +49,7 @@ namespace Ryujinx.Input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public (float, float) GetStick(StickInputId inputId)
         {
-            var result = _joysticksState[(int)inputId];
+            Span<float> result = _joysticksState[(int)inputId].AsSpan();
 
             return (result[0], result[1]);
         }
@@ -63,8 +63,9 @@ namespace Ryujinx.Input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetStick(StickInputId inputId, float x, float y)
         {
-            _joysticksState[(int)inputId][0] = x;
-            _joysticksState[(int)inputId][1] = y;
+            Span<float> stateSpan = _joysticksState[(int)inputId].AsSpan();
+            stateSpan[0] = x;
+            stateSpan[1] = y;
         }
     }
 }

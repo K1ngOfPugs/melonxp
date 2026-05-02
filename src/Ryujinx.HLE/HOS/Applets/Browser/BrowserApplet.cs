@@ -1,3 +1,4 @@
+using Microsoft.IO;
 using Ryujinx.Common;
 using Ryujinx.Common.Logging;
 using Ryujinx.Common.Memory;
@@ -17,13 +18,6 @@ namespace Ryujinx.HLE.HOS.Applets.Browser
         private CommonArguments _commonArguments;
         private List<BrowserArgument> _arguments;
         private ShimKind _shimKind;
-
-        public BrowserApplet(Horizon system) { }
-
-        public ResultCode GetResult()
-        {
-            return ResultCode.Success;
-        }
 
         public ResultCode Start(AppletSession normalSession, AppletSession interactiveSession)
         {
@@ -46,10 +40,10 @@ namespace Ryujinx.HLE.HOS.Applets.Browser
 
             if ((_commonArguments.AppletVersion >= 0x80000 && _shimKind == ShimKind.Web) || (_commonArguments.AppletVersion >= 0x30000 && _shimKind == ShimKind.Share))
             {
-                List<BrowserOutput> result = new()
-                {
-                    new BrowserOutput(BrowserOutputType.ExitReason, (uint)WebExitReason.ExitButton),
-                };
+                List<BrowserOutput> result =
+                [
+                    new(BrowserOutputType.ExitReason, (uint)WebExitReason.ExitButton)
+                ];
 
                 _normalSession.Push(BuildResponseNew(result));
             }
@@ -70,7 +64,7 @@ namespace Ryujinx.HLE.HOS.Applets.Browser
 
         private static byte[] BuildResponseOld(WebCommonReturnValue result)
         {
-            using MemoryStream stream = MemoryStreamManager.Shared.GetStream();
+            using RecyclableMemoryStream stream = MemoryStreamManager.Shared.GetStream();
             using BinaryWriter writer = new(stream);
             writer.WriteStruct(result);
 
@@ -78,7 +72,7 @@ namespace Ryujinx.HLE.HOS.Applets.Browser
         }
         private byte[] BuildResponseNew(List<BrowserOutput> outputArguments)
         {
-            using MemoryStream stream = MemoryStreamManager.Shared.GetStream();
+            using RecyclableMemoryStream stream = MemoryStreamManager.Shared.GetStream();
             using BinaryWriter writer = new(stream);
             writer.WriteStruct(new WebArgHeader
             {

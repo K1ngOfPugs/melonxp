@@ -4,10 +4,11 @@ using Ryujinx.HLE.HOS.Kernel.Threading;
 using Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.SystemAppletProxy.Types;
 using Ryujinx.Horizon.Common;
 using System;
+using System.Threading;
 
 namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.SystemAppletProxy
 {
-    partial class ISelfController : IpcService
+    class ISelfController : IpcService
     {
         private readonly ulong _pid;
 
@@ -17,7 +18,7 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.Sys
         private KEvent _accumulatedSuspendedTickChangedEvent;
         private int _accumulatedSuspendedTickChangedEventHandle;
 
-        private readonly object _fatalSectionLock = new();
+        private readonly Lock _fatalSectionLock = new();
         private int _fatalSectionCount;
 
         // TODO: Set this when the game goes in suspension (go back to home menu ect), we currently don't support that so we can keep it set to 0.
@@ -415,7 +416,7 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.Sys
                 return ResultCode.InvalidParameters;
             }
 
-            Logger.Stub?.PrintStub(LogClass.ServiceAm, new { albumReportOption });
+            context.Device.UIHandler.TakeScreenshot();
 
             return ResultCode.Success;
         }

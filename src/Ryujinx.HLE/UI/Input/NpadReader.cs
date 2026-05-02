@@ -1,5 +1,6 @@
 using Ryujinx.HLE.HOS.Services.Hid.Types.SharedMemory.Common;
 using Ryujinx.HLE.HOS.Services.Hid.Types.SharedMemory.Npad;
+using System;
 
 namespace Ryujinx.HLE.UI.Input
 {
@@ -29,7 +30,7 @@ namespace Ryujinx.HLE.UI.Input
         {
             NpadButton buttons = 0;
 
-            foreach (var state in _lastStates)
+            foreach (NpadCommonState state in _lastStates)
             {
                 buttons |= state.Buttons;
             }
@@ -58,25 +59,25 @@ namespace Ryujinx.HLE.UI.Input
             }
         }
 
-        public void Update(bool supressEvents = false)
+        public void Update(bool suppressEvents = false)
         {
-            ref var npads = ref _device.Hid.SharedMemory.Npads;
+            int npadsCount = _device.Hid.SharedMemory.Npads.Length;
 
             // Process each input individually.
-            for (int npadIndex = 0; npadIndex < npads.Length; npadIndex++)
+            for (int npadIndex = 0; npadIndex < npadsCount; npadIndex++)
             {
-                UpdateNpad(npadIndex, supressEvents);
+                UpdateNpad(npadIndex, suppressEvents);
             }
         }
 
-        private void UpdateNpad(int npadIndex, bool supressEvents)
+        private void UpdateNpad(int npadIndex, bool suppressEvents)
         {
             const int MaxEntries = 1024;
 
-            ref var npadState = ref _device.Hid.SharedMemory.Npads[npadIndex];
-            ref var lastEntry = ref _lastStates[npadIndex];
+            ref NpadState npadState = ref _device.Hid.SharedMemory.Npads[npadIndex];
+            ref NpadCommonState lastEntry = ref _lastStates[npadIndex];
 
-            var fullKeyEntries = GetCommonStateLifo(ref npadState.InternalState).ReadEntries(MaxEntries);
+            ReadOnlySpan<AtomicStorage<NpadCommonState>> fullKeyEntries = GetCommonStateLifo(ref npadState.InternalState).ReadEntries(MaxEntries);
 
             int firstEntryNum;
 
@@ -94,7 +95,7 @@ namespace Ryujinx.HLE.UI.Input
 
             for (; firstEntryNum >= 0; firstEntryNum--)
             {
-                var entry = fullKeyEntries[firstEntryNum];
+                AtomicStorage<NpadCommonState> entry = fullKeyEntries[firstEntryNum];
 
                 // The interval of valid entries should be contiguous.
                 if (entry.SamplingNumber < lastEntry.SamplingNumber)
@@ -102,7 +103,7 @@ namespace Ryujinx.HLE.UI.Input
                     break;
                 }
 
-                if (!supressEvents)
+                if (!suppressEvents)
                 {
                     ProcessNpadButtons(npadIndex, entry.Object.Buttons);
                 }

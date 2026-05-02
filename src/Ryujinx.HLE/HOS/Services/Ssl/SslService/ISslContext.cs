@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Ryujinx.HLE.HOS.Services.Ssl.SslService
 {
-    partial class ISslContext : IpcService
+    class ISslContext : IpcService
     {
         private uint _connectionCount;
 

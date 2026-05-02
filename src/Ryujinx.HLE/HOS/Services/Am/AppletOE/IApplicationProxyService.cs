@@ -3,7 +3,7 @@ using Ryujinx.HLE.HOS.Services.Am.AppletOE.ApplicationProxyService;
 namespace Ryujinx.HLE.HOS.Services.Am
 {
     [Service("appletOE")]
-    partial class IApplicationProxyService : IpcService
+    class IApplicationProxyService : IpcService
     {
         public IApplicationProxyService(ServiceCtx context) { }
 

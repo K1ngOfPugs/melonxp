@@ -1,6 +1,7 @@
 using Ryujinx.Audio.Integration;
 using Ryujinx.Audio.Renderer.Server.Sink;
 using System;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -27,7 +28,7 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
 
         public DeviceSinkCommand()
         {
-
+            
         }
 
         public DeviceSinkCommand Initialize(uint bufferOffset, DeviceSink sink, int sessionId, Memory<float> buffers, int nodeId)
@@ -35,14 +36,18 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
             Enabled = true;
             NodeId = nodeId;
 
-            DeviceName = Encoding.ASCII.GetString(sink.Parameter.DeviceName).TrimEnd('\0');
+            // Unused and wasting time and memory, re-add if needed
+            // DeviceName = Encoding.ASCII.GetString(sink.Parameter.DeviceName).TrimEnd('\0');
+            
             SessionId = sessionId;
             InputCount = sink.Parameter.InputCount;
             InputBufferIndices = new ushort[InputCount];
+            
+            Span<byte> inputSpan = sink.Parameter.Input.AsSpan();
 
             for (int i = 0; i < Math.Min(InputCount, Constants.ChannelCountMax); i++)
             {
-                InputBufferIndices[i] = (ushort)(bufferOffset + sink.Parameter.Input[i]);
+                InputBufferIndices[i] = (ushort)(bufferOffset + inputSpan[i]);
             }
 
             if (sink.UpsamplerInfo != null)
@@ -86,7 +91,8 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
                     inputCount = bufferCount;
                 }
 
-                short[] outputBuffer = new short[inputCount * SampleCount];
+                short[] outputBuffer = ArrayPool<short>.Shared.Rent((int)inputCount * SampleCount);
+                Array.Fill(outputBuffer, (short)0, 0, (int)inputCount * SampleCount);
 
                 for (int i = 0; i < bufferCount; i++)
                 {
@@ -98,7 +104,9 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
                     }
                 }
 
-                device.AppendBuffer(outputBuffer, inputCount);
+                device.AppendBuffer(outputBuffer.AsSpan(..((int)inputCount * SampleCount)), inputCount);
+                
+                ArrayPool<short>.Shared.Return(outputBuffer);
             }
             else
             {

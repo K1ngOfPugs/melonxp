@@ -80,13 +80,13 @@ namespace Ryujinx.Graphics.Gpu.Engine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteWithRedundancyCheck(int offset, int value, out bool changed)
         {
-            var shadowRamControl = _state.State.SetMmeShadowRamControlMode;
+            SetMmeShadowRamControlMode shadowRamControl = _state.State.SetMmeShadowRamControlMode;
             if (shadowRamControl == SetMmeShadowRamControlMode.MethodPassthrough || offset < 0x200)
             {
                 _state.WriteWithRedundancyCheck(offset, value, out changed);
             }
-            else if (shadowRamControl == SetMmeShadowRamControlMode.MethodTrack ||
-                     shadowRamControl == SetMmeShadowRamControlMode.MethodTrackWithFilter)
+            else if (shadowRamControl is SetMmeShadowRamControlMode.MethodTrack or
+                     SetMmeShadowRamControlMode.MethodTrackWithFilter)
             {
                 _shadowState.Write(offset, value);
                 _state.WriteWithRedundancyCheck(offset, value, out changed);

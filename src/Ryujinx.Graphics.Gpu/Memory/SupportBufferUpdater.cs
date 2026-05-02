@@ -19,7 +19,7 @@ namespace Ryujinx.Graphics.Gpu.Memory
         /// <param name="renderer">Renderer that the support buffer will be used with</param>
         public SupportBufferUpdater(IRenderer renderer) : base(renderer)
         {
-            var defaultScale = new Vector4<float> { X = 1f, Y = 0f, Z = 0f, W = 0f };
+            Vector4<float> defaultScale = new() { X = 1f, Y = 0f, Z = 0f, W = 0f };
             _data.RenderScale.AsSpan().Fill(defaultScale);
             DirtyRenderScale(0, SupportBuffer.RenderScaleMaxCount);
         }
@@ -105,9 +105,11 @@ namespace Ryujinx.Graphics.Gpu.Memory
         /// <param name="scale">Scale value</param>
         public void UpdateRenderScale(int index, float scale)
         {
-            if (_data.RenderScale[1 + index].X != scale)
+            Span<Vector4<float>> renderScaleSpan = _data.RenderScale.AsSpan();
+            
+            if (renderScaleSpan[1 + index].X != scale)
             {
-                _data.RenderScale[1 + index].X = scale;
+                renderScaleSpan[1 + index].X = scale;
                 DirtyRenderScale(1 + index, 1);
             }
         }
@@ -134,11 +136,13 @@ namespace Ryujinx.Graphics.Gpu.Memory
         /// <param name="isBgra">True if the format is BGRA< false otherwise</param>
         public void SetRenderTargetIsBgra(int index, bool isBgra)
         {
-            bool isBgraChanged = _data.FragmentIsBgra[index].X != 0 != isBgra;
+            Span<Vector4<int>> fragmentIsBgraSpan = _data.FragmentIsBgra.AsSpan();
+            
+            bool isBgraChanged = fragmentIsBgraSpan[index].X != 0 != isBgra;
 
             if (isBgraChanged)
             {
-                _data.FragmentIsBgra[index].X = isBgra ? 1 : 0;
+                fragmentIsBgraSpan[index].X = isBgra ? 1 : 0;
                 DirtyFragmentIsBgra(index, 1);
             }
         }

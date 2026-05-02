@@ -126,9 +126,9 @@ namespace Ryujinx.Audio.Renderer.Server.Voice
                 _sortedVoices.Span[i] = i;
             }
 
-            int[] sortedVoicesTemp = _sortedVoices[..(int)GetCount()].ToArray();
+            Span<int> sortedVoicesTemp = _sortedVoices[..(int)_voiceCount].Span;
 
-            Array.Sort(sortedVoicesTemp, (a, b) =>
+            sortedVoicesTemp.Sort((a, b) =>
             {
                 ref VoiceInfo aInfo = ref GetState(a);
                 ref VoiceInfo bInfo = ref GetState(b);
@@ -143,7 +143,7 @@ namespace Ryujinx.Audio.Renderer.Server.Voice
                 return result;
             });
 
-            sortedVoicesTemp.AsSpan().CopyTo(_sortedVoices.Span);
+            // sortedVoicesTemp.CopyTo(_sortedVoices.Span);
         }
     }
 }

@@ -1,7 +1,7 @@
 
 namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
 {
-    public enum ArmShiftType
+    enum ArmShiftType
     {
         Lsl = 0,
         Lsr = 1,

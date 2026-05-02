@@ -5,7 +5,7 @@ using Ryujinx.HLE.HOS.Services.Hid.Types;
 namespace Ryujinx.HLE.HOS.Services.Hid
 {
     [Service("hid:sys")]
-    partial class IHidSystemServer : IpcService
+    class IHidSystemServer : IpcService
     {
         public IHidSystemServer(ServiceCtx context) { }
 

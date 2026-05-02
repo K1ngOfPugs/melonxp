@@ -42,6 +42,11 @@ namespace Ryujinx.Tests.Memory
         {
             throw new NotImplementedException();
         }
+        
+        public bool TryReadUnsafe(ulong va, int lenfth, out Span<byte> data)
+        {
+            throw new NotImplementedException();
+        }
 
         public void Write<T>(ulong va, T value) where T : unmanaged
         {
@@ -85,7 +90,7 @@ namespace Ryujinx.Tests.Memory
 
         IEnumerable<MemoryRange> IVirtualMemoryManager.GetPhysicalRegions(ulong va, ulong size)
         {
-            return NoMappings ? Array.Empty<MemoryRange>() : new MemoryRange[] { new MemoryRange(va, size) };
+            return NoMappings ? Array.Empty<MemoryRange>() : new MemoryRange[] { new(va, size) };
         }
 
         public bool IsMapped(ulong va)

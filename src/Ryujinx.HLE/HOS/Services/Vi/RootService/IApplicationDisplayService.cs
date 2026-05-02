@@ -17,7 +17,7 @@ using System.Text;
 
 namespace Ryujinx.HLE.HOS.Services.Vi.RootService
 {
-    partial class IApplicationDisplayService : IpcService
+    class IApplicationDisplayService : IpcService
     {
         private readonly ViServiceType _serviceType;
 
@@ -34,7 +34,7 @@ namespace Ryujinx.HLE.HOS.Services.Vi.RootService
         public IApplicationDisplayService(ViServiceType serviceType)
         {
             _serviceType = serviceType;
-            _displayInfo = new List<DisplayInfo>();
+            _displayInfo = [];
             _openDisplays = new Dictionary<ulong, DisplayState>();
 
             void AddDisplayInfo(string name, bool layerLimitEnabled, ulong layerLimitMax, ulong width, ulong height)
@@ -148,7 +148,7 @@ namespace Ryujinx.HLE.HOS.Services.Vi.RootService
             {
                 byte chr = context.RequestData.ReadByte();
 
-                if (chr >= 0x20 && chr < 0x7f)
+                if (chr is >= 0x20 and < 0x7f)
                 {
                     nameBuilder.Append((char)chr);
                 }
@@ -166,7 +166,7 @@ namespace Ryujinx.HLE.HOS.Services.Vi.RootService
 
         private ResultCode OpenDisplayImpl(ServiceCtx context, string name)
         {
-            if (name == "")
+            if (name == string.Empty)
             {
                 return ResultCode.InvalidValue;
             }
@@ -346,7 +346,7 @@ namespace Ryujinx.HLE.HOS.Services.Vi.RootService
                 return ResultCode.InvalidArguments;
             }
 
-            if (scalingMode != SourceScalingMode.ScaleToWindow && scalingMode != SourceScalingMode.PreserveAspectRatio)
+            if (scalingMode is not SourceScalingMode.ScaleToWindow and not SourceScalingMode.PreserveAspectRatio)
             {
                 // Invalid scaling mode specified.
                 return ResultCode.InvalidScalingMode;

@@ -1,7 +1,7 @@
 using Ryujinx.Common.Logging;
+using Ryujinx.HLE.HOS.Services.Sockets.Bsd.Proxy;
 using Ryujinx.HLE.HOS.Services.Sockets.Bsd.Types;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -21,21 +21,21 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
 
         public bool Blocking { get => Socket.Blocking; set => Socket.Blocking = value; }
 
-        public IntPtr Handle => Socket.Handle;
+        public nint Handle => nint.Zero;
 
         public IPEndPoint RemoteEndPoint => Socket.RemoteEndPoint as IPEndPoint;
 
         public IPEndPoint LocalEndPoint => Socket.LocalEndPoint as IPEndPoint;
 
-        public Socket Socket { get; }
+        public ISocketImpl Socket { get; }
 
-        public ManagedSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        public ManagedSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, string lanInterfaceId)
         {
-            Socket = new Socket(addressFamily, socketType, protocolType);
+            Socket = SocketHelpers.CreateSocket(addressFamily, socketType, protocolType, lanInterfaceId);
             Refcount = 1;
         }
 
-        private ManagedSocket(Socket socket)
+        private ManagedSocket(ISocketImpl socket)
         {
             Socket = socket;
             Refcount = 1;
@@ -91,11 +91,23 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             {
                 newSocket = new ManagedSocket(Socket.Accept());
 
+                IPEndPoint remoteEndPoint = newSocket.RemoteEndPoint;
+                bool isPrivateIp = remoteEndPoint.Address.ToString().StartsWith("192.168.");
+                Logger.Info?.PrintMsg(LogClass.ServiceBsd,
+                    isPrivateIp
+                        ? $"Accepted connection from {ProtocolType}/{remoteEndPoint.Address}:{remoteEndPoint.Port}"
+                        : $"Accepted connection from {ProtocolType}/***:{remoteEndPoint.Port}");
+
                 return LinuxError.SUCCESS;
             }
             catch (SocketException exception)
             {
                 newSocket = null;
+
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
 
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
             }
@@ -103,6 +115,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
 
         public LinuxError Bind(IPEndPoint localEndPoint)
         {
+            Logger.Info?.PrintMsg(LogClass.ServiceBsd, $"Socket binding to: {ProtocolType}/{localEndPoint.Port}");
             try
             {
                 Socket.Bind(localEndPoint);
@@ -111,6 +124,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
             }
         }
@@ -122,6 +140,16 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
 
         public LinuxError Connect(IPEndPoint remoteEndPoint)
         {
+            bool isLDNPrivateIP = remoteEndPoint.Address.ToString().StartsWith("192.168.");
+            if (isLDNPrivateIP)
+            {
+                Logger.Info?.PrintMsg(LogClass.ServiceBsd, $"Connecting to: {ProtocolType}/{remoteEndPoint.Address}:{remoteEndPoint.Port}");
+            }
+            else
+            {
+                Logger.Info?.PrintMsg(LogClass.ServiceBsd, $"Connecting to: {ProtocolType}/***:{remoteEndPoint.Port}");
+            }
+
             try
             {
                 Socket.Connect(remoteEndPoint);
@@ -136,6 +164,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
                 }
                 else
                 {
+                    if (exception.SocketErrorCode != SocketError.WouldBlock)
+                    {
+                        Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                    }
+
                     return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
                 }
             }
@@ -143,11 +176,13 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
 
         public void Disconnect()
         {
+            Logger.Info?.Print(LogClass.ServiceBsd, "Socket disconnecting");
             Socket.Disconnect(true);
         }
 
         public void Dispose()
         {
+            Logger.Info?.Print(LogClass.ServiceBsd, "Socket closed");
             Socket.Close();
             Socket.Dispose();
         }
@@ -158,10 +193,17 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             {
                 Socket.Listen(backlog);
 
+                Logger.Info?.PrintMsg(LogClass.ServiceBsd, $"Socket listening: {ProtocolType}/{(Socket.LocalEndPoint as IPEndPoint).Port}");
+
                 return LinuxError.SUCCESS;
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
             }
         }
@@ -181,9 +223,16 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
             }
         }
+
+        private bool _hasEmittedBlockingWarning;
 
         public LinuxError Receive(out int receiveSize, Span<byte> buffer, BsdSocketFlags flags)
         {
@@ -199,12 +248,23 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
                     shouldBlockAfterOperation = true;
                 }
 
+                if (Blocking && !_hasEmittedBlockingWarning)
+                {
+                    Logger.Warning?.PrintMsg(LogClass.ServiceBsd, "Blocking socket operations are not yet working properly. Expect network errors.");
+                    _hasEmittedBlockingWarning = true;
+                }
+
                 receiveSize = Socket.Receive(buffer, ConvertBsdSocketFlags(flags));
 
                 result = LinuxError.SUCCESS;
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 receiveSize = -1;
 
                 result = WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
@@ -236,6 +296,12 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
                     shouldBlockAfterOperation = true;
                 }
 
+                if (Blocking && !_hasEmittedBlockingWarning)
+                {
+                    Logger.Warning?.PrintMsg(LogClass.ServiceBsd, "Blocking socket operations are not yet working properly. Expect network errors.");
+                    _hasEmittedBlockingWarning = true;
+                }
+
                 if (!Socket.IsBound)
                 {
                     receiveSize = -1;
@@ -250,6 +316,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 receiveSize = -1;
 
                 result = WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
@@ -273,6 +344,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 sendSize = -1;
 
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
@@ -289,6 +365,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 sendSize = -1;
 
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
@@ -313,7 +394,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
                     Logger.Warning?.Print(LogClass.ServiceBsd, $"Unsupported GetSockOpt Option: {option} Level: {level}");
                     optionValue.Clear();
 
-                    return LinuxError.SUCCESS;
+                    return LinuxError.EOPNOTSUPP;
                 }
 
                 byte[] tempOptionValue = new byte[optionValue.Length];
@@ -326,6 +407,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
             }
         }
@@ -347,7 +433,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
                 {
                     Logger.Warning?.Print(LogClass.ServiceBsd, $"Unsupported SetSockOpt Option: {option} Level: {level}");
 
-                    return LinuxError.SUCCESS;
+                    return LinuxError.EOPNOTSUPP;
                 }
 
                 int value = optionValue.Length >= 4 ? MemoryMarshal.Read<int>(optionValue) : MemoryMarshal.Read<byte>(optionValue);
@@ -372,6 +458,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
             }
         }
@@ -400,7 +491,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             return true;
         }
 
-        private static IList<ArraySegment<byte>> ConvertMessagesToBuffer(BsdMMsgHdr message)
+        private static ArraySegment<byte>[] ConvertMessagesToBuffer(BsdMMsgHdr message)
         {
             int segmentCount = 0;
             int index = 0;
@@ -493,7 +584,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
 
             try
             {
-                int receiveSize = Socket.Receive(ConvertMessagesToBuffer(message), ConvertBsdSocketFlags(flags), out SocketError socketError);
+                int receiveSize = (Socket as DefaultSocket).BaseSocket.Receive(ConvertMessagesToBuffer(message), ConvertBsdSocketFlags(flags), out SocketError socketError);
 
                 if (receiveSize > 0)
                 {
@@ -504,6 +595,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
             }
         }
@@ -531,7 +627,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
 
             try
             {
-                int sendSize = Socket.Send(ConvertMessagesToBuffer(message), ConvertBsdSocketFlags(flags), out SocketError socketError);
+                int sendSize = (Socket as DefaultSocket).BaseSocket.Send(ConvertMessagesToBuffer(message), ConvertBsdSocketFlags(flags), out SocketError socketError);
 
                 if (sendSize > 0)
                 {
@@ -542,6 +638,11 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Bsd.Impl
             }
             catch (SocketException exception)
             {
+                if (exception.SocketErrorCode != SocketError.WouldBlock)
+                {
+                    Logger.Warning?.Print(LogClass.ServiceBsd, $"Socket Exception: {exception}");
+                }
+
                 return WinSockHelper.ConvertError((WsaError)exception.ErrorCode);
             }
         }

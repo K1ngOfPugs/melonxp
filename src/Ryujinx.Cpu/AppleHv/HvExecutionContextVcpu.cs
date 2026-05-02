@@ -1,19 +1,20 @@
 using ARMeilleure.State;
 using Ryujinx.Memory;
-using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace Ryujinx.Cpu.AppleHv
 {
     [SupportedOSPlatform("macos")]
-    [SupportedOSPlatform("ios")]
     class HvExecutionContextVcpu : IHvExecutionContext
     {
         private static readonly MemoryBlock _setSimdFpRegFuncMem;
-        private delegate HvResult SetSimdFpReg(ulong vcpu, HvSimdFPReg reg, in V128 value, IntPtr funcPtr);
+        private delegate HvResult SetSimdFpReg(ulong vcpu, HvSimdFPReg reg, in V128 value, nint funcPtr);
         private static readonly SetSimdFpReg _setSimdFpReg;
-        private static readonly IntPtr _setSimdFpRegNativePtr;
+        private static readonly nint _setSimdFpRegNativePtr;
+
+        public ulong ThreadUid { get; set; }
 
         static HvExecutionContextVcpu()
         {
@@ -26,7 +27,7 @@ namespace Ryujinx.Cpu.AppleHv
 
             _setSimdFpReg = Marshal.GetDelegateForFunctionPointer<SetSimdFpReg>(_setSimdFpRegFuncMem.Pointer);
 
-            if (NativeLibrary.TryLoad(HvApi.LibraryName, out IntPtr hvLibHandle))
+            if (NativeLibrary.TryLoad(HvApi.LibraryName, out nint hvLibHandle))
             {
                 _setSimdFpRegNativePtr = NativeLibrary.GetExport(hvLibHandle, nameof(HvApi.hv_vcpu_set_simd_fp_reg));
             }
@@ -137,6 +138,7 @@ namespace Ryujinx.Cpu.AppleHv
         }
 
         private readonly ulong _vcpu;
+        private int _interruptRequested;
 
         public HvExecutionContextVcpu(ulong vcpu)
         {
@@ -182,8 +184,16 @@ namespace Ryujinx.Cpu.AppleHv
 
         public void RequestInterrupt()
         {
-            ulong vcpu = _vcpu;
-            HvApi.hv_vcpus_exit(ref vcpu, 1);
+            if (Interlocked.Exchange(ref _interruptRequested, 1) == 0)
+            {
+                ulong vcpu = _vcpu;
+                HvApi.hv_vcpus_exit(ref vcpu, 1);
+            }
+        }
+
+        public bool GetAndClearInterruptRequested()
+        {
+            return Interlocked.Exchange(ref _interruptRequested, 0) != 0;
         }
     }
 }

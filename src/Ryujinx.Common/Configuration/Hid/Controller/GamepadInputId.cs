@@ -1,9 +1,8 @@
-using Ryujinx.Common.Utilities;
 using System.Text.Json.Serialization;
 
 namespace Ryujinx.Common.Configuration.Hid.Controller
 {
-    [JsonConverter(typeof(TypedStringEnumConverter<GamepadInputId>))]
+    [JsonConverter(typeof(JsonStringEnumConverter<GamepadInputId>))]
     public enum GamepadInputId : byte
     {
         Unbound,
@@ -46,10 +45,11 @@ namespace Ryujinx.Common.Configuration.Hid.Controller
         // PS5 touchpad button
         Touchpad,
 
-        // Virtual buttons for single joycon
+        // Virtual buttons for single joycon (left)
         SingleLeftTrigger0,
         SingleRightTrigger0,
 
+        // Virtual buttons for single joycon (right)
         SingleLeftTrigger1,
         SingleRightTrigger1,
 

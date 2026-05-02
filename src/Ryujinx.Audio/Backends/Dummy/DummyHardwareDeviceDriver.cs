@@ -9,20 +9,12 @@ namespace Ryujinx.Audio.Backends.Dummy
 {
     public class DummyHardwareDeviceDriver : IHardwareDeviceDriver
     {
-        private readonly ManualResetEvent _updateRequiredEvent;
-        private readonly ManualResetEvent _pauseEvent;
+        private readonly ManualResetEvent _updateRequiredEvent = new(false);
+        private readonly ManualResetEvent _pauseEvent = new(true);
 
         public static bool IsSupported => true;
 
-        public float Volume { get; set; }
-
-        public DummyHardwareDeviceDriver()
-        {
-            _updateRequiredEvent = new ManualResetEvent(false);
-            _pauseEvent = new ManualResetEvent(true);
-
-            Volume = 1f;
-        }
+        public float Volume { get; set; } = 1f;
 
         public IHardwareDeviceSession OpenDeviceSession(Direction direction, IVirtualMemoryManager memoryManager, SampleFormat sampleFormat, uint sampleRate, uint channelCount)
         {
@@ -60,7 +52,7 @@ namespace Ryujinx.Audio.Backends.Dummy
             Dispose(true);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -81,12 +73,12 @@ namespace Ryujinx.Audio.Backends.Dummy
 
         public bool SupportsDirection(Direction direction)
         {
-            return direction == Direction.Output || direction == Direction.Input;
+            return direction is Direction.Output or Direction.Input;
         }
 
         public bool SupportsChannelCount(uint channelCount)
         {
-            return channelCount == 1 || channelCount == 2 || channelCount == 6;
+            return channelCount is 1 or 2 or 6;
         }
     }
 }

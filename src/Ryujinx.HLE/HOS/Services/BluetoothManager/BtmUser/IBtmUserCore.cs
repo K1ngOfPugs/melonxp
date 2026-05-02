@@ -5,7 +5,7 @@ using Ryujinx.Horizon.Common;
 
 namespace Ryujinx.HLE.HOS.Services.BluetoothManager.BtmUser
 {
-    partial class IBtmUserCore : IpcService
+    class IBtmUserCore : IpcService
     {
         public KEvent _bleScanEvent;
         public int _bleScanEventHandle;

@@ -1,3 +1,4 @@
+using Ryujinx.Common;
 using Ryujinx.Common.Memory;
 using Silk.NET.Vulkan;
 using System;
@@ -9,9 +10,11 @@ namespace Ryujinx.Graphics.Vulkan
     /// </summary>
     class MultiFenceHolder
     {
+        public static readonly ObjectPool<FenceHolder[]> FencePool = new(() => new FenceHolder[CommandBufferPool.MaxCommandBuffers]);
+        
         private const int BufferUsageTrackingGranularity = 4096;
 
-        private readonly FenceHolder[] _fences;
+        public FenceHolder[] Fences { get; }
         private readonly BufferUsageBitmap _bufferUsageBitmap;
 
         /// <summary>
@@ -19,7 +22,7 @@ namespace Ryujinx.Graphics.Vulkan
         /// </summary>
         public MultiFenceHolder()
         {
-            _fences = new FenceHolder[CommandBufferPool.MaxCommandBuffers];
+            Fences = FencePool.Allocate();
         }
 
         /// <summary>
@@ -28,7 +31,7 @@ namespace Ryujinx.Graphics.Vulkan
         /// <param name="size">Size of the buffer</param>
         public MultiFenceHolder(int size)
         {
-            _fences = new FenceHolder[CommandBufferPool.MaxCommandBuffers];
+            Fences = FencePool.Allocate();
             _bufferUsageBitmap = new BufferUsageBitmap(size, BufferUsageTrackingGranularity);
         }
 
@@ -90,7 +93,7 @@ namespace Ryujinx.Graphics.Vulkan
         /// <returns>True if the command buffer's previous fence value was null</returns>
         public bool AddFence(int cbIndex, FenceHolder fence)
         {
-            ref FenceHolder fenceRef = ref _fences[cbIndex];
+            ref FenceHolder fenceRef = ref Fences[cbIndex];
 
             if (fenceRef == null)
             {
@@ -107,7 +110,7 @@ namespace Ryujinx.Graphics.Vulkan
         /// <param name="cbIndex">Command buffer index of the command buffer that owns the fence</param>
         public void RemoveFence(int cbIndex)
         {
-            _fences[cbIndex] = null;
+            Fences[cbIndex] = null;
         }
 
         /// <summary>
@@ -117,7 +120,7 @@ namespace Ryujinx.Graphics.Vulkan
         /// <returns>True if referenced, false otherwise</returns>
         public bool HasFence(int cbIndex)
         {
-            return _fences[cbIndex] != null;
+            return Fences[cbIndex] != null;
         }
 
         /// <summary>
@@ -227,9 +230,9 @@ namespace Ryujinx.Graphics.Vulkan
         {
             int count = 0;
 
-            for (int i = 0; i < _fences.Length; i++)
+            for (int i = 0; i < Fences.Length; i++)
             {
-                var fence = _fences[i];
+                FenceHolder fence = Fences[i];
 
                 if (fence != null)
                 {
@@ -251,9 +254,9 @@ namespace Ryujinx.Graphics.Vulkan
         {
             int count = 0;
 
-            for (int i = 0; i < _fences.Length; i++)
+            for (int i = 0; i < Fences.Length; i++)
             {
-                var fence = _fences[i];
+                FenceHolder fence = Fences[i];
 
                 if (fence != null && _bufferUsageBitmap.OverlapsWith(i, offset, size))
                 {

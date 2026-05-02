@@ -1,5 +1,4 @@
 using Ryujinx.Common.Memory;
-using System.Buffers;
 
 namespace Ryujinx.Graphics.GAL
 {

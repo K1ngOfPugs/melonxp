@@ -103,7 +103,7 @@ namespace Ryujinx.HLE.HOS.Services.Caps
                 };
 
                 // NOTE: The hex hash is a HMAC-SHA256 (first 32 bytes) using a hardcoded secret key over the titleId, we can simulate it by hashing the titleId instead.
-                string hash = Convert.ToHexString(SHA256.HashData(BitConverter.GetBytes(titleId))).Remove(0x20);
+                string hash = Convert.ToHexString(SHA256.HashData(BitConverter.GetBytes(titleId)))[..0x20];
                 string folderPath = Path.Combine(_sdCardPath, "Nintendo", "Album", currentDateTime.Year.ToString("00"), currentDateTime.Month.ToString("00"), currentDateTime.Day.ToString("00"));
                 string filePath = GenerateFilePath(folderPath, applicationAlbumEntry, currentDateTime, hash);
 
@@ -118,10 +118,13 @@ namespace Ryujinx.HLE.HOS.Services.Caps
                 }
 
                 // NOTE: The saved JPEG file doesn't have the limitation in the extra EXIF data.
-                using var bitmap = new SKBitmap(new SKImageInfo(1280, 720, SKColorType.Rgba8888));
-                Marshal.Copy(screenshotData, 0, bitmap.GetPixels(), screenshotData.Length);
-                using var data = bitmap.Encode(SKEncodedImageFormat.Jpeg, 80);
-                using var file = File.OpenWrite(filePath);
+                using SKBitmap bitmap = new(new SKImageInfo(1280, 720, SKColorType.Rgba8888, SKAlphaType.Premul));
+                int dataLen = screenshotData.Length > bitmap.ByteCount ? bitmap.ByteCount : screenshotData.Length;
+
+                Marshal.Copy(screenshotData, 0, bitmap.GetPixels(), dataLen);
+
+                using SKData data = bitmap.Encode(SKEncodedImageFormat.Jpeg, 80);
+                using FileStream file = File.OpenWrite(filePath);
                 data.SaveTo(file);
 
                 return ResultCode.Success;

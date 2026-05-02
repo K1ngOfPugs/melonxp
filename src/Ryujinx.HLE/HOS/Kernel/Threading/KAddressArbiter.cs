@@ -3,7 +3,6 @@ using Ryujinx.HLE.HOS.Kernel.Process;
 using Ryujinx.Horizon.Common;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 
 namespace Ryujinx.HLE.HOS.Kernel.Threading
@@ -14,15 +13,17 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
 
         private readonly KernelContext _context;
 
-        private readonly List<KThread> _condVarThreads;
-        private readonly List<KThread> _arbiterThreads;
+        private readonly Dictionary<ulong, List<KThread>> _condVarThreads;
+        private readonly Dictionary<ulong, List<KThread>> _arbiterThreads;
+        private readonly ByDynamicPriority _byDynamicPriority;
 
         public KAddressArbiter(KernelContext context)
         {
             _context = context;
 
-            _condVarThreads = new List<KThread>();
-            _arbiterThreads = new List<KThread>();
+            _condVarThreads = [];
+            _arbiterThreads = [];
+            _byDynamicPriority = new ByDynamicPriority();
         }
 
         public Result ArbitrateLock(int ownerHandle, ulong mutexAddress, int requesterHandle)
@@ -138,9 +139,23 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
 
             currentThread.MutexAddress = mutexAddress;
             currentThread.ThreadHandleForUserMutex = threadHandle;
-            currentThread.CondVarAddress = condVarAddress;
 
-            _condVarThreads.Add(currentThread);
+            if (_condVarThreads.TryGetValue(condVarAddress, out List<KThread> threads))
+            {
+                int i = 0;
+
+                if (threads.Count > 0)
+                {
+                    i = threads.BinarySearch(currentThread, _byDynamicPriority);
+                    if (i < 0) i = ~i;
+                }
+                
+                threads.Insert(i, currentThread);
+            }
+            else
+            {
+                _condVarThreads.Add(condVarAddress, [currentThread]);
+            }
 
             if (timeout != 0)
             {
@@ -163,7 +178,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
 
             currentThread.MutexOwner?.RemoveMutexWaiter(currentThread);
 
-            _condVarThreads.Remove(currentThread);
+            _condVarThreads[condVarAddress].Remove(currentThread);
 
             _context.CriticalSection.Leave();
 
@@ -198,9 +213,15 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
         {
             _context.CriticalSection.Enter();
 
-            WakeThreads(_condVarThreads, count, TryAcquireMutex, x => x.CondVarAddress == address);
+            int validThreads = 0;
+            _condVarThreads.TryGetValue(address, out List<KThread> threads);
 
-            if (!_condVarThreads.Exists(x => x.CondVarAddress == address))
+            if (threads is not null && threads.Count > 0)
+            {
+                validThreads = WakeThreads(threads, count, TryAcquireMutex);
+            }
+            
+            if (validThreads == 0)
             {
                 KernelTransfer.KernelToUser(address, 0);
             }
@@ -308,9 +329,24 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
 
                 currentThread.MutexAddress = address;
                 currentThread.WaitingInArbitration = true;
+                
+                if (_arbiterThreads.TryGetValue(address, out List<KThread> threads))
+                {
+                    int i = 0;
 
-                _arbiterThreads.Add(currentThread);
-
+                    if (threads.Count > 0)
+                    {
+                        i = threads.BinarySearch(currentThread, _byDynamicPriority);
+                        if (i < 0) i = ~i;
+                    }
+                
+                    threads.Insert(i, currentThread);
+                }
+                else
+                {
+                    _arbiterThreads.Add(address, [currentThread]);
+                }
+                
                 currentThread.Reschedule(ThreadSchedState.Paused);
 
                 if (timeout > 0)
@@ -329,7 +365,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
 
                 if (currentThread.WaitingInArbitration)
                 {
-                    _arbiterThreads.Remove(currentThread);
+                    _arbiterThreads[address].Remove(currentThread);
 
                     currentThread.WaitingInArbitration = false;
                 }
@@ -385,9 +421,24 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
 
                 currentThread.MutexAddress = address;
                 currentThread.WaitingInArbitration = true;
+                
+                if (_arbiterThreads.TryGetValue(address, out List<KThread> threads))
+                {
+                    int i = 0;
 
-                _arbiterThreads.Add(currentThread);
-
+                    if (threads.Count > 0)
+                    {
+                        i = threads.BinarySearch(currentThread, _byDynamicPriority);
+                        if (i < 0) i = ~i;
+                    }
+                
+                    threads.Insert(i, currentThread);
+                }
+                else
+                {
+                    _arbiterThreads.Add(address, [currentThread]);
+                }
+                
                 currentThread.Reschedule(ThreadSchedState.Paused);
 
                 if (timeout > 0)
@@ -406,7 +457,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
 
                 if (currentThread.WaitingInArbitration)
                 {
-                    _arbiterThreads.Remove(currentThread);
+                    _arbiterThreads[address].Remove(currentThread);
 
                     currentThread.WaitingInArbitration = false;
                 }
@@ -479,14 +530,12 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
             // or equal to the Count of threads to be signaled, or Count is zero
             // or negative. It is incremented if there are no threads waiting.
             int waitingCount = 0;
-
-            foreach (KThread thread in _arbiterThreads.Where(x => x.MutexAddress == address))
+            
+            if (_arbiterThreads.TryGetValue(address, out List<KThread> threads))
             {
-                if (++waitingCount >= count)
-                {
-                    break;
-                }
+                waitingCount = threads.Count;
             }
+            
 
             if (waitingCount > 0)
             {
@@ -553,22 +602,37 @@ namespace Ryujinx.HLE.HOS.Kernel.Threading
                 thread.WaitingInArbitration = false;
             }
 
-            WakeThreads(_arbiterThreads, count, RemoveArbiterThread, x => x.MutexAddress == address);
+            _arbiterThreads.TryGetValue(address, out List<KThread> threads);
+
+            if (threads is not null && threads.Count > 0)
+            {
+                WakeThreads(threads, count, RemoveArbiterThread);
+            }
         }
 
-        private static void WakeThreads(
+        private static int WakeThreads(
             List<KThread> threads,
             int count,
-            Action<KThread> removeCallback,
-            Func<KThread, bool> predicate)
+            Action<KThread> removeCallback)
         {
-            var candidates = threads.Where(predicate).OrderBy(x => x.DynamicPriority);
-            var toSignal = (count > 0 ? candidates.Take(count) : candidates).ToArray();
+            int validCount = count > 0 ? Math.Min(count, threads.Count) : threads.Count;
 
-            foreach (KThread thread in toSignal)
+            for (int i = 0; i < validCount; i++)
             {
+                KThread thread = threads[i];
                 removeCallback(thread);
-                threads.Remove(thread);
+            }
+            
+            threads.RemoveRange(0, validCount);
+
+            return validCount;
+        }
+        
+        private class ByDynamicPriority : IComparer<KThread>
+        {
+            public int Compare(KThread x, KThread y)
+            {
+                return x!.DynamicPriority.CompareTo(y!.DynamicPriority);
             }
         }
     }

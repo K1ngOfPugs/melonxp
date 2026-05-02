@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 using LibHac.Common;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -20,60 +21,41 @@ using Image = SkiaSharp.SKImage;
 
 namespace Ryujinx.Ava.UI.ViewModels
 {
-    internal class UserFirmwareAvatarSelectorViewModel : BaseModel
+    public partial class UserFirmwareAvatarSelectorViewModel : BaseModel
     {
         private static readonly Dictionary<string, byte[]> _avatarStore = new();
 
-        private ObservableCollection<ProfileImageModel> _images;
-        private Color _backgroundColor = Colors.White;
+        [ObservableProperty]
+        public partial ObservableCollection<ProfileImageModel> Images { get; set; }
 
-        private int _selectedIndex;
+        [ObservableProperty]
+        public partial Color BackgroundColor { get; set; } = Colors.White;
 
         public UserFirmwareAvatarSelectorViewModel()
         {
-            _images = new ObservableCollection<ProfileImageModel>();
+            Images = [];
 
             LoadImagesFromStore();
-        }
-
-        public Color BackgroundColor
-        {
-            get => _backgroundColor;
-            set
+            PropertyChanged += (_, args) =>
             {
-                _backgroundColor = value;
-                OnPropertyChanged();
-                ChangeImageBackground();
-            }
-        }
-
-        public ObservableCollection<ProfileImageModel> Images
-        {
-            get => _images;
-            set
-            {
-                _images = value;
-                OnPropertyChanged();
-            }
+                if (args.PropertyName == nameof(BackgroundColor))
+                    ChangeImageBackground();
+            };
         }
 
         public int SelectedIndex
         {
-            get => _selectedIndex;
+            get;
             set
             {
-                _selectedIndex = value;
+                field = value;
 
-                if (_selectedIndex == -1)
-                {
-                    SelectedImage = null;
-                }
-                else
-                {
-                    SelectedImage = _images[_selectedIndex].Data;
-                }
+                SelectedImage = field == -1 
+                    ? null 
+                    : Images[field].Data;
 
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedImage));
             }
         }
 
@@ -83,7 +65,7 @@ namespace Ryujinx.Ava.UI.ViewModels
         {
             Images.Clear();
 
-            foreach (var image in _avatarStore)
+            foreach (KeyValuePair<string, byte[]> image in _avatarStore)
             {
                 Images.Add(new ProfileImageModel(image.Key, image.Value));
             }
@@ -91,7 +73,7 @@ namespace Ryujinx.Ava.UI.ViewModels
 
         private void ChangeImageBackground()
         {
-            foreach (var image in Images)
+            foreach (ProfileImageModel image in Images)
             {
                 image.BackgroundColor = new SolidColorBrush(BackgroundColor);
             }
@@ -119,7 +101,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                     // TODO: Parse DatabaseInfo.bin and table.bin files for more accuracy.
                     if (item.Type == DirectoryEntryType.File && item.FullPath.Contains("chara") && item.FullPath.Contains("szs"))
                     {
-                        using var file = new UniqueRef<IFile>();
+                        using UniqueRef<IFile> file = new();
 
                         romfs.OpenFile(ref file.Ref, ("/" + item.FullPath).ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
@@ -143,7 +125,7 @@ namespace Ryujinx.Ava.UI.ViewModels
             }
         }
 
-        private static byte[] DecompressYaz0(Stream stream)
+        private static byte[] DecompressYaz0(MemoryStream stream)
         {
             using BinaryReader reader = new(stream);
 

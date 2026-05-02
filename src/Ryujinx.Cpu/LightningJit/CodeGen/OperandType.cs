@@ -2,7 +2,7 @@ using System;
 
 namespace Ryujinx.Cpu.LightningJit.CodeGen
 {
-    public enum OperandType
+    enum OperandType
     {
         None,
         I32,
@@ -14,14 +14,11 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen
 
     static class OperandTypeExtensions
     {
-        public static bool IsInteger(this OperandType type)
+        extension(OperandType type)
         {
-            return type == OperandType.I32 || type == OperandType.I64;
-        }
+            public bool IsInteger => type is OperandType.I32 or OperandType.I64;
 
-        public static int GetSizeInBytes(this OperandType type)
-        {
-            return type switch
+            public int ByteSize => type switch
             {
                 OperandType.FP32 => 4,
                 OperandType.FP64 => 8,

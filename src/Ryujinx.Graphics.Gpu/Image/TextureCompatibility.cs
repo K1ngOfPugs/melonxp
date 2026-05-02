@@ -75,13 +75,14 @@ namespace Ryujinx.Graphics.Gpu.Image
 
             if (!caps.SupportsAstcCompression)
             {
-                if (info.FormatInfo.Format.IsAstcUnorm())
+                if (info.FormatInfo.Format.IsAstcUnorm)
                 {
                     return GraphicsConfig.EnableTextureRecompression
                         ? new FormatInfo(Format.Bc7Unorm, 4, 4, 16, 4)
                         : new FormatInfo(Format.R8G8B8A8Unorm, 1, 1, 4, 4);
                 }
-                else if (info.FormatInfo.Format.IsAstcSrgb())
+                
+                if (info.FormatInfo.Format.IsAstcSrgb)
                 {
                     return GraphicsConfig.EnableTextureRecompression
                         ? new FormatInfo(Format.Bc7Srgb, 4, 4, 16, 4)
@@ -151,9 +152,9 @@ namespace Ryujinx.Graphics.Gpu.Image
                     return new FormatInfo(Format.R8G8B8A8Unorm, 1, 1, 4, 4);
                 }
             }
-            else if (!caps.Supports5BitComponentFormat && info.FormatInfo.Format.Is16BitPacked())
+            else if (!caps.Supports5BitComponentFormat && info.FormatInfo.Format.Is16BitPacked)
             {
-                return new FormatInfo(info.FormatInfo.Format.IsBgr() ? Format.B8G8R8A8Unorm : Format.R8G8B8A8Unorm, 1, 1, 4, 4);
+                return new FormatInfo(info.FormatInfo.Format.IsBgr ? Format.B8G8R8A8Unorm : Format.R8G8B8A8Unorm, 1, 1, 4, 4);
             }
 
             return info.FormatInfo;
@@ -207,8 +208,8 @@ namespace Ryujinx.Graphics.Gpu.Image
                 return false; // Flushing this format is not supported, as it may have been converted to another host format.
             }
 
-            if (info.Target == Target.Texture2DMultisample ||
-                info.Target == Target.Texture2DMultisampleArray)
+            if (info.Target is Target.Texture2DMultisample or
+                Target.Texture2DMultisampleArray)
             {
                 return false; // Flushing multisample textures is not supported, the host does not allow getting their data.
             }
@@ -388,7 +389,7 @@ namespace Ryujinx.Graphics.Gpu.Image
 
                 return stride == rhs.Stride ? TextureViewCompatibility.CopyOnly : TextureViewCompatibility.LayoutIncompatible;
             }
-            else if (lhs.Target.IsMultisample() != rhs.Target.IsMultisample() && alignedWidthMatches && lhsAlignedSize.Height == rhsAlignedSize.Height)
+            else if (lhs.Target.IsMultisample != rhs.Target.IsMultisample && alignedWidthMatches && lhsAlignedSize.Height == rhsAlignedSize.Height)
             {
                 // Copy between multisample and non-multisample textures with mismatching size is allowed,
                 // as long aligned size matches.
@@ -644,7 +645,7 @@ namespace Ryujinx.Graphics.Gpu.Image
             FormatInfo lhsFormat = lhs.FormatInfo;
             FormatInfo rhsFormat = rhs.FormatInfo;
 
-            if (lhsFormat.Format.IsDepthOrStencil() || rhsFormat.Format.IsDepthOrStencil())
+            if (lhsFormat.Format.IsDepthOrStencil || rhsFormat.Format.IsDepthOrStencil)
             {
                 bool forSampler = flags.HasFlag(TextureSearchFlags.ForSampler);
                 bool depthAlias = flags.HasFlag(TextureSearchFlags.DepthAlias);
@@ -758,43 +759,45 @@ namespace Ryujinx.Graphics.Gpu.Image
             {
                 case Target.Texture1D:
                 case Target.Texture1DArray:
-                    result = rhs.Target == Target.Texture1D ||
-                             rhs.Target == Target.Texture1DArray;
+                    result = rhs.Target is Target.Texture1D or
+                             Target.Texture1DArray;
                     break;
 
                 case Target.Texture2D:
-                    result = rhs.Target == Target.Texture2D ||
-                             rhs.Target == Target.Texture2DArray;
+                    result = rhs.Target is Target.Texture2D or
+                             Target.Texture2DArray;
                     break;
 
                 case Target.Texture2DArray:
-                    result = rhs.Target == Target.Texture2D ||
-                             rhs.Target == Target.Texture2DArray;
+                    result = rhs.Target is Target.Texture2D or
+                             Target.Texture2DArray;
 
-                    if (rhs.Target == Target.Cubemap || rhs.Target == Target.CubemapArray)
+                    if (rhs.Target is Target.Cubemap or Target.CubemapArray)
                     {
                         return caps.SupportsCubemapView ? TextureViewCompatibility.Full : TextureViewCompatibility.CopyOnly;
                     }
+
                     break;
                 case Target.Cubemap:
                 case Target.CubemapArray:
-                    result = rhs.Target == Target.Cubemap ||
-                             rhs.Target == Target.CubemapArray;
+                    result = rhs.Target is Target.Cubemap or
+                             Target.CubemapArray;
 
-                    if (rhs.Target == Target.Texture2D || rhs.Target == Target.Texture2DArray)
+                    if (rhs.Target is Target.Texture2D or Target.Texture2DArray)
                     {
                         return caps.SupportsCubemapView ? TextureViewCompatibility.Full : TextureViewCompatibility.CopyOnly;
                     }
+
                     break;
                 case Target.Texture2DMultisample:
                 case Target.Texture2DMultisampleArray:
-                    if (rhs.Target == Target.Texture2D || rhs.Target == Target.Texture2DArray)
+                    if (rhs.Target is Target.Texture2D or Target.Texture2DArray)
                     {
                         return TextureViewCompatibility.CopyOnly;
                     }
 
-                    result = rhs.Target == Target.Texture2DMultisample ||
-                             rhs.Target == Target.Texture2DMultisampleArray;
+                    result = rhs.Target is Target.Texture2DMultisample or
+                             Target.Texture2DMultisampleArray;
                     break;
 
                 case Target.Texture3D:

@@ -10,7 +10,7 @@ namespace Ryujinx.HLE.HOS.Services.Spl
     [Service("spl:manu")]
     [Service("spl:mig")]
     [Service("spl:ssl")]
-    partial class IGeneralInterface : IpcService
+    class IGeneralInterface : IpcService
     {
         public IGeneralInterface(ServiceCtx context) { }
 
@@ -51,6 +51,9 @@ namespace Ryujinx.HLE.HOS.Services.Spl
 
             context.ResponseData.Write(configValue);
 
+            if (result == SmcResult.Success)
+                return ResultCode.Success;
+
             return (ResultCode)((int)result << 9) | ResultCode.ModuleId;
         }
 
@@ -61,7 +64,7 @@ namespace Ryujinx.HLE.HOS.Services.Spl
 #pragma warning disable IDE0059 // Remove unnecessary value assignment
             SystemVersion version = context.Device.System.ContentManager.GetCurrentFirmwareVersion();
 #pragma warning restore IDE0059
-            MemorySize memorySize = context.Device.Configuration.MemoryConfiguration.ToKernelMemorySize();
+            MemorySize memorySize = context.Device.Configuration.MemoryConfiguration.KernelMemorySize;
 
             switch (configItem)
             {
@@ -81,6 +84,7 @@ namespace Ryujinx.HLE.HOS.Services.Spl
                     {
                         configValue = (ulong)DramId.IcosaSamsung4GiB;
                     }
+
                     break;
                 case ConfigItem.SecurityEngineInterruptNumber:
                     return SmcResult.NotImplemented;

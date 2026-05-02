@@ -6,7 +6,7 @@ using System;
 
 namespace Ryujinx.HLE.HOS.Services.Ns.Aoc
 {
-    partial class IPurchaseEventManager : IpcService
+    class IPurchaseEventManager : IpcService
     {
         private readonly KEvent _purchasedEvent;
 
@@ -62,7 +62,7 @@ namespace Ryujinx.HLE.HOS.Services.Ns.Aoc
 
             Logger.Debug?.PrintStub(LogClass.ServiceNs); // NOTE: Uses Debug to avoid spamming.
 
-            return ResultCode.Success;
+            return ResultCode.NoPurchasedProductInfoAvailable;
         }
     }
 }

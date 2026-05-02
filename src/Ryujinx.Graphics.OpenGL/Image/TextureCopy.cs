@@ -53,7 +53,7 @@ namespace Ryujinx.Graphics.OpenGL.Image
             int layers,
             int levels)
         {
-            TextureView srcConverted = src.Format.IsBgr() != dst.Format.IsBgr() ? BgraSwap(src) : src;
+            TextureView srcConverted = src.Format.IsBgr != dst.Format.IsBgr ? BgraSwap(src) : src;
 
             (int oldDrawFramebufferHandle, int oldReadFramebufferHandle) = ((Pipeline)_renderer.Pipeline).GetBoundFramebuffers();
 
@@ -87,7 +87,7 @@ namespace Ryujinx.Graphics.OpenGL.Image
 
                     ClearBufferMask mask = GetMask(src.Format);
 
-                    if ((mask & (ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit)) != 0 || src.Format.IsInteger())
+                    if ((mask & (ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit)) != 0 || src.Format.IsInt)
                     {
                         linearFilter = false;
                     }
@@ -290,7 +290,7 @@ namespace Ryujinx.Graphics.OpenGL.Image
 
         private static FramebufferAttachment AttachmentForFormat(Format format)
         {
-            if (format == Format.D24UnormS8Uint || format == Format.D32FloatS8Uint)
+            if (format is Format.D24UnormS8Uint or Format.D32FloatS8Uint)
             {
                 return FramebufferAttachment.DepthStencilAttachment;
             }
@@ -464,7 +464,7 @@ namespace Ryujinx.Graphics.OpenGL.Image
                 _copyPboSize = requiredSize;
 
                 GL.BindBuffer(BufferTarget.PixelPackBuffer, _copyPboHandle);
-                GL.BufferData(BufferTarget.PixelPackBuffer, requiredSize, IntPtr.Zero, BufferUsageHint.DynamicCopy);
+                GL.BufferData(BufferTarget.PixelPackBuffer, requiredSize, nint.Zero, BufferUsageHint.DynamicCopy);
             }
         }
 

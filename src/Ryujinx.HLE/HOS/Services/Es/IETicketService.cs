@@ -1,7 +1,7 @@
 namespace Ryujinx.HLE.HOS.Services.Es
 {
     [Service("es")]
-    partial class IETicketService : IpcService
+    class IETicketService : IpcService
     {
         public IETicketService(ServiceCtx context) { }
     }

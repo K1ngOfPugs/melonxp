@@ -13,6 +13,5 @@ namespace Ryujinx.Cpu.LightningJit
         public static int RunningOffset => NativeContext.GetRunningOffset();
         public static int CounterOffset => NativeContext.GetCounterOffset();
         public static int DispatchAddressOffset => NativeContext.GetDispatchAddressOffset();
-        public static int PageTablePointerOffset => NativeContext.GetPageTablePointerOffset();
     }
 }

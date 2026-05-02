@@ -83,7 +83,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
             {
                 if (context.Definitions.Stage == ShaderStage.Geometry)
                 {
-                    string inPrimitive = context.Definitions.InputTopology.ToGlslString();
+                    string inPrimitive = context.Definitions.InputTopology.GlslString;
 
                     context.AppendLine($"layout (invocations = {context.Definitions.ThreadsPerInputPrimitive}, {inPrimitive}) in;");
 
@@ -98,7 +98,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
                     }
                     else
                     {
-                        string outPrimitive = context.Definitions.OutputTopology.ToGlslString();
+                        string outPrimitive = context.Definitions.OutputTopology.GlslString;
                         int maxOutputVertices = context.Definitions.MaxOutputVertices;
 
                         context.AppendLine($"layout ({outPrimitive}, max_vertices = {maxOutputVertices}) out;");
@@ -123,8 +123,8 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
                         tessCw = !tessCw;
                     }
 
-                    string patchType = context.Definitions.TessPatchType.ToGlsl();
-                    string spacing = context.Definitions.TessSpacing.ToGlsl();
+                    string patchType = context.Definitions.TessPatchType.Glsl;
+                    string spacing = context.Definitions.TessSpacing.Glsl;
                     string windingOrder = tessCw ? "cw" : "ccw";
 
                     context.AppendLine($"layout ({patchType}, {spacing}, {windingOrder}) in;");
@@ -149,7 +149,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
 
                 if (context.Definitions.TransformFeedbackEnabled && context.Definitions.LastInVertexPipeline)
                 {
-                    var tfOutput = context.Definitions.GetTransformFeedbackOutput(AttributeConsts.PositionX);
+                    TransformFeedbackOutput tfOutput = context.Definitions.GetTransformFeedbackOutput(AttributeConsts.PositionX);
                     if (tfOutput.Valid)
                     {
                         context.AppendLine($"layout (xfb_buffer = {tfOutput.Buffer}, xfb_offset = {tfOutput.Offset}, xfb_stride = {tfOutput.Stride}) out gl_PerVertex");
@@ -338,7 +338,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
 
         private static void DeclareSamplers(CodeGenContext context, IEnumerable<TextureDefinition> definitions)
         {
-            foreach (var definition in definitions)
+            foreach (TextureDefinition definition in definitions)
             {
                 string arrayDecl = string.Empty;
 
@@ -351,7 +351,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
                     arrayDecl = "[]";
                 }
 
-                string samplerTypeName = definition.Separate ? definition.Type.ToGlslTextureType() : definition.Type.ToGlslSamplerType();
+                string samplerTypeName = definition.Separate ? definition.Type.GlslTextureTypeName : definition.Type.GlslSamplerTypeName;
 
                 string layout = string.Empty;
 
@@ -366,7 +366,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
 
         private static void DeclareImages(CodeGenContext context, IEnumerable<TextureDefinition> definitions)
         {
-            foreach (var definition in definitions)
+            foreach (TextureDefinition definition in definitions)
             {
                 string arrayDecl = string.Empty;
 
@@ -379,7 +379,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
                     arrayDecl = "[]";
                 }
 
-                string imageTypeName = definition.Type.ToGlslImageType(definition.Format.GetComponentType());
+                string imageTypeName = definition.Type.GetGlslImageTypeName(definition.Format.GetComponentType());
 
                 if (definition.Flags.HasFlag(TextureUsageFlags.ImageCoherent))
                 {
@@ -413,7 +413,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
             }
             else
             {
-                foreach (var ioDefinition in inputs.OrderBy(x => x.Location))
+                foreach (IoDefinition ioDefinition in inputs.OrderBy(x => x.Location))
                 {
                     DeclareInputAttribute(context, ioDefinition.Location, ioDefinition.Component);
                 }
@@ -427,7 +427,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
 
         private static void DeclareInputAttributesPerPatch(CodeGenContext context, IEnumerable<IoDefinition> inputs)
         {
-            foreach (var ioDefinition in inputs.OrderBy(x => x.Location))
+            foreach (IoDefinition ioDefinition in inputs.OrderBy(x => x.Location))
             {
                 DeclareInputAttributePerPatch(context, ioDefinition.Location);
             }
@@ -512,16 +512,12 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
                 if (context.Definitions.Stage == ShaderStage.Fragment && context.Definitions.DualSourceBlend)
                 {
                     IoDefinition firstOutput = outputs.ElementAtOrDefault(0);
-                    IoDefinition secondOutput = outputs.ElementAtOrDefault(1);
 
-                    if (firstOutput.Location + 1 == secondOutput.Location)
-                    {
-                        DeclareOutputDualSourceBlendAttribute(context, firstOutput.Location);
-                        outputs = outputs.Skip(2);
-                    }
+                    DeclareOutputDualSourceBlendAttribute(context, firstOutput.Location);
+                    outputs = outputs.Skip(2);
                 }
 
-                foreach (var ioDefinition in outputs)
+                foreach (IoDefinition ioDefinition in outputs)
                 {
                     DeclareOutputAttribute(context, ioDefinition.Location, ioDefinition.Component);
                 }
@@ -548,7 +544,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
 
                     string xfb = string.Empty;
 
-                    var tfOutput = context.Definitions.GetTransformFeedbackOutput(location, component);
+                    TransformFeedbackOutput tfOutput = context.Definitions.GetTransformFeedbackOutput(location, component);
                     if (tfOutput.Valid)
                     {
                         xfb = $", xfb_buffer = {tfOutput.Buffer}, xfb_offset = {tfOutput.Offset}, xfb_stride = {tfOutput.Stride}";
@@ -570,7 +566,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
 
                     string xfb = string.Empty;
 
-                    var tfOutput = context.Definitions.GetTransformFeedbackOutput(location, 0);
+                    TransformFeedbackOutput tfOutput = context.Definitions.GetTransformFeedbackOutput(location, 0);
                     if (tfOutput.Valid)
                     {
                         xfb = $", xfb_buffer = {tfOutput.Buffer}, xfb_offset = {tfOutput.Offset}, xfb_stride = {tfOutput.Stride}";
@@ -606,7 +602,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
 
         private static void DeclareOutputAttributesPerPatch(CodeGenContext context, IEnumerable<IoDefinition> outputs)
         {
-            foreach (var ioDefinition in outputs)
+            foreach (IoDefinition ioDefinition in outputs)
             {
                 DeclareOutputAttributePerPatch(context, ioDefinition.Location);
             }
@@ -633,9 +629,9 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl
             }
             else
             {
-                return stage == ShaderStage.TessellationControl ||
-                       stage == ShaderStage.TessellationEvaluation ||
-                       stage == ShaderStage.Geometry;
+                return stage is ShaderStage.TessellationControl or
+                       ShaderStage.TessellationEvaluation or
+                       ShaderStage.Geometry;
             }
         }
 

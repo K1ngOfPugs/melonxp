@@ -8,14 +8,14 @@ using System.Collections.Generic;
 namespace Ryujinx.HLE.HOS.Services.Ns.Aoc
 {
     [Service("aoc:u")]
-    partial class IAddOnContentManager : IpcService
+    class IAddOnContentManager : IpcService
     {
         private readonly KEvent _addOnContentListChangedEvent;
         private int _addOnContentListChangedEventHandle;
 
         private ulong _addOnContentBaseId;
 
-        private readonly List<ulong> _mountedAocTitleIds = new();
+        private readonly List<ulong> _mountedAocTitleIds = [];
 
         public IAddOnContentManager(ServiceCtx context)
         {

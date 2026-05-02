@@ -63,6 +63,7 @@ namespace Ryujinx.HLE.HOS.Kernel
             TickSource = tickSource;
             Device = device;
             Memory = memory;
+            KScheduler.CpuCoresCount = device.CpuCoresCount;
 
             Running = true;
 
@@ -116,7 +117,7 @@ namespace Ryujinx.HLE.HOS.Kernel
                 KScheduler.PreemptionThreadLoop(this);
             }
 
-            new Thread(PreemptionThreadStart, 4096 * 100) { Name = "HLE.PreemptionThread" }.Start();
+            new Thread(PreemptionThreadStart) { Name = "HLE.PreemptionThread" }.Start();
         }
 
         public void CommitMemory(ulong address, ulong size)

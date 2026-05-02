@@ -21,13 +21,21 @@ namespace ARMeilleure.State
             public ulong ExclusiveValueLow;
             public ulong ExclusiveValueHigh;
             public int Running;
+            public long Tpidr2El0;
+            public int CallDepth;
+            
+            /// <summary>
+            /// Precise PC value used for debugging.
+            /// This will only be set when Optimizations.EnableDebugging is true.
+            /// </summary>
+            public ulong DebugPrecisePc;
         }
 
         private static NativeCtxStorage _dummyStorage = new();
 
         private readonly IJitMemoryBlock _block;
 
-        public IntPtr BasePtr => _block.Pointer;
+        public nint BasePtr => _block.Pointer;
 
         public NativeContext(IJitMemoryAllocator allocator)
         {
@@ -38,6 +46,11 @@ namespace ARMeilleure.State
 
         public ulong GetPc()
         {
+            if (Optimizations.EnableDebugging)
+            {
+                return GetStorage().DebugPrecisePc;
+            }
+
             // TODO: More precise tracking of PC value.
             return GetStorage().DispatchAddress;
         }
@@ -110,6 +123,7 @@ namespace ARMeilleure.State
             {
                 value |= GetStorage().Flags[flag] != 0 ? 1u << flag : 0u;
             }
+
             return value;
         }
 
@@ -154,6 +168,7 @@ namespace ARMeilleure.State
                     value |= GetStorage().FpFlags[flag] != 0 ? bit : 0u;
                 }
             }
+
             return value;
         }
 
@@ -176,11 +191,16 @@ namespace ARMeilleure.State
         public long GetTpidrroEl0() => GetStorage().TpidrroEl0;
         public void SetTpidrroEl0(long value) => GetStorage().TpidrroEl0 = value;
 
+        public long GetTpidr2El0() => GetStorage().Tpidr2El0;
+        public void SetTpidr2El0(long value) => GetStorage().Tpidr2El0 = value;
+
         public int GetCounter() => GetStorage().Counter;
         public void SetCounter(int value) => GetStorage().Counter = value;
 
         public bool GetRunning() => GetStorage().Running != 0;
         public void SetRunning(bool value) => GetStorage().Running = value ? 1 : 0;
+
+        public void ResetCallDepth() => GetStorage().CallDepth = 0;
 
         public unsafe static int GetRegisterOffset(Register reg)
         {
@@ -232,6 +252,11 @@ namespace ARMeilleure.State
             return StorageOffset(ref _dummyStorage, ref _dummyStorage.TpidrroEl0);
         }
 
+        public static int GetTpidr2El0Offset()
+        {
+            return StorageOffset(ref _dummyStorage, ref _dummyStorage.Tpidr2El0);
+        }
+
         public static int GetCounterOffset()
         {
             return StorageOffset(ref _dummyStorage, ref _dummyStorage.Counter);
@@ -255,6 +280,16 @@ namespace ARMeilleure.State
         public static int GetRunningOffset()
         {
             return StorageOffset(ref _dummyStorage, ref _dummyStorage.Running);
+        }
+
+        public static int GetDebugPrecisePcOffset()
+        {
+            return StorageOffset(ref _dummyStorage, ref _dummyStorage.DebugPrecisePc);
+        }
+
+        public static int GetCallDepthOffset()
+        {
+            return StorageOffset(ref _dummyStorage, ref _dummyStorage.CallDepth);
         }
 
         private static int StorageOffset<T>(ref NativeCtxStorage storage, ref T target)

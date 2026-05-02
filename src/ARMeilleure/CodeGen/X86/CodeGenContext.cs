@@ -1,14 +1,14 @@
 using ARMeilleure.CodeGen.RegisterAllocators;
 using ARMeilleure.IntermediateRepresentation;
+using Microsoft.IO;
 using Ryujinx.Common.Memory;
-using System.IO;
 using System.Numerics;
 
 namespace ARMeilleure.CodeGen.X86
 {
     class CodeGenContext
     {
-        private readonly Stream _stream;
+        private readonly RecyclableMemoryStream _stream;
         private readonly Operand[] _blockLabels;
 
         public int StreamOffset => (int)_stream.Length;

@@ -25,7 +25,7 @@ namespace Ryujinx.HLE.HOS
         {
             if (_tamperThread == null || !_tamperThread.IsAlive)
             {
-                _tamperThread = new Thread(this.TamperRunner, 4096 * 100)
+                _tamperThread = new Thread(this.TamperRunner)
                 {
                     Name = "HLE.TamperMachine",
                 };
@@ -46,14 +46,10 @@ namespace Ryujinx.HLE.HOS
 
             if (program != null)
             {
-                Logger.Info?.Print(LogClass.TamperMachine, $"Installing tampering program {name} on process {info.Process.Pid} ({info.Process.Name})");
                 program.TampersCodeMemory = false;
 
                 _programs.Enqueue(program);
                 _programDictionary.TryAdd($"{buildId}-{name}", program);
-            } else
-            {
-                Logger.Warning?.Print(LogClass.TamperMachine, $"Failed to compile tampering program {name} on process {info.Process.Pid} ({info.Process.Name})");
             }
 
             Activate();
@@ -74,29 +70,23 @@ namespace Ryujinx.HLE.HOS
 
         public void EnableCheats(string[] enabledCheats)
         {
-            // foreach (var program in _programDictionary.Values)
-            // {
-            //     program.IsEnabled = false;
-            // }
-
-            // foreach (var cheat in enabledCheats)
-            // {
-            //     if (_programDictionary.TryGetValue(cheat, out var program))
-            //     {
-            //         program.IsEnabled = true;
-            //     }
-            // }
-            
-            // simply enable all cheats since we don't have a way to select them yet
-            foreach (var program in _programDictionary.Values)
+            foreach (ITamperProgram program in _programDictionary.Values)
             {
-                program.IsEnabled = true;
+                program.IsEnabled = false;
+            }
+
+            foreach (string cheat in enabledCheats)
+            {
+                if (_programDictionary.TryGetValue(cheat, out ITamperProgram program))
+                {
+                    program.IsEnabled = true;
+                }
             }
         }
 
         private static bool IsProcessValid(ITamperedProcess process)
         {
-            return process.State != ProcessState.Crashed && process.State != ProcessState.Exiting && process.State != ProcessState.Exited;
+            return process.State is not ProcessState.Crashed and not ProcessState.Exiting and not ProcessState.Exited;
         }
 
         private void TamperRunner()
@@ -173,11 +163,6 @@ namespace Ryujinx.HLE.HOS
                 {
                     Logger.Debug?.Print(LogClass.TamperMachine, ex.Message);
                 }
-
-                if (!string.IsNullOrEmpty(ex.StackTrace))
-                {
-                    Logger.Debug?.Print(LogClass.TamperMachine, ex.StackTrace);
-                }
             }
 
             return true;
@@ -188,7 +173,7 @@ namespace Ryujinx.HLE.HOS
             // Look for the input of the player one or the handheld.
             foreach (GamepadInput input in gamepadInputs)
             {
-                if (input.PlayerId == PlayerIndex.Player1 || input.PlayerId == PlayerIndex.Handheld)
+                if (input.PlayerId is PlayerIndex.Player1 or PlayerIndex.Handheld)
                 {
                     Volatile.Write(ref _pressedKeys, (long)input.Buttons);
 

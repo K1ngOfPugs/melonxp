@@ -413,7 +413,7 @@ namespace Ryujinx.HLE.HOS
         }
 
         // Assumes searchDirPaths don't overlap
-        private static void CollectMods(Dictionary<ulong, ModCache> modCaches, PatchCache patches, params string[] searchDirPaths)
+        private static void CollectMods(Dictionary<ulong, ModCache> modCaches, PatchCache patches, params ReadOnlySpan<string> searchDirPaths)
         {
             static bool IsPatchesDir(string name) => StrEquals(AmsNsoPatchDir, name) ||
                                                      StrEquals(AmsNroPatchDir, name) ||
@@ -463,7 +463,7 @@ namespace Ryujinx.HLE.HOS
             patches.Initialized = true;
         }
 
-        public void CollectMods(IEnumerable<ulong> applications, params string[] searchDirPaths)
+        public void CollectMods(IEnumerable<ulong> applications, params ReadOnlySpan<string> searchDirPaths)
         {
             Clear();
 
@@ -650,7 +650,7 @@ namespace Ryujinx.HLE.HOS
                         nsos[i] = new NsoExecutable(stream.AsStorage(), nsoName);
                         Logger.Info?.Print(LogClass.ModLoader, $"NSO '{nsoName}' replaced");
                         stream.Seek(0, SeekOrigin.Begin);
-                        tempHash += ToHexStringLower(MD5.HashData(stream));
+                        tempHash += Convert.ToHexStringLower(MD5.HashData(stream));
                     }
 
                     modLoadResult.Stubs[1 << i] |= File.Exists(Path.Combine(mod.Path.FullName, nsoName + StubExtension));
@@ -684,7 +684,7 @@ namespace Ryujinx.HLE.HOS
 
             if (!string.IsNullOrEmpty(tempHash))
             {
-                modLoadResult.Hash += ToHexStringLower(MD5.HashData(tempHash.ToBytes()));
+                modLoadResult.Hash += Convert.ToHexStringLower(MD5.HashData(tempHash.ToBytes()));
             }
 
             return modLoadResult;
@@ -704,12 +704,7 @@ namespace Ryujinx.HLE.HOS
             ApplyProgramPatches(nroPatches, 0, nro);
         }
 
-        public static string ToHexStringLower(byte[] bytes)
-        {
-            return Convert.ToHexString(bytes).ToLowerInvariant();
-        }
-
-        internal bool ApplyNsoPatches(ulong applicationId, params IExecutable[] programs)
+        internal bool ApplyNsoPatches(ulong applicationId, params ReadOnlySpan<IExecutable> programs)
         {
             IEnumerable<Mod<DirectoryInfo>> nsoMods = _patches.NsoPatches;
 
@@ -766,18 +761,14 @@ namespace Ryujinx.HLE.HOS
         {
             DirectoryInfo contentDirectory = FindApplicationDir(new DirectoryInfo(Path.Combine(GetModsBasePath(), AmsContentsDir)), $"{applicationId:x16}");
             string enabledCheatsPath = Path.Combine(contentDirectory.FullName, CheatDir, "enabled.txt");
-            string[] enabledCheats = Array.Empty<string>();
 
             if (File.Exists(enabledCheatsPath))
             {
-                enabledCheats = File.ReadAllLines(enabledCheatsPath);
+                tamperMachine.EnableCheats(File.ReadAllLines(enabledCheatsPath));
             }
-
-            tamperMachine.EnableCheats(enabledCheats);
-
         }
 
-        private static bool ApplyProgramPatches(IEnumerable<Mod<DirectoryInfo>> mods, int protectedOffset, params IExecutable[] programs)
+        private static bool ApplyProgramPatches(IEnumerable<Mod<DirectoryInfo>> mods, int protectedOffset, params ReadOnlySpan<IExecutable> programs)
         {
             int count = 0;
 

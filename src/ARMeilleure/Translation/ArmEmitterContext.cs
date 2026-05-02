@@ -6,7 +6,6 @@ using ARMeilleure.Instructions;
 using ARMeilleure.IntermediateRepresentation;
 using ARMeilleure.Memory;
 using ARMeilleure.State;
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using static ARMeilleure.IntermediateRepresentation.Operand.Factory;
@@ -46,28 +45,30 @@ namespace ARMeilleure.Translation
         public IMemoryManager Memory { get; }
 
         public EntryTable<uint> CountTable { get; }
-        public AddressTable<ulong> FunctionTable { get; }
+        public IAddressTable<ulong> FunctionTable { get; }
         public TranslatorStubs Stubs { get; }
 
         public ulong EntryAddress { get; }
         public bool HighCq { get; }
         public bool HasPtc { get; }
         public Aarch32Mode Mode { get; }
+        public bool IsSingleStep { get; }
 
         private int _ifThenBlockStateIndex = 0;
-        private Condition[] _ifThenBlockState = Array.Empty<Condition>();
+        private Condition[] _ifThenBlockState = [];
         public bool IsInIfThenBlock => _ifThenBlockStateIndex < _ifThenBlockState.Length;
         public Condition CurrentIfThenBlockCond => _ifThenBlockState[_ifThenBlockStateIndex];
 
         public ArmEmitterContext(
             IMemoryManager memory,
             EntryTable<uint> countTable,
-            AddressTable<ulong> funcTable,
+            IAddressTable<ulong> funcTable,
             TranslatorStubs stubs,
             ulong entryAddress,
             bool highCq,
             bool hasPtc,
-            Aarch32Mode mode)
+            Aarch32Mode mode,
+            bool isSingleStep)
         {
             Memory = memory;
             CountTable = countTable;
@@ -77,6 +78,7 @@ namespace ARMeilleure.Translation
             HighCq = highCq;
             HasPtc = hasPtc;
             Mode = mode;
+            IsSingleStep = isSingleStep;
 
             _labels = new Dictionary<ulong, Operand>();
         }
@@ -92,7 +94,7 @@ namespace ARMeilleure.Translation
             else
             {
                 int index = Delegates.GetDelegateIndex(info);
-                IntPtr funcPtr = Delegates.GetDelegateFuncPtrByIndex(index);
+                nint funcPtr = Delegates.GetDelegateFuncPtrByIndex(index);
 
                 OperandType returnType = GetOperandType(info.ReturnType);
 

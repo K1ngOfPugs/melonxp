@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
 {
-    public struct Assembler
+    struct Assembler
     {
         private const uint SfFlag = 1u << 31;
 
@@ -26,7 +26,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
         public Assembler(CodeWriter writer)
         {
             _code = writer.GetList();
-            _labels = new List<LabelState>();
+            _labels = [];
         }
 
         public readonly Operand CreateLabel()
@@ -41,7 +41,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
         {
             int targetIndex = _code.Count;
 
-            var state = _labels[label.AsInt32()];
+            LabelState state = _labels[label.AsInt32()];
 
             state.TargetIndex = targetIndex;
             state.HasTarget = true;
@@ -68,7 +68,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
         {
             int branchIndex = _code.Count;
 
-            var state = _labels[label.AsInt32()];
+            LabelState state = _labels[label.AsInt32()];
 
             state.BranchIndex = branchIndex;
             state.HasBranch = true;
@@ -94,7 +94,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
         {
             int branchIndex = _code.Count;
 
-            var state = _labels[label.AsInt32()];
+            LabelState state = _labels[label.AsInt32()];
 
             state.BranchIndex = branchIndex;
             state.HasBranch = true;
@@ -113,7 +113,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
         {
             int branchIndex = _code.Count;
 
-            var state = _labels[label.AsInt32()];
+            LabelState state = _labels[label.AsInt32()];
 
             state.BranchIndex = branchIndex;
             state.HasBranch = true;
@@ -342,7 +342,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
 
         public readonly void Cset(Operand rd, ArmCondition condition)
         {
-            var zr = new Operand(ZrRegister, RegisterType.Integer, rd.Type);
+            Operand zr = new(ZrRegister, RegisterType.Integer, rd.Type);
             Csinc(rd, zr, zr, (ArmCondition)((int)condition ^ 1));
         }
 
@@ -673,7 +673,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
 
         public readonly void Mov(Operand rd, Operand rn)
         {
-            Debug.Assert(rd.Type.IsInteger());
+            Debug.Assert(rd.Type.IsInteger);
             Orr(rd, new Operand(ZrRegister, RegisterType.Integer, rd.Type), rn);
         }
 
@@ -857,7 +857,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
 
         public readonly void PrfmI(Operand rn, int imm, uint type, uint target, uint policy)
         {
-            Operand rt = new Operand((int)EncodeTypeTargetPolicy(type, target, policy), RegisterType.Integer, OperandType.I32);
+            Operand rt = new((int)EncodeTypeTargetPolicy(type, target, policy), RegisterType.Integer, OperandType.I32);
             WriteInstruction(0xf9800000u | (EncodeUImm12(imm, 3) << 10), rt, rn);
         }
 
@@ -868,7 +868,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
 
         public readonly void Prfum(Operand rn, int imm, uint type, uint target, uint policy)
         {
-            Operand rt = new Operand((int)EncodeTypeTargetPolicy(type, target, policy), RegisterType.Integer, OperandType.I32);
+            Operand rt = new((int)EncodeTypeTargetPolicy(type, target, policy), RegisterType.Integer, OperandType.I32);
             WriteInstruction(0xf8800000u | (EncodeSImm9(imm) << 12), rt, rn);
         }
 
@@ -4360,6 +4360,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
                     instI |= 1 << 22; // sh flag
                     imm >>= 12;
                 }
+
                 WriteInstructionAuto(instI | (EncodeUImm12(imm, 0) << 10), rd, rn);
             }
             else
@@ -4543,7 +4544,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
             uint instruction;
             int scale;
 
-            if (type.IsInteger())
+            if (type.IsInteger)
             {
                 instruction = intInst;
 
@@ -4579,7 +4580,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
         {
             uint instruction;
 
-            if (type.IsInteger())
+            if (type.IsInteger)
             {
                 instruction = intInst;
 
@@ -4609,7 +4610,7 @@ namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
         {
             uint instruction;
 
-            if (type.IsInteger())
+            if (type.IsInteger)
             {
                 instruction = intInst;
 

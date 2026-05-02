@@ -15,7 +15,7 @@ namespace Ryujinx.Graphics.OpenGL.Image
 
         private int _viewsCount;
 
-        internal TextureView DefaultView { get; private set; }
+        internal ITexture DefaultView { get; private set; }
 
         public TextureStorage(OpenGLRenderer renderer, TextureCreateInfo info)
         {
@@ -144,14 +144,14 @@ namespace Ryujinx.Graphics.OpenGL.Image
             }
         }
 
-        public TextureView CreateDefaultView()
+        public ITexture CreateDefaultView()
         {
             DefaultView = CreateView(Info, 0, 0);
 
             return DefaultView;
         }
 
-        public TextureView CreateView(TextureCreateInfo info, int firstLayer, int firstLevel)
+        public ITexture CreateView(TextureCreateInfo info, int firstLayer, int firstLevel)
         {
             IncrementViewsCount();
 

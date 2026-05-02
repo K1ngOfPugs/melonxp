@@ -1,6 +1,6 @@
 namespace Ryujinx.Cpu.LightningJit.CodeGen
 {
-    public enum OperandKind
+    enum OperandKind
     {
         None,
         Constant,

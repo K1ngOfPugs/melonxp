@@ -26,12 +26,13 @@ namespace Ryujinx.HLE.HOS.Tamper
 
         public ITamperProgram Compile(string name, IEnumerable<string> rawInstructions)
         {
-            string[] addresses = {
+            string[] addresses =
+            [
                 $"    Executable address: 0x{_exeAddress:X16}",
                 $"    Heap address      : 0x{_heapAddress:X16}",
                 $"    Alias address     : 0x{_aliasAddress:X16}",
-                $"    Aslr address      : 0x{_aslrAddress:X16}",
-            };
+                $"    Aslr address      : 0x{_aslrAddress:X16}"
+            ];
 
             Logger.Debug?.Print(LogClass.TamperMachine, $"Compiling Atmosphere cheat {name}...\n{string.Join('\n', addresses)}");
 
@@ -42,19 +43,19 @@ namespace Ryujinx.HLE.HOS.Tamper
             catch (TamperCompilationException ex)
             {
                 // Just print the message without the stack trace.
-                Logger.Warning?.Print(LogClass.TamperMachine, ex.Message);
+                Logger.Error?.Print(LogClass.TamperMachine, ex.Message);
             }
             catch (Exception ex)
             {
-                Logger.Warning?.Print(LogClass.TamperMachine, ex.ToString());
+                Logger.Error?.Print(LogClass.TamperMachine, ex.ToString());
             }
 
-            Logger.Warning?.Print(LogClass.TamperMachine, "There was a problem while compiling the Atmosphere cheat");
+            Logger.Error?.Print(LogClass.TamperMachine, $"There was a problem while compiling the Atmosphere cheat '{name}'");
 
             return null;
         }
 
-        private ITamperProgram CompileImpl(string name, IEnumerable<string> rawInstructions)
+        private AtmosphereProgram CompileImpl(string name, IEnumerable<string> rawInstructions)
         {
             CompilationContext context = new(_exeAddress, _heapAddress, _aliasAddress, _aslrAddress, _process);
             context.BlockStack.Push(new OperationBlock(null));
@@ -125,7 +126,7 @@ namespace Ryujinx.HLE.HOS.Tamper
                         DebugLog.Emit(instruction, context);
                         break;
                     default:
-                        throw new TamperCompilationException($"Code type {codeType} not implemented in Atmosphere cheat");
+                        throw new TamperCompilationException($"Code type {codeType} not implemented in Atmosphere cheat compiler");
                 }
             }
 
@@ -144,8 +145,6 @@ namespace Ryujinx.HLE.HOS.Tamper
             {
                 throw new TamperCompilationException("Reached end of compilation with unmatched conditional(s) or loop(s)");
             }
-
-            Logger.Debug?.Print(LogClass.TamperMachine, "Compilation successful, creating AtmosphereProgram");
 
             return new AtmosphereProgram(name, _process, context.PressedKeys, new Block(context.CurrentOperations));
         }

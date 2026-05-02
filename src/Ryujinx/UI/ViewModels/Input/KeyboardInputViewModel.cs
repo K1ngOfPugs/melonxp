@@ -1,40 +1,50 @@
 using Avalonia.Svg.Skia;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Ryujinx.Ava.UI.Models.Input;
 
 namespace Ryujinx.Ava.UI.ViewModels.Input
 {
-    public class KeyboardInputViewModel : BaseModel
+    public partial class KeyboardInputViewModel : BaseModel
     {
-        private KeyboardInputConfig _config;
         public KeyboardInputConfig Config
         {
-            get => _config;
+            get;
             set
             {
-                _config = value;
+                field = value;
+
                 OnPropertyChanged();
             }
         }
 
-        private bool _isLeft;
-        public bool IsLeft
+        public StickVisualizer Visualizer
         {
-            get => _isLeft;
+            get;
             set
             {
-                _isLeft = value;
+                field = value;
+
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsLeft
+        {
+            get;
+            set
+            {
+                field = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(HasSides));
             }
         }
 
-        private bool _isRight;
         public bool IsRight
         {
-            get => _isRight;
+            get;
             set
             {
-                _isRight = value;
+                field = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(HasSides));
             }
@@ -42,22 +52,15 @@ namespace Ryujinx.Ava.UI.ViewModels.Input
 
         public bool HasSides => IsLeft ^ IsRight;
 
-        private SvgImage _image;
-        public SvgImage Image
-        {
-            get => _image;
-            set
-            {
-                _image = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial SvgImage Image { get; set; }
 
         public readonly InputViewModel ParentModel;
 
-        public KeyboardInputViewModel(InputViewModel model, KeyboardInputConfig config)
+        public KeyboardInputViewModel(InputViewModel model, KeyboardInputConfig config, StickVisualizer visualizer)
         {
             ParentModel = model;
+            Visualizer = visualizer;
             model.NotifyChangesEvent += OnParentModelChanged;
             OnParentModelChanged();
             Config = config;

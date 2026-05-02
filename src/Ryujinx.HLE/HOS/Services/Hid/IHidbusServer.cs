@@ -4,15 +4,13 @@ using Ryujinx.Common.Logging;
 namespace Ryujinx.HLE.HOS.Services.Hid
 {
     [Service("hidbus")]
-    partial class IHidbusServer : IpcService
+    class IHidbusServer : IpcService
     {
         public IHidbusServer(ServiceCtx context) { }
 
         [CommandCmif(1)]
         // GetBusHandle(nn::hid::NpadIdType, nn::hidbus::BusType, nn::applet::AppletResourceUserId) -> (bool HasHandle, nn::hidbus::BusHandle)
-#pragma warning disable CA1822 // Mark member as static
         public ResultCode GetBusHandle(ServiceCtx context)
-#pragma warning restore CA1822
         {
             NpadIdType npadIdType = (NpadIdType)context.RequestData.ReadInt32();
             context.RequestData.BaseStream.Position += 4; // Padding

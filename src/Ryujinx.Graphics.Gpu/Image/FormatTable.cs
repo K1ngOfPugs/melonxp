@@ -1,6 +1,5 @@
 using Ryujinx.Graphics.GAL;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Ryujinx.Graphics.Gpu.Image
 {
@@ -10,7 +9,6 @@ namespace Ryujinx.Graphics.Gpu.Image
     static class FormatTable
     {
 #pragma warning disable IDE0055 // Disable formatting
-        [SuppressMessage("Design", "CA1069: Enums values should not be duplicated")]
         private enum TextureFormat : uint
         {
             // Formats
@@ -249,7 +247,6 @@ namespace Ryujinx.Graphics.Gpu.Image
             A5B5G5R1Unorm                    = A5B5G5R1          | RUnorm | GUnorm | BUnorm | AUnorm,        // 0x24913
         }
 
-        [SuppressMessage("Design", "CA1069: Enums values should not be duplicated")]
         private enum VertexAttributeFormat : uint
         {
             // Width
@@ -665,7 +662,7 @@ namespace Ryujinx.Graphics.Gpu.Image
 
             bool found = _textureFormats.TryGetValue((TextureFormat)encoded, out format);
 
-            if (found && isPacked && !format.Format.IsDepthOrStencil())
+            if (found && isPacked && !format.Format.IsDepthOrStencil)
             {
                 // If the packed flag is set, then the components of the pixel are tightly packed into the
                 // GPU registers on the shader.
@@ -706,7 +703,7 @@ namespace Ryujinx.Graphics.Gpu.Image
         /// <returns>True if the format is valid, false otherwise</returns>
         public static bool TryGetSingleComponentAttribFormat(uint encoded, out Format format, out int componentsCount)
         {
-            bool result = _singleComponentAttribFormats.TryGetValue((VertexAttributeFormat)encoded, out var tuple);
+            bool result = _singleComponentAttribFormats.TryGetValue((VertexAttributeFormat)encoded, out (Format, int) tuple);
 
             format = tuple.Item1;
             componentsCount = tuple.Item2;

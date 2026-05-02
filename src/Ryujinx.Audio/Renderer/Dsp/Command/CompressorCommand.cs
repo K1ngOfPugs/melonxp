@@ -45,14 +45,14 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
             ResultState = resultState;
 
             IsEffectEnabled = isEnabled;
-
+            
             Span<byte> inputSpan = _parameter.Input.AsSpan();
             Span<byte> outputSpan = _parameter.Output.AsSpan();
 
             for (int i = 0; i < _parameter.ChannelCount; i++)
             {
-                InputBufferIndices[i] = (ushort)(bufferOffset + _parameter.Input[i]);
-                OutputBufferIndices[i] = (ushort)(bufferOffset + _parameter.Output[i]);
+                InputBufferIndices[i] = (ushort)(bufferOffset + inputSpan[i]);
+                OutputBufferIndices[i] = (ushort)(bufferOffset + outputSpan[i]);
             }
 
             return this;
@@ -90,8 +90,8 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
                     statistics.Reset(_parameter.ChannelCount);
                 }
 
-                Span<IntPtr> inputBuffers = stackalloc IntPtr[_parameter.ChannelCount];
-                Span<IntPtr> outputBuffers = stackalloc IntPtr[_parameter.ChannelCount];
+                Span<nint> inputBuffers = stackalloc nint[_parameter.ChannelCount];
+                Span<nint> outputBuffers = stackalloc nint[_parameter.ChannelCount];
                 Span<float> channelInput = stackalloc float[_parameter.ChannelCount];
                 ExponentialMovingAverage inputMovingAverage = state.InputMovingAverage;
                 float unknown4 = state.Unknown4;
@@ -179,10 +179,12 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
 
                         statistics.MinimumGain = MathF.Min(statistics.MinimumGain, compressionGain * state.OutputGain);
                         statistics.MaximumMean = MathF.Max(statistics.MaximumMean, mean);
+                        
+                        Span<float> lastSamplesSpan = statistics.LastSamples.AsSpan();
 
                         for (int channelIndex = 0; channelIndex < _parameter.ChannelCount; channelIndex++)
                         {
-                            statistics.LastSamples[channelIndex] = MathF.Abs(channelInput[channelIndex] * (1f / 32768f));
+                            lastSamplesSpan[channelIndex] = MathF.Abs(channelInput[channelIndex] * (1f / 32768f));
                         }
                     }
                 }

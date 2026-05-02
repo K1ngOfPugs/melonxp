@@ -1,6 +1,6 @@
 namespace Ryujinx.Horizon.Sdk.OsTypes
 {
-    public struct InterProcessEventType
+    struct InterProcessEventType
     {
         public readonly bool AutoClear;
         public InitializationState State;

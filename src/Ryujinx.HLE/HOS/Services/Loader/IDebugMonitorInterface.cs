@@ -1,7 +1,7 @@
 namespace Ryujinx.HLE.HOS.Services.Loader
 {
     [Service("ldr:dmnt")]
-    partial class IDebugMonitorInterface : IpcService
+    class IDebugMonitorInterface : IpcService
     {
         public IDebugMonitorInterface(ServiceCtx context) { }
     }

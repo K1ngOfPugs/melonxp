@@ -26,7 +26,7 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
     {
         private static readonly TitleUpdateMetadataJsonSerializerContext _applicationSerializerContext = new(JsonHelper.GetDefaultSerializerOptions());
 
-        public static ProcessResult Load(this Nca nca, Switch device, Nca patchNca, Nca controlNca)
+        public static ProcessResult Load(this Nca nca, Switch device, Nca patchNca, Nca controlNca, BlitStruct<ApplicationControlProperty>? customNacpData = null)
         {
             // Extract RomFs and ExeFs from NCA.
             IStorage romFs = nca.GetRomFs(device, patchNca);
@@ -44,16 +44,20 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
 
             // Collecting mods related to AocTitleIds and ProgramId.
             device.Configuration.VirtualFileSystem.ModLoader.CollectMods(
-                device.Configuration.ContentManager.GetAocTitleIds().Prepend(metaLoader.GetProgramId()),
+                device.Configuration.ContentManager.GetAocTitleIds().Prepend(metaLoader.ProgramId),
                 ModLoader.GetModsBasePath(),
                 ModLoader.GetSdModsBasePath());
 
             // Load Nacp file.
-            var nacpData = new BlitStruct<ApplicationControlProperty>(1);
+            BlitStruct<ApplicationControlProperty> nacpData = new(1);
 
             if (controlNca != null)
             {
                 nacpData = controlNca.GetNacp(device);
+            }
+            else if (customNacpData != null) // if the Application doesn't provide a nacp file but the Application provides an override, use the provided nacp override
+            {
+                nacpData = (BlitStruct<ApplicationControlProperty>)customNacpData;
             }
 
             /* TODO: Rework this since it's wrong and doesn't work as it takes the DisplayVersion from a "potential" non-existent update.
@@ -70,7 +74,7 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
 
             */
 
-            ProcessResult processResult = exeFs.Load(device, nacpData, metaLoader, (byte)nca.GetProgramIndex());
+            ProcessResult processResult = exeFs.Load(device, nacpData, metaLoader, (byte)nca.ProgramIndex);
 
             // Load RomFS.
             if (romFs == null)
@@ -95,38 +99,6 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
             return processResult;
         }
 
-        public static ulong GetProgramIdBase(this Nca nca)
-        {
-            return nca.Header.TitleId & ~0x1FFFUL;
-        }
-
-        public static int GetProgramIndex(this Nca nca)
-        {
-            return (int)(nca.Header.TitleId & 0xF);
-        }
-
-        public static bool IsProgram(this Nca nca)
-        {
-            return nca.Header.ContentType == NcaContentType.Program;
-        }
-
-        public static bool IsMain(this Nca nca)
-        {
-            return nca.IsProgram() && !nca.IsPatch();
-        }
-
-        public static bool IsPatch(this Nca nca)
-        {
-            int dataIndex = Nca.GetSectionIndexFromType(NcaSectionType.Data, NcaContentType.Program);
-
-            return nca.IsProgram() && nca.SectionExists(NcaSectionType.Data) && nca.Header.GetFsHeader(dataIndex).IsPatchSection();
-        }
-
-        public static bool IsControl(this Nca nca)
-        {
-            return nca.Header.ContentType == NcaContentType.Control;
-        }
-
         public static (Nca, Nca) GetUpdateData(this Nca mainNca, VirtualFileSystem fileSystem, IntegrityCheckLevel checkLevel, int programIndex, out string updatePath)
         {
             updatePath = null;
@@ -136,14 +108,13 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
             Nca updateControlNca = null;
 
             // Clear the program index part.
-            ulong titleIdBase = mainNca.GetProgramIdBase();
+            ulong titleIdBase = mainNca.ProgramIdBase;
 
             // Load update information if exists.
             string titleUpdateMetadataPath = Path.Combine(AppDataManager.GamesDirPath, titleIdBase.ToString("x16"), "updates.json");
             if (File.Exists(titleUpdateMetadataPath))
             {
-                updatePath = AppDataManager.BaseDirPath + "/" + JsonHelper.DeserializeFromFile(titleUpdateMetadataPath, _applicationSerializerContext.TitleUpdateMetadata).Selected;
-                Logger.Info?.Print(LogClass.Loader, $"Using update path: {updatePath}");
+                updatePath = JsonHelper.DeserializeFromFile(titleUpdateMetadataPath, _applicationSerializerContext.TitleUpdateMetadata).Selected;
                 if (File.Exists(updatePath))
                 {
                     IFileSystem updatePartitionFileSystem = PartitionFileSystemUtils.OpenApplicationFileSystem(updatePath, fileSystem);
@@ -211,9 +182,9 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
 
         public static BlitStruct<ApplicationControlProperty> GetNacp(this Nca controlNca, Switch device)
         {
-            var nacpData = new BlitStruct<ApplicationControlProperty>(1);
+            BlitStruct<ApplicationControlProperty> nacpData = new(1);
 
-            using var controlFile = new UniqueRef<IFile>();
+            using UniqueRef<IFile> controlFile = new();
 
             Result result = controlNca.OpenFileSystem(NcaSectionType.Data, device.System.FsIntegrityCheckLevel)
                                       .OpenFile(ref controlFile.Ref, "/control.nacp".ToU8Span(), OpenMode.Read);
@@ -233,7 +204,7 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
         public static Cnmt GetCnmt(this Nca cnmtNca, IntegrityCheckLevel checkLevel, ContentMetaType metaType)
         {
             string path = $"/{metaType}_{cnmtNca.Header.TitleId:x16}.cnmt";
-            using var cnmtFile = new UniqueRef<IFile>();
+            using UniqueRef<IFile> cnmtFile = new();
 
             try
             {

@@ -1,14 +1,13 @@
-using Ryujinx.Common.Utilities;
 using System.Text.Json.Serialization;
 
 namespace Ryujinx.Common.Configuration.Hid
 {
-    [JsonConverter(typeof(TypedStringEnumConverter<InputBackendType>))]
+    [JsonConverter(typeof(JsonStringEnumConverter<InputBackendType>))]
     public enum InputBackendType
     {
         Invalid,
         WindowKeyboard,
-        GamepadSDL2,
-        GamepadiOS
+        GamepadSDL2, //backcompat
+        GamepadSDL3,
     }
 }

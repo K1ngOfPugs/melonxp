@@ -39,11 +39,6 @@ namespace Ryujinx.Audio.Backends.CompatLayer
             _realSession.PrepareToClose();
         }
 
-        public override ulong GetSampleCount(int dataSize)
-        {
-            return _realSession.GetSampleCount(dataSize);
-        }
-
         public override void QueueBuffer(AudioBuffer buffer)
         {
             SampleFormat realSampleFormat = _realSession.RequestedSampleFormat;
@@ -63,16 +58,16 @@ namespace Ryujinx.Audio.Backends.CompatLayer
                 switch (realSampleFormat)
                 {
                     case SampleFormat.PcmInt8:
-                        PcmHelper.ConvertSampleToPcm8(MemoryMarshal.Cast<byte, sbyte>(convertedSamples), samples);
+                        PcmHelper.ConvertSampleToPcm8(MemoryMarshal.Cast<byte, sbyte>(new Span<byte>(convertedSamples)), samples);
                         break;
                     case SampleFormat.PcmInt24:
                         PcmHelper.ConvertSampleToPcm24(convertedSamples, samples);
                         break;
                     case SampleFormat.PcmInt32:
-                        PcmHelper.ConvertSampleToPcm32(MemoryMarshal.Cast<byte, int>(convertedSamples), samples);
+                        PcmHelper.ConvertSampleToPcm32(MemoryMarshal.Cast<byte, int>(new Span<byte>(convertedSamples)), samples);
                         break;
                     case SampleFormat.PcmFloat:
-                        PcmHelper.ConvertSampleToPcmFloat(MemoryMarshal.Cast<byte, float>(convertedSamples), samples);
+                        PcmHelper.ConvertSampleToPcmFloat(MemoryMarshal.Cast<byte, float>(new Span<byte>(convertedSamples)), samples);
                         break;
                     default:
                         throw new NotImplementedException($"Sample format conversion from {_userSampleFormat} to {realSampleFormat} not implemented.");
@@ -124,7 +119,6 @@ namespace Ryujinx.Audio.Backends.CompatLayer
             AudioBuffer fakeBuffer = new()
             {
                 BufferTag = buffer.BufferTag,
-                HostTag = buffer.HostTag,
                 DataPointer = buffer.DataPointer,
                 DataSize = (ulong)samples.Length,
             };

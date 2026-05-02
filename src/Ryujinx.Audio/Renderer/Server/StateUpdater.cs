@@ -49,7 +49,7 @@ namespace Ryujinx.Audio.Renderer.Server
             _output = _output[Unsafe.SizeOf<UpdateDataHeader>()..];
         }
 
-        public ResultCode UpdateBehaviourContext()
+        public ResultCode UpdateBehaviourInfo()
         {
             ref readonly BehaviourParameter parameter = ref _inputReader.GetRefOrRefToCopy<BehaviourParameter>(out _);
 
@@ -86,9 +86,9 @@ namespace Ryujinx.Audio.Renderer.Server
 
                 PoolMapper.UpdateResult updateResult = mapper.Update(ref memoryPool, in parameter, ref outStatus);
 
-                if (updateResult != PoolMapper.UpdateResult.Success &&
-                    updateResult != PoolMapper.UpdateResult.MapError &&
-                    updateResult != PoolMapper.UpdateResult.UnmapError)
+                if (updateResult is not PoolMapper.UpdateResult.Success and
+                    not PoolMapper.UpdateResult.MapError and
+                    not PoolMapper.UpdateResult.UnmapError)
                 {
                     if (updateResult != PoolMapper.UpdateResult.InvalidParameter)
                     {
@@ -125,7 +125,7 @@ namespace Ryujinx.Audio.Renderer.Server
 
             return ResultCode.Success;
         }
-
+        
         public ResultCode UpdateVoices2(VoiceContext context, PoolMapper mapper)
         {
             if (context.GetCount() * Unsafe.SizeOf<VoiceInParameter2>() != _inputHeader.VoicesSize)
@@ -249,9 +249,11 @@ namespace Ryujinx.Audio.Renderer.Server
                 {
                     ref VoiceInfo currentVoiceInfo = ref context.GetState(i);
 
+                    Span<int> channelResourceIdsSpan = parameter.ChannelResourceIds.AsSpan();
+
                     for (int channelResourceIndex = 0; channelResourceIndex < parameter.ChannelCount; channelResourceIndex++)
                     {
-                        int channelId = parameter.ChannelResourceIds[channelResourceIndex];
+                        int channelId = channelResourceIdsSpan[channelResourceIndex];
 
                         Debug.Assert(channelId >= 0 && channelId < context.GetCount());
 
@@ -328,7 +330,7 @@ namespace Ryujinx.Audio.Renderer.Server
 
             return UpdateEffectsVersion1(context, isAudioRendererActive, mapper);
         }
-
+        
         public ResultCode UpdateEffectsVersion2(EffectContext context, bool isAudioRendererActive, PoolMapper mapper)
         {
             if (context.GetCount() * Unsafe.SizeOf<EffectInParameterVersion2>() != _inputHeader.EffectsSize)
@@ -431,8 +433,12 @@ namespace Ryujinx.Audio.Renderer.Server
 
         public ResultCode UpdateSplitter(SplitterContext context)
         {
+            long initialInputConsumed = _inputReader.Consumed;
+
             if (context.Update(ref _inputReader))
             {
+                _inputReader.SetConsumed(initialInputConsumed + _inputHeader.SplitterSize);
+
                 return ResultCode.Success;
             }
 

@@ -1,7 +1,6 @@
 using ARMeilleure.CodeGen.Linking;
 using ARMeilleure.CodeGen.Unwinding;
 using ARMeilleure.Translation.Cache;
-using System;
 using System.Runtime.InteropServices;
 
 namespace ARMeilleure.CodeGen
@@ -58,9 +57,9 @@ namespace ARMeilleure.CodeGen
         /// <typeparam name="T">Type of delegate</typeparam>
         /// <param name="codePointer">Pointer to the function code in memory</param>
         /// <returns>A delegate of type <typeparamref name="T"/> pointing to the mapped function</returns>
-        public T MapWithPointer<T>(out IntPtr codePointer, bool deferProtect = false)
+        public T MapWithPointer<T>(out nint codePointer)
         {
-            codePointer = JitCache.Map(this, deferProtect);
+            codePointer = JitCache.Map(this);
 
             return Marshal.GetDelegateForFunctionPointer<T>(codePointer);
         }

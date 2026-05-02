@@ -50,13 +50,7 @@ namespace Ryujinx.HLE.HOS.Services.Account.Acc.AccountService
 
         public ResultCode GetImageSize(ServiceCtx context)
         {
-            try
-            {
-                context.ResponseData.Write(_profile.Image.Length);
-            } catch
-            {
-                context.ResponseData.Write(0);
-            }
+            context.ResponseData.Write(_profile.Image.Length);
 
             return ResultCode.Success;
         }

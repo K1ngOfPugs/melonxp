@@ -4,7 +4,6 @@ using Ryujinx.Audio.Common;
 using Ryujinx.Common.Memory;
 using Ryujinx.Memory;
 using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -12,7 +11,7 @@ using static Ryujinx.Audio.Backends.SoundIo.Native.SoundIo;
 
 namespace Ryujinx.Audio.Backends.SoundIo
 {
-    class SoundIoHardwareDeviceSession : HardwareDeviceSessionOutputBase
+    sealed class SoundIoHardwareDeviceSession : HardwareDeviceSessionOutputBase
     {
         private readonly SoundIoHardwareDeviceDriver _driver;
         private readonly ConcurrentQueue<SoundIoAudioBuffer> _queuedBuffers;
@@ -58,7 +57,7 @@ namespace Ryujinx.Audio.Backends.SoundIo
 
         public override void QueueBuffer(AudioBuffer buffer)
         {
-            SoundIoAudioBuffer driverBuffer = new(buffer.HostTag, GetSampleCount(buffer));
+            SoundIoAudioBuffer driverBuffer = new(buffer.DataPointer, GetSampleCount(buffer));
 
             _ringBuffer.Write(buffer.Data, 0, buffer.Data.Length);
 
@@ -101,7 +100,7 @@ namespace Ryujinx.Audio.Backends.SoundIo
                 return true;
             }
 
-            return driverBuffer.DriverIdentifier != buffer.HostTag;
+            return driverBuffer.DriverIdentifier != buffer.DataPointer;
         }
 
         private unsafe void Update(int minFrameCount, int maxFrameCount)
@@ -429,7 +428,7 @@ namespace Ryujinx.Audio.Backends.SoundIo
             }
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing && _driver.Unregister(this))
             {

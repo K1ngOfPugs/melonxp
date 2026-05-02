@@ -47,14 +47,15 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
             ref VoiceState state = ref State.Span[0];
 
             Span<float> depopBuffer = DepopBuffer.Span;
+            Span<float> lastSamplesSpan = state.LastSamples.AsSpan();
 
             for (int i = 0; i < MixBufferCount; i++)
             {
-                if (state.LastSamples[i] != 0)
+                if (lastSamplesSpan[i] != 0)
                 {
-                    depopBuffer[OutputBufferIndices[i]] += state.LastSamples[i];
+                    depopBuffer[OutputBufferIndices[i]] += lastSamplesSpan[i];
 
-                    state.LastSamples[i] = 0;
+                    lastSamplesSpan[i] = 0;
                 }
             }
         }

@@ -39,9 +39,9 @@ namespace Ryujinx.Horizon.Bcat.Ipc
         [CmifCommand(1)]
         public Result CreateDeliveryCacheStorageService(out IDeliveryCacheStorageService service, [ClientProcessId] ulong pid)
         {
-            using var libHacService = new SharedRef<LibHac.Bcat.Impl.Ipc.IDeliveryCacheStorageService>();
+            using SharedRef<LibHac.Bcat.Impl.Ipc.IDeliveryCacheStorageService> libHacService = new();
 
-            var resultCode = _libHacService.Get.CreateDeliveryCacheStorageService(ref libHacService.Ref, pid);
+            LibHac.Result resultCode = _libHacService.Get.CreateDeliveryCacheStorageService(ref libHacService.Ref, pid);
 
             if (resultCode.IsSuccess())
             {
@@ -52,15 +52,15 @@ namespace Ryujinx.Horizon.Bcat.Ipc
                 service = null;
             }
 
-            return resultCode.ToHorizonResult();
+            return resultCode.Horizon;
         }
 
         [CmifCommand(2)]
         public Result CreateDeliveryCacheStorageServiceWithApplicationId(out IDeliveryCacheStorageService service, ApplicationId applicationId)
         {
-            using var libHacService = new SharedRef<LibHac.Bcat.Impl.Ipc.IDeliveryCacheStorageService>();
+            using SharedRef<LibHac.Bcat.Impl.Ipc.IDeliveryCacheStorageService> libHacService = new();
 
-            var resultCode = _libHacService.Get.CreateDeliveryCacheStorageServiceWithApplicationId(ref libHacService.Ref, new LibHac.ApplicationId(applicationId.Id));
+            LibHac.Result resultCode = _libHacService.Get.CreateDeliveryCacheStorageServiceWithApplicationId(ref libHacService.Ref, new LibHac.ApplicationId(applicationId.Id));
 
             if (resultCode.IsSuccess())
             {
@@ -71,7 +71,7 @@ namespace Ryujinx.Horizon.Bcat.Ipc
                 service = null;
             }
 
-            return resultCode.ToHorizonResult();
+            return resultCode.Horizon;
         }
 
         public void Dispose()

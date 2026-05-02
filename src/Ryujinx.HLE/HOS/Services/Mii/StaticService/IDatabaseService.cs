@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Ryujinx.HLE.HOS.Services.Mii.StaticService
 {
-    abstract partial class IDatabaseService : IpcService
+    abstract class IDatabaseService : IpcService
     {
         [CommandCmif(0)]
         // IsUpdated(SourceFlag flag) -> bool

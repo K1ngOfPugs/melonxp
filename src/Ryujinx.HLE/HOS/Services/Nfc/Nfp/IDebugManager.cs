@@ -3,7 +3,7 @@ using Ryujinx.HLE.HOS.Services.Nfc.Nfp.NfpManager;
 namespace Ryujinx.HLE.HOS.Services.Nfc.Nfp
 {
     [Service("nfp:dbg")]
-    partial class IAmManager : IpcService
+    class IAmManager : IpcService
     {
         public IAmManager(ServiceCtx context) { }
 

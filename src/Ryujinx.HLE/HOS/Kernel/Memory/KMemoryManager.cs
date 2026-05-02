@@ -16,7 +16,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
         {
             for (int i = 0; i < MemoryRegions.Length; i++)
             {
-                var region = MemoryRegions[i];
+                KMemoryRegionManager region = MemoryRegions[i];
 
                 if (address >= region.Address && address < region.EndAddr)
                 {
@@ -39,32 +39,26 @@ namespace Ryujinx.HLE.HOS.Kernel.Memory
 
         private void IncrementOrDecrementPagesReferenceCount(ulong address, ulong pagesCount, bool increment)
         {
-            try
+            while (pagesCount != 0)
             {
-                while (pagesCount != 0)
+                KMemoryRegionManager region = GetMemoryRegion(address);
+
+                ulong countToProcess = Math.Min(pagesCount, region.GetPageOffsetFromEnd(address));
+
+                lock (region)
                 {
-                    var region = GetMemoryRegion(address);
-
-                    ulong countToProcess = Math.Min(pagesCount, region.GetPageOffsetFromEnd(address));
-
-                    lock (region)
+                    if (increment)
                     {
-                        if (increment)
-                        {
-                            region.IncrementPagesReferenceCount(address, countToProcess);
-                        }
-                        else
-                        {
-                            region.DecrementPagesReferenceCount(address, countToProcess);
-                        }
+                        region.IncrementPagesReferenceCount(address, countToProcess);
                     }
-
-                    pagesCount -= countToProcess;
-                    address += countToProcess * KPageTableBase.PageSize;
+                    else
+                    {
+                        region.DecrementPagesReferenceCount(address, countToProcess);
+                    }
                 }
-            } catch (Exception ex)
-            {
-            
+
+                pagesCount -= countToProcess;
+                address += countToProcess * KPageTableBase.PageSize;
             }
         }
     }

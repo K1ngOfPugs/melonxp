@@ -1,6 +1,7 @@
 using ARMeilleure.Memory;
 using ARMeilleure.State;
 using System;
+using System.Threading;
 
 namespace Ryujinx.Cpu.LightningJit.State
 {
@@ -10,7 +11,7 @@ namespace Ryujinx.Cpu.LightningJit.State
 
         private readonly NativeContext _nativeContext;
 
-        internal IntPtr NativeContextPtr => _nativeContext.BasePtr;
+        internal nint NativeContextPtr => _nativeContext.BasePtr;
 
         private bool _interrupted;
         private readonly ICounter _counter;
@@ -51,6 +52,8 @@ namespace Ryujinx.Cpu.LightningJit.State
         }
 
         public bool IsAarch32 { get; set; }
+        
+        public ulong ThreadUid { get; set; }
 
         internal ExecutionMode ExecutionMode
         {
@@ -77,8 +80,12 @@ namespace Ryujinx.Cpu.LightningJit.State
 
         private readonly ExceptionCallbackNoArgs _interruptCallback;
         private readonly ExceptionCallback _breakCallback;
+        private readonly ExceptionCallbackNoArgs _stepCallback;
         private readonly ExceptionCallback _supervisorCallback;
         private readonly ExceptionCallback _undefinedCallback;
+
+        internal int ShouldStep;
+        public ulong DebugPc { get; set; }
 
         public ExecutionContext(IJitMemoryAllocator allocator, ICounter counter, ExceptionCallbacks exceptionCallbacks)
         {
@@ -86,6 +93,7 @@ namespace Ryujinx.Cpu.LightningJit.State
             _counter = counter;
             _interruptCallback = exceptionCallbacks.InterruptCallback;
             _breakCallback = exceptionCallbacks.BreakCallback;
+            _stepCallback = exceptionCallbacks.StepCallback;
             _supervisorCallback = exceptionCallbacks.SupervisorCallback;
             _undefinedCallback = exceptionCallbacks.UndefinedCallback;
 
@@ -117,6 +125,17 @@ namespace Ryujinx.Cpu.LightningJit.State
             _interrupted = true;
         }
 
+        public void StepHandler()
+        {
+            _stepCallback?.Invoke(this);
+        }
+
+        public void RequestDebugStep()
+        {
+            Interlocked.Exchange(ref ShouldStep, 1);
+            RequestInterrupt();
+        }
+
         internal void OnBreak(ulong address, int imm)
         {
             _breakCallback?.Invoke(this, address, imm);
@@ -130,11 +149,6 @@ namespace Ryujinx.Cpu.LightningJit.State
         internal void OnUndefined(ulong address, int opCode)
         {
             _undefinedCallback?.Invoke(this, address, opCode);
-        }
-
-        public void SetPageTablePointer(IMemoryManager memoryManager) 
-        {
-            _nativeContext.SetPageTablePointer((ulong)memoryManager.PageTablePointer);
         }
 
         public void StopRunning()

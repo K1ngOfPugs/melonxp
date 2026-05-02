@@ -6,9 +6,9 @@ using LibHac.Ns;
 using LibHac.Tools.FsSystem;
 using Ryujinx.Common.Configuration;
 using Ryujinx.Common.Logging;
+using Ryujinx.Graphics.Gpu;
 using Ryujinx.HLE.Loaders.Executables;
 using Ryujinx.Memory;
-using System;
 using System.Linq;
 using static Ryujinx.HLE.HOS.ModLoader;
 
@@ -36,7 +36,7 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
 
         public static ProcessResult Load(this IFileSystem exeFs, Switch device, BlitStruct<ApplicationControlProperty> nacpData, MetaLoader metaLoader, byte programIndex, bool isHomebrew = false)
         {
-            ulong programId = metaLoader.GetProgramId();
+            ulong programId = metaLoader.ProgramId;
 
             // Replace the whole ExeFs partition by the modded one.
             if (device.Configuration.VirtualFileSystem.ModLoader.ReplaceExefsPartition(programId, ref exeFs))
@@ -60,7 +60,7 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
 
                 Logger.Info?.Print(LogClass.Loader, $"Loading {name}...");
 
-                using var nsoFile = new UniqueRef<IFile>();
+                using UniqueRef<IFile> nsoFile = new();
 
                 exeFs.OpenFile(ref nsoFile.Ref, $"/{name}".ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
@@ -82,14 +82,7 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
             // Apply Nsos patches.
             device.Configuration.VirtualFileSystem.ModLoader.ApplyNsoPatches(programId, nsoExecutables);
 
-            // Don't use PTC if ExeFS files have been replaced.
-            bool enablePtc = device.System.EnablePtc && !modLoadResult.Modified;
-            if (!enablePtc)
-            {
-                Logger.Warning?.Print(LogClass.Ptc, "Detected unsupported ExeFs modifications. PTC disabled.");
-            }
-
-            string programName = "";
+            string programName = string.Empty;
 
             if (!isHomebrew && programId > 0x010000000000FFFF)
             {
@@ -97,12 +90,18 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
 
                 if (string.IsNullOrWhiteSpace(programName))
                 {
-                    programName = Array.Find(nacpData.Value.Title.ItemsRo.ToArray(), x => x.Name[0] != 0).NameString.ToString();
+                    foreach (ApplicationControlProperty.ApplicationTitle appTitle in nacpData.Value.Title)
+                    {
+                        if (appTitle.Name[0] != 0)
+                            continue;
+
+                        programName = appTitle.NameString.ToString();
+                    }
                 }
             }
 
             // Initialize GPU.
-            Graphics.Gpu.GraphicsConfig.TitleId = $"{programId:x16}";
+            GraphicsConfig.TitleId = programId.ToString("X16");
             device.Gpu.HostInitalized.Set();
 
             if (!MemoryBlock.SupportsFlags(MemoryAllocationFlags.ViewCompatible))
@@ -115,16 +114,17 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
                 device.System.KernelContext,
                 metaLoader,
                 nacpData,
-                enablePtc,
+                device.System.EnablePtc,
+                modLoadResult.Hash,
                 true,
                 programName,
-                metaLoader.GetProgramId(),
+                programId,
                 programIndex,
                 null,
                 nsoExecutables);
 
             // TODO: This should be stored using ProcessId instead.
-            device.System.LibHacHorizonManager.ArpIReader.ApplicationId = new LibHac.ApplicationId(metaLoader.GetProgramId());
+            device.System.LibHacHorizonManager.ArpIReader.ApplicationId = new LibHac.ApplicationId(programId);
 
             return processResult;
         }

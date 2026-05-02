@@ -5,6 +5,7 @@ using LibHac.Fs.Shim;
 using LibHac.FsSystem;
 using LibHac.Tools.FsSystem;
 using Ryujinx.Cpu;
+using Ryujinx.HLE.Debugger;
 using Ryujinx.HLE.FileSystem;
 using Ryujinx.HLE.HOS.Kernel;
 using Ryujinx.HLE.HOS.Kernel.Memory;
@@ -16,7 +17,10 @@ using Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.SystemA
 using Ryujinx.HLE.HOS.Services.Apm;
 using Ryujinx.HLE.HOS.Services.Caps;
 using Ryujinx.HLE.HOS.Services.Mii;
+using Ryujinx.HLE.HOS.Services.Nfc.AmiiboDecryption;
+using Ryujinx.HLE.HOS.Services.Nfc.Nfp;
 using Ryujinx.HLE.HOS.Services.Nfc.Nfp.NfpManager;
+using Ryujinx.HLE.HOS.Services.Nfc.Mifare.MifareManager;
 using Ryujinx.HLE.HOS.Services.Nv;
 using Ryujinx.HLE.HOS.Services.Nv.NvDrvServices.NvHostCtrl;
 using Ryujinx.HLE.HOS.Services.Pcv.Bpc;
@@ -62,6 +66,8 @@ namespace Ryujinx.HLE.HOS
         internal AppletStateMgr AppletState { get; private set; }
 
         internal List<NfpDevice> NfpDevices { get; private set; }
+
+        internal List<NfcDevice> NfcDevices { get; private set; }
 
         internal SmRegistry SmRegistry { get; private set; }
 
@@ -119,8 +125,8 @@ namespace Ryujinx.HLE.HOS
                 TickSource,
                 device,
                 device.Memory,
-                device.Configuration.MemoryConfiguration.ToKernelMemorySize(),
-                device.Configuration.MemoryConfiguration.ToKernelMemoryArrange());
+                device.Configuration.MemoryConfiguration.KernelMemorySize,
+                device.Configuration.MemoryConfiguration.KernelMemoryArrange);
 
             Device = device;
 
@@ -128,7 +134,8 @@ namespace Ryujinx.HLE.HOS
 
             PerformanceState = new PerformanceState();
 
-            NfpDevices = new List<NfpDevice>();
+            NfpDevices = [];
+            NfcDevices = [];
 
             // Note: This is not really correct, but with HLE of services, the only memory
             // region used that is used is Application, so we can use the other ones for anything.
@@ -152,11 +159,11 @@ namespace Ryujinx.HLE.HOS
             timePageList.AddRange(timePa, TimeSize / KPageTableBase.PageSize);
             appletCaptureBufferPageList.AddRange(appletCaptureBufferPa, AppletCaptureBufferSize / KPageTableBase.PageSize);
 
-            var hidStorage = new SharedMemoryStorage(KernelContext, hidPageList);
-            var fontStorage = new SharedMemoryStorage(KernelContext, fontPageList);
-            var iirsStorage = new SharedMemoryStorage(KernelContext, iirsPageList);
-            var timeStorage = new SharedMemoryStorage(KernelContext, timePageList);
-            var appletCaptureBufferStorage = new SharedMemoryStorage(KernelContext, appletCaptureBufferPageList);
+            SharedMemoryStorage hidStorage = new(KernelContext, hidPageList);
+            SharedMemoryStorage fontStorage = new(KernelContext, fontPageList);
+            SharedMemoryStorage iirsStorage = new(KernelContext, iirsPageList);
+            SharedMemoryStorage timeStorage = new(KernelContext, timePageList);
+            SharedMemoryStorage appletCaptureBufferStorage = new(KernelContext, appletCaptureBufferPageList);
 
             HidStorage = hidStorage;
 
@@ -239,21 +246,21 @@ namespace Ryujinx.HLE.HOS
         public void InitializeServices()
         {
             SmRegistry = new SmRegistry();
-            SmServer = new ServerBase(KernelContext, "SmServer", () => new IUserInterface(KernelContext, SmRegistry));
+            SmServer = new ServerBase(KernelContext, "Sm", () => new IUserInterface(KernelContext, SmRegistry));
 
             // Wait until SM server thread is done with initialization,
             // only then doing connections to SM is safe.
             SmServer.InitDone.WaitOne();
 
-            BsdServer = new ServerBase(KernelContext, "BsdServer");
-            FsServer = new ServerBase(KernelContext, "FsServer");
-            HidServer = new ServerBase(KernelContext, "HidServer");
-            NvDrvServer = new ServerBase(KernelContext, "NvservicesServer");
-            TimeServer = new ServerBase(KernelContext, "TimeServer");
-            ViServer = new ServerBase(KernelContext, "ViServerU");
-            ViServerM = new ServerBase(KernelContext, "ViServerM");
-            ViServerS = new ServerBase(KernelContext, "ViServerS");
-            LdnServer = new ServerBase(KernelContext, "LdnServer");
+            BsdServer = new ServerBase(KernelContext, "Bsd");
+            FsServer = new ServerBase(KernelContext, "Fs");
+            HidServer = new ServerBase(KernelContext, "Hid");
+            NvDrvServer = new ServerBase(KernelContext, "Nv");
+            TimeServer = new ServerBase(KernelContext, "Time");
+            ViServer = new ServerBase(KernelContext, "Vi:u");
+            ViServerM = new ServerBase(KernelContext, "Vi:m");
+            ViServerS = new ServerBase(KernelContext, "Vi:s");
+            LdnServer = new ServerBase(KernelContext, "Ldn");
 
             StartNewServices();
         }
@@ -263,7 +270,7 @@ namespace Ryujinx.HLE.HOS
             HorizonFsClient fsClient = new(this);
 
             ServiceTable = new ServiceTable();
-            var services = ServiceTable.GetServices(new HorizonOptions
+            IEnumerable<ServiceEntry> services = ServiceTable.GetServices(new HorizonOptions
                 (Device.Configuration.IgnoreMissingServices,
                 LibHacHorizonManager.BcatClient,
                 fsClient,
@@ -271,7 +278,7 @@ namespace Ryujinx.HLE.HOS
                 Device.AudioDeviceDriver,
                 TickSource));
 
-            foreach (var service in services)
+            foreach (ServiceEntry service in services)
             {
                 const ProcessCreationFlags Flags =
                     ProcessCreationFlags.EnableAslr |
@@ -279,16 +286,17 @@ namespace Ryujinx.HLE.HOS
                     ProcessCreationFlags.Is64Bit |
                     ProcessCreationFlags.PoolPartitionSystem;
 
-                ProcessCreationInfo creationInfo = new("Service", 1, 0, 0x8000000, 1, Flags, 0, 0);
+                ProcessCreationInfo creationInfo = new(service.Name, 1, 0, 0x8000000, 1, Flags, 0, 0);
 
-                uint[] defaultCapabilities = {
-                    0x030363F7,
+                uint[] defaultCapabilities =
+                [
+                    (((uint)KScheduler.CpuCoresCount - 1) << 24) + (((uint)KScheduler.CpuCoresCount - 1) << 16) + 0x63F7u,
                     0x1FFFFFCF,
                     0x207FFFEF,
                     0x47E0060F,
                     0x0048BFFF,
-                    0x01007FFF,
-                };
+                    0x01007FFF
+                ];
 
                 // TODO:
                 // - Pass enough information (capabilities, process creation info, etc) on ServiceEntry for proper initialization.
@@ -302,7 +310,7 @@ namespace Ryujinx.HLE.HOS
 
         public bool LoadKip(string kipPath)
         {
-            using var kipFile = new SharedRef<IStorage>(new LocalStorage(kipPath, FileAccess.Read));
+            using SharedRef<IStorage> kipFile = new(new LocalStorage(kipPath, FileAccess.Read));
 
             return ProcessLoaderHelper.LoadKip(KernelContext, new KipExecutable(in kipFile));
         }
@@ -337,11 +345,43 @@ namespace Ryujinx.HLE.HOS
 
         public void ScanAmiibo(int nfpDeviceId, string amiiboId, bool useRandomUuid)
         {
+            if (VirtualAmiibo.ApplicationBytes.Length > 0)
+            {
+                VirtualAmiibo.ApplicationBytes = [];
+                VirtualAmiibo.InputBin = string.Empty;
+            }
+
             if (NfpDevices[nfpDeviceId].State == NfpDeviceState.SearchingForTag)
             {
                 NfpDevices[nfpDeviceId].State = NfpDeviceState.TagFound;
                 NfpDevices[nfpDeviceId].AmiiboId = amiiboId;
                 NfpDevices[nfpDeviceId].UseRandomUuid = useRandomUuid;
+            }
+        }
+        public void ScanAmiiboFromBin(string path)
+        {
+            VirtualAmiibo.InputBin = path;
+            if (VirtualAmiibo.ApplicationBytes.Length > 0)
+            {
+                VirtualAmiibo.ApplicationBytes = [];
+            }
+
+            byte[] encryptedData = File.ReadAllBytes(path);
+            VirtualAmiiboFile newFile = AmiiboBinReader.ReadBinFile(encryptedData);
+            if (SearchingForAmiibo(out int nfpDeviceId))
+            {
+                NfpDevices[nfpDeviceId].State = NfpDeviceState.TagFound;
+                NfpDevices[nfpDeviceId].AmiiboId = newFile.AmiiboId;
+                NfpDevices[nfpDeviceId].UseRandomUuid = false;
+            }
+        }
+
+        public void ScanSkylander(int nfcDeviceId, byte[] data)
+        {
+            if (NfcDevices[nfcDeviceId].State == NfcDeviceState.SearchingForTag)
+            {
+                NfcDevices[nfcDeviceId].State = NfcDeviceState.TagFound;
+                NfcDevices[nfcDeviceId].Data = data;
             }
         }
 
@@ -360,6 +400,53 @@ namespace Ryujinx.HLE.HOS
             }
 
             return false;
+        }
+
+        public bool SearchingForSkylander(out int nfcDeviceId)
+        {
+            nfcDeviceId = default;
+
+            for (int i = 0; i < NfcDevices.Count; i++)
+            {
+                if (NfcDevices[i].State == NfcDeviceState.SearchingForTag)
+                {
+                    nfcDeviceId = i;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool HasSkylander(out int nfcDeviceId)
+        {
+            nfcDeviceId = default;
+
+            for (int i = 0; i < NfcDevices.Count; i++)
+            {
+                if (NfcDevices[i].State == NfcDeviceState.TagFound)
+                {
+                    nfcDeviceId = i;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void RemoveSkylander()
+        {
+            for (int i = 0; i < NfcDevices.Count; i++)
+            {
+                if (NfcDevices[i].State == NfcDeviceState.TagFound)
+                {
+                    NfcDevices[i].State = NfcDeviceState.Initialized;
+                    NfcDevices[i].SignalDeactivate();
+                    Thread.Sleep(100); // NOTE: Simulate skylander scanning delay.
+                }
+            }
         }
 
         public void SignalDisplayResolutionChange()
@@ -471,7 +558,24 @@ namespace Ryujinx.HLE.HOS
                     TickSource.Resume();
                 }
             }
+
             IsPaused = pause;
+        }
+
+        internal IDebuggableProcess DebugGetApplicationProcessDebugInterface()
+        {
+            lock (KernelContext.Processes)
+            {
+                return KernelContext.Processes.Values.FirstOrDefault(x => x.IsApplication)?.DebugInterface;
+            }
+        }
+
+        internal KProcess DebugGetApplicationProcess()
+        {
+            lock (KernelContext.Processes)
+            {
+                return KernelContext.Processes.Values.FirstOrDefault(x => x.IsApplication);
+            }
         }
     }
 }

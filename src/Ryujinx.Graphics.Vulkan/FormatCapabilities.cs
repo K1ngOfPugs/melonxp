@@ -9,7 +9,8 @@ namespace Ryujinx.Graphics.Vulkan
 {
     class FormatCapabilities
     {
-        private static readonly GAL.Format[] _scaledFormats = {
+        private static readonly GAL.Format[] _scaledFormats =
+        [
             GAL.Format.R8Uscaled,
             GAL.Format.R8Sscaled,
             GAL.Format.R16Uscaled,
@@ -27,10 +28,11 @@ namespace Ryujinx.Graphics.Vulkan
             GAL.Format.R16G16B16A16Uscaled,
             GAL.Format.R16G16B16A16Sscaled,
             GAL.Format.R10G10B10A2Uscaled,
-            GAL.Format.R10G10B10A2Sscaled,
-        };
+            GAL.Format.R10G10B10A2Sscaled
+        ];
 
-        private static readonly GAL.Format[] _intFormats = {
+        private static readonly GAL.Format[] _intFormats =
+        [
             GAL.Format.R8Uint,
             GAL.Format.R8Sint,
             GAL.Format.R16Uint,
@@ -48,8 +50,8 @@ namespace Ryujinx.Graphics.Vulkan
             GAL.Format.R16G16B16A16Uint,
             GAL.Format.R16G16B16A16Sint,
             GAL.Format.R10G10B10A2Uint,
-            GAL.Format.R10G10B10A2Sint,
-        };
+            GAL.Format.R10G10B10A2Sint
+        ];
 
         private readonly FormatFeatureFlags[] _bufferTable;
         private readonly FormatFeatureFlags[] _optimalTable;
@@ -62,13 +64,13 @@ namespace Ryujinx.Graphics.Vulkan
             _api = api;
             _physicalDevice = physicalDevice;
 
-            int totalFormats = Enum.GetNames(typeof(Format)).Length;
+            int totalFormats = Enum.GetNames<Format>().Length;
 
             _bufferTable = new FormatFeatureFlags[totalFormats];
             _optimalTable = new FormatFeatureFlags[totalFormats];
         }
 
-        public bool BufferFormatsSupport(FormatFeatureFlags flags, params Format[] formats)
+        public bool BufferFormatsSupport(FormatFeatureFlags flags, params ReadOnlySpan<Format> formats)
         {
             foreach (Format format in formats)
             {
@@ -81,7 +83,7 @@ namespace Ryujinx.Graphics.Vulkan
             return true;
         }
 
-        public bool OptimalFormatsSupport(FormatFeatureFlags flags, params Format[] formats)
+        public bool OptimalFormatsSupport(FormatFeatureFlags flags, params ReadOnlySpan<Format> formats)
         {
             foreach (Format format in formats)
             {
@@ -96,11 +98,11 @@ namespace Ryujinx.Graphics.Vulkan
 
         public bool BufferFormatSupports(FormatFeatureFlags flags, Format format)
         {
-            var formatFeatureFlags = _bufferTable[(int)format];
+            FormatFeatureFlags formatFeatureFlags = _bufferTable[(int)format];
 
             if (formatFeatureFlags == 0)
             {
-                _api.GetPhysicalDeviceFormatProperties(_physicalDevice, FormatTable.GetFormat(format), out var fp);
+                _api.GetPhysicalDeviceFormatProperties(_physicalDevice, FormatTable.GetFormat(format), out FormatProperties fp);
                 formatFeatureFlags = fp.BufferFeatures;
                 _bufferTable[(int)format] = formatFeatureFlags;
             }
@@ -129,18 +131,18 @@ namespace Ryujinx.Graphics.Vulkan
 
         public bool BufferFormatSupports(FormatFeatureFlags flags, VkFormat format)
         {
-            _api.GetPhysicalDeviceFormatProperties(_physicalDevice, format, out var fp);
+            _api.GetPhysicalDeviceFormatProperties(_physicalDevice, format, out FormatProperties fp);
 
             return (fp.BufferFeatures & flags) == flags;
         }
 
         public bool OptimalFormatSupports(FormatFeatureFlags flags, Format format)
         {
-            var formatFeatureFlags = _optimalTable[(int)format];
+            FormatFeatureFlags formatFeatureFlags = _optimalTable[(int)format];
 
             if (formatFeatureFlags == 0)
             {
-                _api.GetPhysicalDeviceFormatProperties(_physicalDevice, FormatTable.GetFormat(format), out var fp);
+                _api.GetPhysicalDeviceFormatProperties(_physicalDevice, FormatTable.GetFormat(format), out FormatProperties fp);
                 formatFeatureFlags = fp.OptimalTilingFeatures;
                 _optimalTable[(int)format] = formatFeatureFlags;
             }
@@ -148,24 +150,24 @@ namespace Ryujinx.Graphics.Vulkan
             return (formatFeatureFlags & flags) == flags;
         }
 
-        public VkFormat ConvertToVkFormat(Format srcFormat)
+        public VkFormat ConvertToVkFormat(Format srcFormat, bool storageFeatureFlagRequired)
         {
-            var format = FormatTable.GetFormat(srcFormat);
+            VkFormat format = FormatTable.GetFormat(srcFormat);
 
-            var requiredFeatures = FormatFeatureFlags.SampledImageBit |
-                                   FormatFeatureFlags.TransferSrcBit |
-                                   FormatFeatureFlags.TransferDstBit;
+            FormatFeatureFlags requiredFeatures = FormatFeatureFlags.SampledImageBit |
+                                                  FormatFeatureFlags.TransferSrcBit |
+                                                  FormatFeatureFlags.TransferDstBit;
 
-            if (srcFormat.IsDepthOrStencil())
+            if (srcFormat.IsDepthOrStencil)
             {
                 requiredFeatures |= FormatFeatureFlags.DepthStencilAttachmentBit;
             }
-            else if (srcFormat.IsRtColorCompatible())
+            else if (srcFormat.IsRtColorCompatible)
             {
                 requiredFeatures |= FormatFeatureFlags.ColorAttachmentBit;
             }
 
-            if (srcFormat.IsImageCompatible())
+            if (srcFormat.IsImageCompatible && storageFeatureFlagRequired)
             {
                 requiredFeatures |= FormatFeatureFlags.StorageImageBit;
             }
@@ -192,7 +194,7 @@ namespace Ryujinx.Graphics.Vulkan
 
         public VkFormat ConvertToVertexVkFormat(Format srcFormat)
         {
-            var format = FormatTable.GetFormat(srcFormat);
+            VkFormat format = FormatTable.GetFormat(srcFormat);
 
             if (!BufferFormatSupports(FormatFeatureFlags.VertexBufferBit, srcFormat) ||
                 (IsRGB16IntFloat(srcFormat) && VulkanConfiguration.ForceRGB16IntFloatUnsupported))
@@ -223,14 +225,14 @@ namespace Ryujinx.Graphics.Vulkan
 
         public static bool IsD24S8(Format format)
         {
-            return format == Format.D24UnormS8Uint || format == Format.S8UintD24Unorm || format == Format.X8UintD24Unorm;
+            return format is Format.D24UnormS8Uint or Format.S8UintD24Unorm or Format.X8UintD24Unorm;
         }
 
         private static bool IsRGB16IntFloat(Format format)
         {
-            return format == Format.R16G16B16Float ||
-                   format == Format.R16G16B16Sint ||
-                   format == Format.R16G16B16Uint;
+            return format is Format.R16G16B16Float or
+                   Format.R16G16B16Sint or
+                   Format.R16G16B16Uint;
         }
     }
 }

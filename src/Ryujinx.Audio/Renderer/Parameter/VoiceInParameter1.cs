@@ -171,10 +171,9 @@ namespace Ryujinx.Audio.Renderer.Parameter
         /// Reserved/unused.
         /// </summary>
         private unsafe fixed uint _reserved3[2];
-
     }
-
-        /// <summary>
+    
+    /// <summary>
         /// Input information for a voice wavebuffer.
         /// </summary>
         [StructLayout(LayoutKind.Sequential, Size = 0x38, Pack = 1)]

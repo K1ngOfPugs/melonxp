@@ -1,3 +1,4 @@
+using Gommon;
 using Ryujinx.Common.Logging;
 using Ryujinx.Common.Memory;
 using Ryujinx.Common.Utilities;
@@ -58,6 +59,7 @@ namespace Ryujinx.HLE.HOS.Services.Ldn.UserServiceCreator.LdnMitm
                     {
                         Scan?.Invoke(endPoint, LanPacketType.ScanResponse, SpanHelpers.AsSpan<NetworkInfo, byte>(ref _discovery.NetworkInfo).ToArray());
                     }
+
                     break;
                 case LanPacketType.ScanResponse:
                     // UDP
@@ -143,7 +145,7 @@ namespace Ryujinx.HLE.HOS.Services.Ldn.UserServiceCreator.LdnMitm
                             if (decompressedLdnData.Length != header.DecompressLength)
                             {
                                 Logger.Error?.PrintMsg(LogClass.ServiceLdn, $"Decompress error: length does not match. ({decompressedLdnData.Length} != {header.DecompressLength})");
-                                Logger.Error?.PrintMsg(LogClass.ServiceLdn, $"Decompress error data: '{string.Join("", decompressedLdnData.Select(x => (int)x).ToArray())}'");
+                                Logger.Error?.PrintMsg(LogClass.ServiceLdn, $"Decompress error data: '{decompressedLdnData.Select(x => (int)x).JoinToString(string.Empty)}'");
 
                                 return;
                             }
@@ -161,7 +163,7 @@ namespace Ryujinx.HLE.HOS.Services.Ldn.UserServiceCreator.LdnMitm
 
         public int SendBroadcast(ILdnSocket s, LanPacketType type, int port)
         {
-            return SendPacket(s, type, Array.Empty<byte>(), new IPEndPoint(_discovery.LocalBroadcastAddr, port));
+            return SendPacket(s, type, [], new IPEndPoint(_discovery.LocalBroadcastAddr, port));
         }
 
         public int SendPacket(ILdnSocket s, LanPacketType type, byte[] data, EndPoint endPoint = null)
@@ -230,7 +232,7 @@ namespace Ryujinx.HLE.HOS.Services.Ldn.UserServiceCreator.LdnMitm
 
         private int Compress(byte[] input, out byte[] output)
         {
-            List<byte> outputList = new();
+            List<byte> outputList = [];
             int i = 0;
             int maxCount = 0xFF;
 
@@ -274,7 +276,7 @@ namespace Ryujinx.HLE.HOS.Services.Ldn.UserServiceCreator.LdnMitm
 
         private int Decompress(byte[] input, out byte[] output)
         {
-            List<byte> outputList = new();
+            List<byte> outputList = [];
             int i = 0;
 
             while (i < input.Length && outputList.Count < BufferSize)

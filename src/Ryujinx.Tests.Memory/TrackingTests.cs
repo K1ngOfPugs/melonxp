@@ -214,7 +214,7 @@ namespace Ryujinx.Tests.Memory
                 handles[i].Reprotect();
             }
 
-            List<Thread> testThreads = new();
+            List<Thread> testThreads = [];
 
             // Dirty flag consumer threads
             int dirtyFlagReprotects = 0;
@@ -329,6 +329,7 @@ namespace Ryujinx.Tests.Memory
                     {
                         _tracking.VirtualMemoryEvent((ulong)random.Next(PageSize), 4, false);
                     }
+
                     Interlocked.Increment(ref signalThreadsDone);
                 });
             }

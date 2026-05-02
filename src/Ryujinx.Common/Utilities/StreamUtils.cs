@@ -1,5 +1,6 @@
 using Microsoft.IO;
 using Ryujinx.Common.Memory;
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ namespace Ryujinx.Common.Utilities
 
                 MemoryOwner<byte> ownedMemory = MemoryOwner<byte>.Rent(checked((int)bytesExpected));
 
-                var destSpan = ownedMemory.Span;
+                Span<byte> destSpan = ownedMemory.Span;
 
                 int totalBytesRead = 0;
 
@@ -58,7 +59,7 @@ namespace Ryujinx.Common.Utilities
 
         public static async Task<byte[]> StreamToBytesAsync(Stream input, CancellationToken cancellationToken = default)
         {
-            using MemoryStream stream = MemoryStreamManager.Shared.GetStream();
+            using RecyclableMemoryStream stream = MemoryStreamManager.Shared.GetStream();
 
             await input.CopyToAsync(stream, cancellationToken);
 

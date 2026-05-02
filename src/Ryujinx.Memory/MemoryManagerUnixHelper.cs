@@ -6,7 +6,6 @@ namespace Ryujinx.Memory
 {
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
-    [SupportedOSPlatform("ios")]
     public static partial class MemoryManagerUnixHelper
     {
         [Flags]
@@ -45,7 +44,7 @@ namespace Ryujinx.Memory
             O_SYNC = 256,
         }
 
-        public const IntPtr MAP_FAILED = -1;
+        public const nint MAP_FAILED = -1;
 
         private const int MAP_ANONYMOUS_LINUX_GENERIC = 0x20;
         private const int MAP_NORESERVE_LINUX_GENERIC = 0x4000;
@@ -58,37 +57,37 @@ namespace Ryujinx.Memory
         public const int MADV_REMOVE = 9;
 
         [LibraryImport("libc", EntryPoint = "mmap", SetLastError = true)]
-        private static partial IntPtr Internal_mmap(IntPtr address, ulong length, MmapProts prot, int flags, int fd, long offset);
+        private static partial nint Internal_mmap(nint address, ulong length, MmapProts prot, int flags, int fd, long offset);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial int mprotect(IntPtr address, ulong length, MmapProts prot);
+        public static partial int mprotect(nint address, ulong length, MmapProts prot);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial int munmap(IntPtr address, ulong length);
+        public static partial int munmap(nint address, ulong length);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial IntPtr mremap(IntPtr old_address, ulong old_size, ulong new_size, int flags, IntPtr new_address);
+        public static partial nint mremap(nint old_address, ulong old_size, ulong new_size, int flags, nint new_address);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial int madvise(IntPtr address, ulong size, int advice);
+        public static partial int madvise(nint address, ulong size, int advice);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial int mkstemp(IntPtr template);
+        public static partial int mkstemp(nint template);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial int unlink(IntPtr pathname);
+        public static partial int unlink(nint pathname);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial int ftruncate(int fildes, IntPtr length);
+        public static partial int ftruncate(int fildes, nint length);
 
         [LibraryImport("libc", SetLastError = true)]
         public static partial int close(int fd);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial int shm_open(IntPtr name, int oflag, uint mode);
+        public static partial int shm_open(nint name, int oflag, uint mode);
 
         [LibraryImport("libc", SetLastError = true)]
-        public static partial int shm_unlink(IntPtr name);
+        public static partial int shm_unlink(nint name);
 
         private static int MmapFlagsToSystemFlags(MmapFlags flags)
         {
@@ -115,7 +114,7 @@ namespace Ryujinx.Memory
                 {
                     result |= MAP_ANONYMOUS_LINUX_GENERIC;
                 }
-                else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+                else if (OperatingSystem.IsMacOS())
                 {
                     result |= MAP_ANONYMOUS_DARWIN;
                 }
@@ -131,7 +130,7 @@ namespace Ryujinx.Memory
                 {
                     result |= MAP_NORESERVE_LINUX_GENERIC;
                 }
-                else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+                else if (OperatingSystem.IsMacOS())
                 {
                     result |= MAP_NORESERVE_DARWIN;
                 }
@@ -147,7 +146,7 @@ namespace Ryujinx.Memory
                 {
                     result |= MAP_UNLOCKED_LINUX_GENERIC;
                 }
-                else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+                else if (OperatingSystem.IsMacOS())
                 {
                     // FIXME: Doesn't exist on Darwin
                 }
@@ -157,7 +156,7 @@ namespace Ryujinx.Memory
                 }
             }
 
-            if (flags.HasFlag(MmapFlags.MAP_JIT_DARWIN) && (OperatingSystem.IsIOS() || OperatingSystem.IsMacOSVersionAtLeast(10, 14)))
+            if (flags.HasFlag(MmapFlags.MAP_JIT_DARWIN) && OperatingSystem.IsMacOSVersionAtLeast(10, 14))
             {
                 result |= (int)MmapFlags.MAP_JIT_DARWIN;
             }
@@ -165,7 +164,7 @@ namespace Ryujinx.Memory
             return result;
         }
 
-        public static IntPtr Mmap(IntPtr address, ulong length, MmapProts prot, MmapFlags flags, int fd, long offset)
+        public static nint Mmap(nint address, ulong length, MmapProts prot, MmapFlags flags, int fd, long offset)
         {
             return Internal_mmap(address, length, prot, MmapFlagsToSystemFlags(flags), fd, offset);
         }

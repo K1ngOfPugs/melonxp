@@ -2,7 +2,7 @@ using Ryujinx.Common;
 
 namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.LibraryAppletProxy
 {
-    partial class IProcessWindingController : IpcService
+    class IProcessWindingController : IpcService
     {
         public IProcessWindingController() { }
 

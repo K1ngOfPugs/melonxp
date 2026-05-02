@@ -13,7 +13,7 @@ namespace Ryujinx.Graphics.Shader.Translation
         {
             Blocks = blocks;
 
-            HashSet<BasicBlock> visited = new();
+            HashSet<BasicBlock> visited = [];
 
             Stack<BasicBlock> blockStack = new();
 
@@ -52,7 +52,7 @@ namespace Ryujinx.Graphics.Shader.Translation
         {
             Dictionary<Operand, BasicBlock> labels = new();
 
-            List<BasicBlock> blocks = new();
+            List<BasicBlock> blocks = [];
 
             BasicBlock currentBlock = null;
 
@@ -110,9 +110,9 @@ namespace Ryujinx.Graphics.Shader.Translation
                     currentBlock.Operations.AddLast(operation);
                 }
 
-                needsNewBlock = operation.Inst == Instruction.Branch ||
-                                operation.Inst == Instruction.BranchIfTrue ||
-                                operation.Inst == Instruction.BranchIfFalse;
+                needsNewBlock = operation.Inst is Instruction.Branch or
+                                Instruction.BranchIfTrue or
+                                Instruction.BranchIfFalse;
 
                 if (needsNewBlock)
                 {

@@ -3,7 +3,7 @@ using Ryujinx.Common.Logging;
 namespace Ryujinx.HLE.HOS.Services.Ptm.Psm
 {
     [Service("psm")]
-    partial class IPsmServer : IpcService
+    class IPsmServer : IpcService
     {
         public IPsmServer(ServiceCtx context) { }
 

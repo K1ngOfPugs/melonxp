@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);._*</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +14,6 @@
 
   <ItemGroup>
     <PackageReference Include="Concentus" />
-    <PackageReference Include="LibHac" />
+    <PackageReference Include="Ryujinx.LibHac" />
   </ItemGroup>
 </Project>

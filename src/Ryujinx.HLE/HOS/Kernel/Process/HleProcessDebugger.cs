@@ -1,8 +1,10 @@
+using Ryujinx.Cpu;
 using Ryujinx.HLE.HOS.Diagnostics.Demangler;
 using Ryujinx.HLE.HOS.Kernel.Memory;
 using Ryujinx.HLE.HOS.Kernel.Threading;
 using Ryujinx.HLE.Loaders.Elf;
 using Ryujinx.Memory;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,8 +18,9 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
 
         private readonly KProcess _owner;
 
-        private class Image
+        public class Image
         {
+            public string Name { get; internal set; }
             public ulong BaseAddress { get; }
             public ulong Size { get; }
             public ulong EndAddress => BaseAddress + Size;
@@ -29,6 +32,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
                 BaseAddress = baseAddress;
                 Size = size;
                 Symbols = symbols;
+                Name = "(unknown)";
             }
         }
 
@@ -40,18 +44,29 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
         {
             _owner = owner;
 
-            _images = new List<Image>();
+            _images = [];
         }
 
         public string GetGuestStackTrace(KThread thread)
         {
             EnsureLoaded();
 
-            var context = thread.Context;
+            IExecutionContext context = thread.Context;
 
             StringBuilder trace = new();
 
             trace.AppendLine($"Process: {_owner.Name}, PID: {_owner.Pid}");
+
+            string ThreadName = thread.GetThreadName();
+
+            if (!String.IsNullOrEmpty(ThreadName))
+            {
+                trace.AppendLine($"Thread ID: {thread.ThreadUid} ({ThreadName})");
+            }
+            else
+            {
+                trace.AppendLine($"Thread ID: {thread.ThreadUid}");
+            }
 
             void AppendTrace(ulong address)
             {
@@ -109,13 +124,13 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
         {
             EnsureLoaded();
 
-            var context = thread.Context;
+            IExecutionContext context = thread.Context;
 
             StringBuilder sb = new();
 
             string GetReg(int x)
             {
-                var v = x == 32 ? context.Pc : context.GetX(x);
+                ulong v = x == 32 ? context.Pc : context.GetX(x);
                 if (!AnalyzePointer(out PointerInfo info, v, thread))
                 {
                     return $"0x{v:x16}";
@@ -137,12 +152,123 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
             {
                 sb.AppendLine($"\tX[{i:d2}]:\t{GetReg(i)}");
             }
+
             sb.AppendLine($"\tFP:\t{GetReg(29)}");
             sb.AppendLine($"\tLR:\t{GetReg(30)}");
             sb.AppendLine($"\tSP:\t{GetReg(31)}");
             sb.AppendLine($"\tPC:\t{GetReg(32)}");
 
             return sb.ToString();
+        }
+
+        public string GetProcessInfoPrintout()
+        {
+            StringBuilder sb = new();
+
+            sb.AppendLine($"Process: {_owner.Name}, PID: {_owner.Pid}");
+            sb.AppendLine($"Program Id:  0x{_owner.TitleId:x16}");
+            sb.AppendLine($"Application: {(_owner.IsApplication ? 1 : 0)}");
+
+            sb.AppendLine("Layout:");
+            sb.AppendLine(
+                $"  Alias: 0x{_owner.MemoryManager.AliasRegionStart:x10} - 0x{_owner.MemoryManager.AliasRegionEnd - 1:x10}");
+            sb.AppendLine(
+                $"  Heap:  0x{_owner.MemoryManager.HeapRegionStart:x10} - 0x{_owner.MemoryManager.HeapRegionEnd - 1:x10}");
+            sb.AppendLine(
+                $"  Aslr:  0x{_owner.MemoryManager.AslrRegionStart:x10} - 0x{_owner.MemoryManager.AslrRegionEnd - 1:x10}");
+            sb.AppendLine(
+                $"  Stack: 0x{_owner.MemoryManager.StackRegionStart:x10} - 0x{_owner.MemoryManager.StackRegionEnd - 1:x10}");
+
+            sb.AppendLine("Modules:");
+
+            foreach (Image image in GetLoadedImages())
+            {
+                ulong endAddress = image.BaseAddress + image.Size - 1;
+                sb.AppendLine($"  0x{image.BaseAddress:x10} - 0x{endAddress:x10} {image.Name}");
+            }
+
+            return sb.ToString();
+        }
+
+        public string GetMinidump()
+        {
+            var result = new StringBuilder();
+
+            result.AppendLine("=== Begin Minidump ===\n");
+            try
+            {
+                result.AppendLine(GetProcessInfoPrintout());
+            }
+            catch (Exception e)
+            {
+                result.AppendLine($"[Error getting process info: {e.Message}]");
+            }
+
+            var debugInterface = _owner?.DebugInterface;
+
+            if (debugInterface != null)
+            {
+                ulong[] threadUids;
+
+                try
+                {
+                    threadUids = debugInterface.ThreadUids ?? [];
+                }
+                catch (Exception e)
+                {
+                    result.AppendLine($"[Error getting thread uids: {e.Message}]");
+                    threadUids = [];
+                }
+
+                foreach (ulong threadUid in threadUids)
+                {
+                    result.AppendLine($"=== Thread {threadUid} ===");
+
+                    KThread thread;
+
+                    try
+                    {
+                        thread = debugInterface.GetThread(threadUid);
+                    }
+                    catch (Exception e)
+                    {
+                        result.AppendLine($"[Error getting thread: {e.Message}]");
+                        continue;
+                    }
+
+                    if (thread == null)
+                    {
+                        result.AppendLine("[Thread not found]");
+                        continue;
+                    }
+
+                    try
+                    {
+                        result.AppendLine(GetGuestStackTrace(thread));
+                    }
+                    catch (Exception e)
+                    {
+                        result.AppendLine($"[Error getting stack trace: {e.Message}]");
+                    }
+
+                    try
+                    {
+                        result.AppendLine(GetCpuRegisterPrintout(thread));
+                    }
+                    catch (Exception e)
+                    {
+                        result.AppendLine($"[Error getting registers: {e.Message}]");
+                    }
+                }
+            }
+            else
+            {
+                result.AppendLine("[Error generating minidump: debugInterface is null]");
+            }
+
+            result.AppendLine("=== End Minidump ===");
+
+            return result.ToString();
         }
 
         private static bool TryGetSubName(Image image, ulong address, out ElfSymbol symbol)
@@ -234,16 +360,74 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
                 {
                     info.SubName = Demangler.Parse(info.SubName);
                 }
+
                 info.SubOffset = info.Offset - symbol.Value;
             }
             else
             {
-                info.SubName = "";
+                info.SubName = string.Empty;
             }
 
-            info.ImageName = GetGuessedNsoNameFromIndex(imageIndex);
+            info.ImageName = image.Name;
 
             return true;
+        }
+
+        private bool GetModuleName(out string moduleName, Image image)
+        {
+            moduleName = string.Empty;
+
+            ulong rodataStart = image.BaseAddress + image.Size;
+
+            KMemoryInfo roInfo = _owner.MemoryManager.QueryMemory(rodataStart);
+            if (roInfo.Permission != KMemoryPermission.Read)
+            {
+                return false;
+            }
+
+            ulong rwdataStart = roInfo.Address + roInfo.Size;
+            
+            KMemoryInfo.Pool.Release(roInfo);
+
+            try
+            {
+                Span<byte> rodataBuf = stackalloc byte[0x208];
+                _owner.CpuMemory.Read(rodataStart, rodataBuf);
+
+                ulong deprecatedRwDataOffset = BitConverter.ToUInt64(rodataBuf);
+                // no name if using old format
+                if (image.BaseAddress + deprecatedRwDataOffset == rwdataStart)
+                {
+                    return false;
+                }
+
+                uint zero = BitConverter.ToUInt32(rodataBuf);
+                int pathLength = BitConverter.ToInt32(rodataBuf.Slice(4));
+                if (zero != 0 || pathLength <= 0)
+                {
+                    // try again with 12 byte offset, 20.0.0+
+                    _owner.CpuMemory.Read(rodataStart + 12, rodataBuf);
+                    zero = BitConverter.ToUInt32(rodataBuf);
+                    pathLength = BitConverter.ToInt32(rodataBuf.Slice(4));
+                }
+
+                if (zero != 0 || pathLength <= 0)
+                {
+                    return false;
+                }
+
+                pathLength = Math.Min(pathLength, rodataBuf.Length - 8);
+                Span<byte> pathBuf = rodataBuf.Slice(8, pathLength);
+                int lastSlash = pathBuf.LastIndexOfAny(new byte[] { (byte)'\\', (byte)'/' });
+
+                moduleName = Encoding.ASCII.GetString(pathBuf.Slice(lastSlash + 1).TrimEnd((byte)0));
+
+                return true;
+            }
+            catch (InvalidMemoryRegionException)
+            {
+                return false;
+            }
         }
 
         private bool AnalyzePointerFromStack(out PointerInfo info, ulong address, KThread thread)
@@ -251,7 +435,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
             info = default;
 
             ulong sp = thread.Context.GetX(31);
-            var memoryInfo = _owner.MemoryManager.QueryMemory(address);
+            KMemoryInfo memoryInfo = _owner.MemoryManager.QueryMemory(address);
             MemoryState memoryState = memoryInfo.State;
 
             if (!memoryState.HasFlag(MemoryState.Stack)) // Is this pointer within the stack?
@@ -280,36 +464,21 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
             return null;
         }
 
-        private string GetGuessedNsoNameFromIndex(int index)
-        {
-            if ((uint)index > 11)
-            {
-                return "???";
-            }
-
-            if (index == 0)
-            {
-                return "rtld";
-            }
-            else if (index == 1)
-            {
-                return "main";
-            }
-            else if (index == GetImagesCount() - 1)
-            {
-                return "sdk";
-            }
-            else
-            {
-                return "subsdk" + (index - 2);
-            }
-        }
-
         private int GetImagesCount()
         {
             lock (_images)
             {
                 return _images.Count;
+            }
+        }
+
+        public List<Image> GetLoadedImages()
+        {
+            EnsureLoaded();
+
+            lock (_images)
+            {
+                return [.. _images];
             }
         }
 
@@ -413,7 +582,7 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
             ulong strTblAddr = textOffset + strTab;
             ulong symTblAddr = textOffset + symTab;
 
-            List<ElfSymbol> symbols = new();
+            List<ElfSymbol> symbols = [];
 
             while (symTblAddr < strTblAddr)
             {
@@ -426,7 +595,16 @@ namespace Ryujinx.HLE.HOS.Kernel.Process
 
             lock (_images)
             {
-                _images.Add(new Image(textOffset, textSize, symbols.OrderBy(x => x.Value).ToArray()));
+                Image image = new(textOffset, textSize, symbols.OrderBy(x => x.Value).ToArray());
+
+                if (!GetModuleName(out string moduleName, image))
+                {
+                    int newIndex = _images.Count;
+                    moduleName = $"(unknown{newIndex})";
+                }
+                image.Name = moduleName;
+
+                _images.Add(image);
             }
         }
 

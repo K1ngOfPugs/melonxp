@@ -10,7 +10,6 @@ namespace Ryujinx.Cpu.AppleHv
     }
 
     [SupportedOSPlatform("macos")]
-    [SupportedOSPlatform("ios")]
     static partial class TimeApi
     {
         [LibraryImport("libc", SetLastError = true)]

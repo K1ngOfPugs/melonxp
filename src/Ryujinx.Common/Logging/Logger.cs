@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -24,7 +25,7 @@ namespace Ryujinx.Common.Logging
         public readonly struct Log
         {
             private static readonly string _homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            private static readonly string _homeDirRedacted = Path.Combine(Directory.GetParent(_homeDir).FullName, "[redacted]");
+            private static readonly string _homeDirRedacted = Path.Combine(Directory.GetParent(_homeDir)!.FullName, "[redacted]");
 
             internal readonly LogLevel Level;
 
@@ -38,7 +39,7 @@ namespace Ryujinx.Common.Logging
             {
                 if (_enabledClasses[(int)logClass])
                 {
-                    Updated?.Invoke(null, new LogEventArgs(Level, _time.Elapsed, Thread.CurrentThread.Name, FormatMessage(logClass, "", message)));
+                    Updated?.Invoke(null, new LogEventArgs(Level, _time.Elapsed, Thread.CurrentThread.Name, FormatMessage(logClass, string.Empty, message)));
                 }
             }
 
@@ -131,7 +132,7 @@ namespace Ryujinx.Common.Logging
                 _enabledClasses[index] = true;
             }
 
-            _logTargets = new List<ILogTarget>();
+            _logTargets = [];
 
             _time = Stopwatch.StartNew();
 
@@ -158,20 +159,15 @@ namespace Ryujinx.Common.Logging
         }
 
         private static ILogTarget GetTarget(string targetName)
-        {
-            foreach (var target in _logTargets)
-            {
-                if (target.Name.Equals(targetName))
-                {
-                    return target;
-                }
-            }
-
-            return null;
-        }
+            => _logTargets.FirstOrDefault(target => target.Name.Equals(targetName));
 
         public static void AddTarget(ILogTarget target)
         {
+            if (_logTargets.Any(t => t.Name == target.Name))
+            {
+                return;
+            }
+
             _logTargets.Add(target);
 
             Updated += target.Log;
@@ -191,13 +187,24 @@ namespace Ryujinx.Common.Logging
             }
         }
 
+        public static void Flush()
+        {
+            foreach (ILogTarget target in _logTargets)
+            {
+                if (target is AsyncLogTargetWrapper asyncTarget)
+                {
+                    asyncTarget.Flush();
+                }
+            }
+        }
+
         public static void Shutdown()
         {
             Updated = null;
 
             _stdErrAdapter.Dispose();
 
-            foreach (var target in _logTargets)
+            foreach (ILogTarget target in _logTargets)
             {
                 target.Dispose();
             }
@@ -207,14 +214,12 @@ namespace Ryujinx.Common.Logging
 
         public static IReadOnlyCollection<LogLevel> GetEnabledLevels()
         {
-            var logs = new[] { Debug, Info, Warning, Error, Guest, AccessLog, Stub, Trace };
+            Log?[] logs = [Debug, Info, Warning, Error, Guest, AccessLog, Stub, Trace];
             List<LogLevel> levels = new(logs.Length);
-            foreach (var log in logs)
+            foreach (Log? log in logs)
             {
                 if (log.HasValue)
-                {
                     levels.Add(log.Value.Level);
-                }
             }
 
             return levels;
@@ -225,15 +230,16 @@ namespace Ryujinx.Common.Logging
             switch (logLevel)
             {
 #pragma warning disable IDE0055 // Disable formatting
-                case LogLevel.Debug     : Debug     = enabled ? new Log(LogLevel.Debug)     : new Log?(); break;
-                case LogLevel.Info      : Info      = enabled ? new Log(LogLevel.Info)      : new Log?(); break;
-                case LogLevel.Warning   : Warning   = enabled ? new Log(LogLevel.Warning)   : new Log?(); break;
-                case LogLevel.Error     : Error     = enabled ? new Log(LogLevel.Error)     : new Log?(); break;
-                case LogLevel.Guest     : Guest     = enabled ? new Log(LogLevel.Guest)     : new Log?(); break;
-                case LogLevel.AccessLog : AccessLog = enabled ? new Log(LogLevel.AccessLog) : new Log?(); break;
-                case LogLevel.Stub      : Stub      = enabled ? new Log(LogLevel.Stub)      : new Log?(); break;
-                case LogLevel.Trace     : Trace     = enabled ? new Log(LogLevel.Trace)     : new Log?(); break;
-                default: throw new ArgumentException("Unknown Log Level");
+                case LogLevel.Debug     : Debug     = enabled ? new Log(LogLevel.Debug)     : null; break;
+                case LogLevel.Info      : Info      = enabled ? new Log(LogLevel.Info)      : null; break;
+                case LogLevel.Warning   : Warning   = enabled ? new Log(LogLevel.Warning)   : null; break;
+                case LogLevel.Error     : Error     = enabled ? new Log(LogLevel.Error)     : null; break;
+                case LogLevel.Guest     : Guest     = enabled ? new Log(LogLevel.Guest)     : null; break;
+                case LogLevel.AccessLog : AccessLog = enabled ? new Log(LogLevel.AccessLog) : null; break;
+                case LogLevel.Stub      : Stub      = enabled ? new Log(LogLevel.Stub)      : null; break;
+                case LogLevel.Trace     : Trace     = enabled ? new Log(LogLevel.Trace)     : null; break;
+                case LogLevel.Notice    : break;
+                default: throw new ArgumentException("Unknown Log Level", nameof(logLevel));
 #pragma warning restore IDE0055
             }
         }

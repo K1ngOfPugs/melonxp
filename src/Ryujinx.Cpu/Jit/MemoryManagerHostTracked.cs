@@ -8,7 +8,6 @@ using Ryujinx.Memory.Tracking;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Ryujinx.Cpu.Jit
@@ -28,7 +27,7 @@ namespace Ryujinx.Cpu.Jit
         public MemoryTracking Tracking { get; }
 
         private readonly NativePageTable _nativePageTable;
-        private readonly Ryujinx.Cpu.Jit.HostTracked.AddressSpacePartitioned _addressSpace;
+        private readonly AddressSpacePartitioned _addressSpace;
 
         private readonly ManagedPageFlags _pages;
 
@@ -37,7 +36,7 @@ namespace Ryujinx.Cpu.Jit
         /// <inheritdoc/>
         public bool UsesPrivateAllocations => true;
 
-        public IntPtr PageTablePointer => _nativePageTable.PageTablePointer;
+        public nint PageTablePointer => _nativePageTable.PageTablePointer;
 
         public MemoryManagerType Type => _unsafeMode ? MemoryManagerType.HostTrackedUnsafe : MemoryManagerType.HostTracked;
 
@@ -166,17 +165,6 @@ namespace Ryujinx.Cpu.Jit
         }
 
         /// <inheritdoc/>
-        public override void MapForeign(ulong va, nuint hostPointer, ulong size)
-        {
-            AssertValidAddressAndSize(va, size);
-
-            _pages.AddMapping(va, size);
-            _nativePageTable.MapForeign(va, hostPointer, size);
-
-            Tracking.Map(va, size);
-        }
-
-        /// <inheritdoc/>
         public void Unmap(ulong va, ulong size)
         {
             AssertValidAddressAndSize(va, size);
@@ -239,6 +227,11 @@ namespace Ryujinx.Cpu.Jit
                 }
             }
         }
+        
+        public override bool TryReadUnsafe(ulong va, int length, out Span<byte> data)
+        {
+            throw new NotImplementedException();
+        }
 
         public override bool WriteWithRedundancyCheck(ulong va, ReadOnlySpan<byte> data)
         {
@@ -251,7 +244,7 @@ namespace Ryujinx.Cpu.Jit
 
             if (TryGetVirtualContiguous(va, data.Length, out MemoryBlock memoryBlock, out ulong offset))
             {
-                var target = memoryBlock.GetSpan(offset, data.Length);
+                Span<byte> target = memoryBlock.GetSpan(offset, data.Length);
 
                 bool changed = !data.SequenceEqual(target);
 
@@ -349,7 +342,7 @@ namespace Ryujinx.Cpu.Jit
 
         private bool TryGetVirtualContiguous(ulong va, int size, out MemoryBlock memory, out ulong offset)
         {
-            if (_addressSpace.HasAnyPrivateAllocation(va, (ulong)size, out Ryujinx.Cpu.Jit.HostTracked.PrivateRange range))
+            if (_addressSpace.HasAnyPrivateAllocation(va, (ulong)size, out PrivateRange range))
             {
                 // If we have a private allocation overlapping the range,
                 // then the access is only considered contiguous if it covers the entire range.
@@ -433,9 +426,9 @@ namespace Ryujinx.Cpu.Jit
             return Math.Min(contiguousSize, size);
         }
 
-        public (MemoryBlock, ulong, ulong) GetMemoryOffsetAndSize(ulong va, ulong size)
+        private (MemoryBlock, ulong, ulong) GetMemoryOffsetAndSize(ulong va, ulong size)
         {
-            Ryujinx.Cpu.Jit.HostTracked.PrivateRange privateRange = _addressSpace.GetFirstPrivateAllocation(va, size, out ulong nextVa);
+            PrivateRange privateRange = _addressSpace.GetFirstPrivateAllocation(va, size, out ulong nextVa);
 
             if (privateRange.Memory != null)
             {
@@ -454,7 +447,7 @@ namespace Ryujinx.Cpu.Jit
                 return null;
             }
 
-            var regions = new List<HostMemoryRange>();
+            List<HostMemoryRange> regions = [];
             ulong endVa = va + size;
 
             try
@@ -463,7 +456,7 @@ namespace Ryujinx.Cpu.Jit
                 {
                     (MemoryBlock memory, ulong rangeOffset, ulong rangeSize) = GetMemoryOffsetAndSize(va, endVa - va);
 
-                    regions.Add(new((UIntPtr)memory.GetPointer(rangeOffset, rangeSize), rangeSize));
+                    regions.Add(new((nuint)memory.GetPointer(rangeOffset, rangeSize), rangeSize));
 
                     va += rangeSize;
                 }
@@ -480,22 +473,20 @@ namespace Ryujinx.Cpu.Jit
         {
             if (size == 0)
             {
-                return Enumerable.Empty<MemoryRange>();
+                return [];
             }
 
             return GetPhysicalRegionsImpl(va, size);
         }
 
-        private List<MemoryRange> GetPhysicalRegionsImpl(ulong va, ulong size)
+        private IEnumerable<MemoryRange> GetPhysicalRegionsImpl(ulong va, ulong size)
         {
             if (!ValidateAddress(va) || !ValidateAddressAndSize(va, size))
             {
-                return null;
+                yield break;
             }
 
             int pages = GetPagesCount(va, (uint)size, out va);
-
-            var regions = new List<MemoryRange>();
 
             ulong regionStart = GetPhysicalAddressInternal(va);
             ulong regionSize = PageSize;
@@ -504,14 +495,14 @@ namespace Ryujinx.Cpu.Jit
             {
                 if (!ValidateAddress(va + PageSize))
                 {
-                    return null;
+                    yield break;
                 }
 
                 ulong newPa = GetPhysicalAddressInternal(va + PageSize);
 
                 if (GetPhysicalAddressInternal(va) + PageSize != newPa)
                 {
-                    regions.Add(new MemoryRange(regionStart, regionSize));
+                    yield return new MemoryRange(regionStart, regionSize);
                     regionStart = newPa;
                     regionSize = 0;
                 }
@@ -520,9 +511,7 @@ namespace Ryujinx.Cpu.Jit
                 regionSize += PageSize;
             }
 
-            regions.Add(new MemoryRange(regionStart, regionSize));
-
-            return regions;
+            yield return new MemoryRange(regionStart, regionSize);
         }
 
         /// <inheritdoc/>

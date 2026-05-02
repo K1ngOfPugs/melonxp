@@ -62,11 +62,11 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.Blender
                 currentCode = currentCode[..codeLength];
             }
 
-            Hash128 hash = XXHash128.ComputeHash(MemoryMarshal.Cast<uint, byte>(currentCode));
+            Hash128 hash = Hash128.ComputeHash(MemoryMarshal.Cast<uint, byte>(currentCode));
 
             descriptor = default;
 
-            if (!AdvancedBlendPreGenTable.Entries.TryGetValue(hash, out var entry))
+            if (!AdvancedBlendPreGenTable.Entries.TryGetValue(hash, out AdvancedBlendEntry entry))
             {
                 return false;
             }
@@ -75,10 +75,12 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.Blender
             {
                 bool constantsMatch = true;
 
+                Span<RgbHalf> blendUcodeConstantsSpan = _state.State.BlendUcodeConstants.AsSpan();
+
                 for (int i = 0; i < entry.Constants.Length; i++)
                 {
                     RgbFloat constant = entry.Constants[i];
-                    RgbHalf constant2 = _state.State.BlendUcodeConstants[i];
+                    RgbHalf constant2 = blendUcodeConstantsSpan[i];
 
                     if ((Half)constant.R != constant2.UnpackR() ||
                         (Half)constant.G != constant2.UnpackG() ||

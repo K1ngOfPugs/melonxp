@@ -221,14 +221,14 @@ namespace Ryujinx.Graphics.Shader.Instructions
 
             Operand d = Register(dest, RegisterType.Gpr);
 
-            List<Operand> sourcesList = new();
+            List<Operand> sourcesList = [];
 
             if (isBindless)
             {
                 sourcesList.Add(context.Copy(GetSrcReg(context, srcC)));
             }
 
-            int coordsCount = type.GetDimensions();
+            int coordsCount = type.Dimensions;
 
             for (int index = 0; index < coordsCount; index++)
             {
@@ -258,7 +258,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
             }
 
             // TODO: FP and 64-bit formats.
-            TextureFormat format = size == SuatomSize.Sd32 || size == SuatomSize.Sd64
+            TextureFormat format = size is SuatomSize.Sd32 or SuatomSize.Sd64
                 ? (isBindless ? TextureFormat.Unknown : ShaderProperties.GetTextureFormatAtomic(context.TranslatorContext.GpuAccessor, imm))
                 : GetTextureFormat(size);
 
@@ -328,14 +328,14 @@ namespace Ryujinx.Graphics.Shader.Instructions
                 return context.Copy(Register(srcA++, RegisterType.Gpr));
             }
 
-            List<Operand> sourcesList = new();
+            List<Operand> sourcesList = [];
 
             if (isBindless)
             {
                 sourcesList.Add(context.Copy(Register(srcC, RegisterType.Gpr)));
             }
 
-            int coordsCount = type.GetDimensions();
+            int coordsCount = type.Dimensions;
 
             for (int index = 0; index < coordsCount; index++)
             {
@@ -500,14 +500,14 @@ namespace Ryujinx.Graphics.Shader.Instructions
                 return context.Copy(Register(srcB++, RegisterType.Gpr));
             }
 
-            List<Operand> sourcesList = new();
+            List<Operand> sourcesList = [];
 
             if (isBindless)
             {
                 sourcesList.Add(context.Copy(GetSrcReg(context, srcC)));
             }
 
-            int coordsCount = type.GetDimensions();
+            int coordsCount = type.Dimensions;
 
             for (int index = 0; index < coordsCount; index++)
             {
@@ -537,7 +537,7 @@ namespace Ryujinx.Graphics.Shader.Instructions
             }
 
             // TODO: FP and 64-bit formats.
-            TextureFormat format = size == SuatomSize.Sd32 || size == SuatomSize.Sd64
+            TextureFormat format = size is SuatomSize.Sd32 or SuatomSize.Sd64
                 ? (isBindless ? TextureFormat.Unknown : ShaderProperties.GetTextureFormatAtomic(context.TranslatorContext.GpuAccessor, imm))
                 : GetTextureFormat(size);
 
@@ -605,14 +605,14 @@ namespace Ryujinx.Graphics.Shader.Instructions
                 return context.Copy(Register(srcB++, RegisterType.Gpr));
             }
 
-            List<Operand> sourcesList = new();
+            List<Operand> sourcesList = [];
 
             if (isBindless)
             {
                 sourcesList.Add(context.Copy(Register(srcC, RegisterType.Gpr)));
             }
 
-            int coordsCount = type.GetDimensions();
+            int coordsCount = type.Dimensions;
 
             for (int index = 0; index < coordsCount; index++)
             {

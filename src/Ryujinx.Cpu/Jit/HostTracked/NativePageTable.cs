@@ -30,7 +30,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
 
         private bool _disposed;
 
-        public IntPtr PageTablePointer => _nativePageTable.Pointer;
+        public nint PageTablePointer => _nativePageTable.Pointer;
 
         public NativePageTable(ulong asSize)
         {
@@ -49,8 +49,6 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             ulong ptEnd = ptStart + _nativePageTable.Size;
 
             _trackingEvent = VirtualMemoryEvent;
-
-            // NativeSignalHandler.ClearAllTrackedRegions();
 
             bool added = NativeSignalHandler.AddTrackedRegion((nuint)ptStart, (nuint)ptEnd, Marshal.GetFunctionPointerForDelegate(_trackingEvent));
 
@@ -85,7 +83,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
 
         public void Unmap(ulong va, ulong size)
         {
-            IntPtr guardPagePtr = GetGuardPagePointer();
+            nint guardPagePtr = GetGuardPagePointer();
 
             while (size != 0)
             {
@@ -93,22 +91,6 @@ namespace Ryujinx.Cpu.Jit.HostTracked
                 _nativePageTable.Write((va / PageSize) * PteSize, GetPte(va, guardPagePtr));
 
                 va += PageSize;
-                size -= PageSize;
-            }
-        }
-
-        public void MapForeign(ulong va, nuint hostPointer, ulong size)
-        {
-            while (size != 0)
-            {
-                _pageTable.Map(va, (ulong)hostPointer);
-
-                EnsureCommitment(va);
-
-                _nativePageTable.Write((va / PageSize) * PteSize, GetPte(va, (IntPtr)hostPointer));
-
-                va += PageSize;
-                hostPointer += PageSize;
                 size -= PageSize;
             }
         }
@@ -122,7 +104,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             return pte + (va & PageMask);
         }
 
-        public void Update(ulong va, IntPtr ptr, ulong size)
+        public void Update(ulong va, nint ptr, ulong size)
         {
             ulong remainingSize = size;
 
@@ -166,7 +148,7 @@ namespace Ryujinx.Cpu.Jit.HostTracked
 
                     Debug.Assert(pageSpan.Length == _entriesPerPtPage);
 
-                    IntPtr guardPagePtr = GetGuardPagePointer();
+                    nint guardPagePtr = GetGuardPagePointer();
 
                     for (int i = 0; i < pageSpan.Length; i++)
                     {
@@ -178,12 +160,12 @@ namespace Ryujinx.Cpu.Jit.HostTracked
             }
         }
 
-        private IntPtr GetGuardPagePointer()
+        private nint GetGuardPagePointer()
         {
             return _nativePageTable.GetPointer(_nativePageTable.Size - _hostPageSize, _hostPageSize);
         }
 
-        private static ulong GetPte(ulong va, IntPtr ptr)
+        private static ulong GetPte(ulong va, nint ptr)
         {
             Debug.Assert((va & PageMask) == 0);
 

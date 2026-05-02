@@ -39,12 +39,14 @@ namespace Ryujinx.Common.Collections
             {
                 return Minimum(node.Right);
             }
+
             T parent = node.Parent;
             while (parent != null && node == parent.Right)
             {
                 node = parent;
                 parent = parent.Parent;
             }
+
             return parent;
         }
 
@@ -59,12 +61,14 @@ namespace Ryujinx.Common.Collections
             {
                 return Maximum(node.Left);
             }
+
             T parent = node.Parent;
             while (parent != null && node == parent.Left)
             {
                 node = parent;
                 parent = parent.Parent;
             }
+
             return parent;
         }
 
@@ -120,6 +124,7 @@ namespace Ryujinx.Common.Collections
                         RotateLeft(ParentOf(ptr));
                         sibling = RightOf(ParentOf(ptr));
                     }
+
                     if (ColorOf(LeftOf(sibling)) == Black && ColorOf(RightOf(sibling)) == Black)
                     {
                         SetColor(sibling, Red);
@@ -134,6 +139,7 @@ namespace Ryujinx.Common.Collections
                             RotateRight(sibling);
                             sibling = RightOf(ParentOf(ptr));
                         }
+
                         SetColor(sibling, ColorOf(ParentOf(ptr)));
                         SetColor(ParentOf(ptr), Black);
                         SetColor(RightOf(sibling), Black);
@@ -152,6 +158,7 @@ namespace Ryujinx.Common.Collections
                         RotateRight(ParentOf(ptr));
                         sibling = LeftOf(ParentOf(ptr));
                     }
+
                     if (ColorOf(RightOf(sibling)) == Black && ColorOf(LeftOf(sibling)) == Black)
                     {
                         SetColor(sibling, Red);
@@ -166,6 +173,7 @@ namespace Ryujinx.Common.Collections
                             RotateLeft(sibling);
                             sibling = LeftOf(ParentOf(ptr));
                         }
+
                         SetColor(sibling, ColorOf(ParentOf(ptr)));
                         SetColor(ParentOf(ptr), Black);
                         SetColor(LeftOf(sibling), Black);
@@ -174,6 +182,7 @@ namespace Ryujinx.Common.Collections
                     }
                 }
             }
+
             SetColor(ptr, Black);
         }
 
@@ -200,6 +209,7 @@ namespace Ryujinx.Common.Collections
                             balanceNode = ParentOf(balanceNode);
                             RotateLeft(balanceNode);
                         }
+
                         SetColor(ParentOf(balanceNode), Black);
                         SetColor(ParentOf(ParentOf(balanceNode)), Red);
                         RotateRight(ParentOf(ParentOf(balanceNode)));
@@ -223,12 +233,14 @@ namespace Ryujinx.Common.Collections
                             balanceNode = ParentOf(balanceNode);
                             RotateRight(balanceNode);
                         }
+
                         SetColor(ParentOf(balanceNode), Black);
                         SetColor(ParentOf(ParentOf(balanceNode)), Red);
                         RotateLeft(ParentOf(ParentOf(balanceNode)));
                     }
                 }
             }
+
             SetColor(Root, Black);
         }
 
@@ -238,10 +250,8 @@ namespace Ryujinx.Common.Collections
             {
                 T right = RightOf(node);
                 node.Right = LeftOf(right);
-                if (node.Right != null)
-                {
-                    node.Right.Parent = node;
-                }
+                node.Right?.Parent = node;
+
                 T nodeParent = ParentOf(node);
                 right.Parent = nodeParent;
                 if (nodeParent == null)
@@ -256,6 +266,7 @@ namespace Ryujinx.Common.Collections
                 {
                     nodeParent.Right = right;
                 }
+
                 right.Left = node;
                 node.Parent = right;
             }
@@ -267,10 +278,8 @@ namespace Ryujinx.Common.Collections
             {
                 T left = LeftOf(node);
                 node.Left = RightOf(left);
-                if (node.Left != null)
-                {
-                    node.Left.Parent = node;
-                }
+                node.Left?.Parent = node;
+
                 T nodeParent = ParentOf(node);
                 left.Parent = nodeParent;
                 if (nodeParent == null)
@@ -285,6 +294,7 @@ namespace Ryujinx.Common.Collections
                 {
                     nodeParent.Left = left;
                 }
+
                 left.Right = node;
                 node.Parent = left;
             }
@@ -313,10 +323,7 @@ namespace Ryujinx.Common.Collections
         /// <param name="color">Color (Boolean)</param>
         protected static void SetColor(T node, bool color)
         {
-            if (node != null)
-            {
-                node.Color = color;
-            }
+            node?.Color = color;
         }
 
         /// <summary>

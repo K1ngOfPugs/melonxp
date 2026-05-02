@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Ryujinx.Cpu.LightningJit
 {
-    public class CodeWriter
+    class CodeWriter
     {
         private readonly List<uint> _instructions;
 
@@ -12,7 +12,7 @@ namespace Ryujinx.Cpu.LightningJit
 
         public CodeWriter()
         {
-            _instructions = new();
+            _instructions = [];
         }
 
         public void WriteInstruction(uint instruction)

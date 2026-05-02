@@ -3,7 +3,7 @@ using Ryujinx.HLE.HOS.Services.Sdb.Pdm.QueryService;
 namespace Ryujinx.HLE.HOS.Services.Sdb.Pdm
 {
     [Service("pdm:qry")]
-    partial class IQueryService : IpcService
+    class IQueryService : IpcService
     {
         public IQueryService(ServiceCtx context) { }
 

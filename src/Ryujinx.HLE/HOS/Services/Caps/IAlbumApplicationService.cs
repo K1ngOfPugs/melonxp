@@ -5,7 +5,7 @@ using Ryujinx.HLE.HOS.Services.Caps.Types;
 namespace Ryujinx.HLE.HOS.Services.Caps
 {
     [Service("caps:u")]
-    partial class IAlbumApplicationService : IpcService
+    class IAlbumApplicationService : IpcService
     {
         public IAlbumApplicationService(ServiceCtx context) { }
 
@@ -50,7 +50,7 @@ namespace Ryujinx.HLE.HOS.Services.Caps
 
             MemoryHelper.FillWithZeros(context.Memory, applicationAlbumFileEntryPosition, (int)applicationAlbumFileEntrySize);
 
-            if (contentType > ContentType.Unknown || contentType == ContentType.ExtraMovie)
+            if (contentType is > ContentType.Unknown or ContentType.ExtraMovie)
             {
                 resultCode = ResultCode.InvalidContentType;
             }

@@ -6,7 +6,7 @@ using Ryujinx.Horizon.Common;
 namespace Ryujinx.HLE.HOS.Services.Pm
 {
     [Service("pm:dmnt")]
-    partial class IDebugMonitorInterface : IpcService
+    class IDebugMonitorInterface : IpcService
     {
         public IDebugMonitorInterface(ServiceCtx context) { }
 

@@ -20,7 +20,7 @@ namespace ARMeilleure.CodeGen.Arm64
                 LinuxFeatureInfoHwCap2 = (LinuxFeatureFlagsHwCap2)getauxval(AT_HWCAP2);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+            if (OperatingSystem.IsMacOS())
             {
                 for (int i = 0; i < _sysctlNames.Length; i++)
                 {
@@ -127,22 +127,22 @@ namespace ARMeilleure.CodeGen.Arm64
         #region macOS
 
         [LibraryImport("libSystem.dylib", SetLastError = true)]
-        private static unsafe partial int sysctlbyname([MarshalAs(UnmanagedType.LPStr)] string name, out int oldValue, ref ulong oldSize, IntPtr newValue, ulong newValueSize);
+        private static unsafe partial int sysctlbyname([MarshalAs(UnmanagedType.LPStr)] string name, out int oldValue, ref ulong oldSize, nint newValue, ulong newValueSize);
 
         [SupportedOSPlatform("macos")]
-        [SupportedOSPlatform("ios")]
         private static bool CheckSysctlName(string name)
         {
             ulong size = sizeof(int);
-            if (sysctlbyname(name, out int val, ref size, IntPtr.Zero, 0) == 0 && size == sizeof(int))
+            if (sysctlbyname(name, out int val, ref size, nint.Zero, 0) == 0 && size == sizeof(int))
             {
                 return val != 0;
             }
+
             return false;
         }
 
-        private static readonly string[] _sysctlNames = new string[]
-        {
+        private static readonly string[] _sysctlNames =
+        [
             "hw.optional.floatingpoint",
             "hw.optional.AdvSIMD",
             "hw.optional.arm.FEAT_FP16",
@@ -151,8 +151,8 @@ namespace ARMeilleure.CodeGen.Arm64
             "hw.optional.arm.FEAT_LSE",
             "hw.optional.armv8_crc32",
             "hw.optional.arm.FEAT_SHA1",
-            "hw.optional.arm.FEAT_SHA256",
-        };
+            "hw.optional.arm.FEAT_SHA256"
+        ];
 
         [Flags]
         public enum MacOsFeatureFlags

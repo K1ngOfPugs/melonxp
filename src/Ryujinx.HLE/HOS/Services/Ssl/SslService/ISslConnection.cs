@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Ryujinx.HLE.HOS.Services.Ssl.SslService
 {
-    partial class ISslConnection : IpcService, IDisposable
+    class ISslConnection : IpcService, IDisposable
     {
         private bool _doNotClockSocket;
         private bool _getServerCertChain;
@@ -21,7 +21,7 @@ namespace Ryujinx.HLE.HOS.Services.Ssl.SslService
         private SessionCacheMode _sessionCacheMode;
         private string _hostName;
 
-        private ISslConnectionBase _connection;
+        private SslManagedSocketConnection _connection;
         private BsdContext _bsdContext;
         private readonly ulong _processId;
 
@@ -145,7 +145,7 @@ namespace Ryujinx.HLE.HOS.Services.Ssl.SslService
             ulong bufferAddress = context.Request.ReceiveBuff[0].Position;
             ulong bufferLen = context.Request.ReceiveBuff[0].Size;
 
-            using (var region = context.Memory.GetWritableRegion(bufferAddress, (int)bufferLen, true))
+            using (WritableRegion region = context.Memory.GetWritableRegion(bufferAddress, (int)bufferLen, true))
             {
                 Encoding.ASCII.GetBytes(_hostName, region.Memory.Span);
             }
@@ -295,7 +295,6 @@ namespace Ryujinx.HLE.HOS.Services.Ssl.SslService
             ResultCode result;
 
             using WritableRegion region = context.Memory.GetWritableRegion(context.Request.ReceiveBuff[0].Position, (int)context.Request.ReceiveBuff[0].Size);
-
 
             // TODO: Better error management.
             result = _connection.Peek(out int peekCount, region.Memory);

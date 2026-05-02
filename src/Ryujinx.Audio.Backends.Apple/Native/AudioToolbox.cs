@@ -1,6 +1,5 @@
-using Ryujinx.Common.Memory;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+// ReSharper disable InconsistentNaming
 
 namespace Ryujinx.Audio.Backends.Apple.Native
 {
@@ -66,9 +65,6 @@ namespace Ryujinx.Audio.Backends.Apple.Native
 
         [LibraryImport("/System/Library/Frameworks/AudioToolbox.framework/AudioToolbox")]
         internal static partial int AudioQueueStart(nint audioQueue, nint startTime);
-
-        [LibraryImport("/System/Library/Frameworks/AudioToolbox.framework/AudioToolbox")]
-        internal static partial int AudioQueueFreeBuffer(nint audioQueue, nint buffer);
 
         [LibraryImport("/System/Library/Frameworks/AudioToolbox.framework/AudioToolbox")]
         internal static partial int AudioQueuePause(nint audioQueue);

@@ -11,7 +11,7 @@ using Ryujinx.Audio.Renderer.Server.Sink;
 using Ryujinx.Audio.Renderer.Server.Splitter;
 using Ryujinx.Audio.Renderer.Server.Types;
 using Ryujinx.Audio.Renderer.Server.Upsampler;
-using Ryujinx.Audio.Renderer.Server.Voice; 
+using Ryujinx.Audio.Renderer.Server.Voice;
 using Ryujinx.Audio.Renderer.Utils;
 using Ryujinx.Common;
 using Ryujinx.Common.Logging;
@@ -26,7 +26,7 @@ namespace Ryujinx.Audio.Renderer.Server
 {
     public class AudioRenderSystem : IDisposable
     {
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
 
         private AudioRendererRenderingDevice _renderingDevice;
         private AudioRendererExecutionMode _executionMode;
@@ -233,9 +233,9 @@ namespace Ryujinx.Audio.Renderer.Server
                 voiceChannelResource.IsUsed = false;
             }
 
-            Memory<VoiceState> voiceUpdateStates = workBufferAllocator.Allocate<VoiceState>(parameter.VoiceCount, VoiceState.Align);
+            Memory<VoiceState> voiceStates = workBufferAllocator.Allocate<VoiceState>(parameter.VoiceCount, VoiceState.Align);
 
-            if (voiceUpdateStates.IsEmpty)
+            if (voiceStates.IsEmpty)
             {
                 return ResultCode.WorkBufferTooSmall;
             }
@@ -321,14 +321,14 @@ namespace Ryujinx.Audio.Renderer.Server
             _effectContext.Initialize(parameter.EffectCount, _behaviourInfo.IsEffectInfoVersion2Supported() ? parameter.EffectCount : 0);
             _sinkContext.Initialize(parameter.SinkCount);
 
-            Memory<VoiceState> voiceUpdateStatesDsp = workBufferAllocator.Allocate<VoiceState>(parameter.VoiceCount, VoiceState.Align);
+            Memory<VoiceState> voiceStatesDsp = workBufferAllocator.Allocate<VoiceState>(parameter.VoiceCount, VoiceState.Align);
 
-            if (voiceUpdateStatesDsp.IsEmpty)
+            if (voiceStatesDsp.IsEmpty)
             {
                 return ResultCode.WorkBufferTooSmall;
             }
 
-            _voiceContext.Initialize(sortedVoices, voices, voiceChannelResources, voiceUpdateStates, voiceUpdateStatesDsp, parameter.VoiceCount);
+            _voiceContext.Initialize(sortedVoices, voices, voiceChannelResources, voiceStates, voiceStatesDsp, parameter.VoiceCount);
 
             if (parameter.PerformanceMetricFramesCount > 0)
             {
@@ -415,7 +415,7 @@ namespace Ryujinx.Audio.Renderer.Server
 
                 ResultCode result;
 
-                result = stateUpdater.UpdateBehaviourContext();
+                result = stateUpdater.UpdateBehaviourInfo();
 
                 if (result != ResultCode.Success)
                 {
@@ -539,13 +539,13 @@ namespace Ryujinx.Audio.Renderer.Server
 
                 CommandType commandType = command.CommandType;
 
-                if (commandType == CommandType.AdpcmDataSourceVersion1 ||
-                    commandType == CommandType.AdpcmDataSourceVersion2 ||
-                    commandType == CommandType.PcmInt16DataSourceVersion1 ||
-                    commandType == CommandType.PcmInt16DataSourceVersion2 ||
-                    commandType == CommandType.PcmFloatDataSourceVersion1 ||
-                    commandType == CommandType.PcmFloatDataSourceVersion2 ||
-                    commandType == CommandType.Performance)
+                if (commandType is CommandType.AdpcmDataSourceVersion1 or
+                    CommandType.AdpcmDataSourceVersion2 or
+                    CommandType.PcmInt16DataSourceVersion1 or
+                    CommandType.PcmInt16DataSourceVersion2 or
+                    CommandType.PcmFloatDataSourceVersion1 or
+                    CommandType.PcmFloatDataSourceVersion2 or
+                    CommandType.Performance)
                 {
                     break;
                 }

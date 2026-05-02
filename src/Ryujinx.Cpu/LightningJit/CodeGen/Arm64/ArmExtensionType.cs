@@ -1,6 +1,6 @@
 namespace Ryujinx.Cpu.LightningJit.CodeGen.Arm64
 {
-    public enum ArmExtensionType
+    enum ArmExtensionType
     {
         Uxtb = 0,
         Uxth = 1,

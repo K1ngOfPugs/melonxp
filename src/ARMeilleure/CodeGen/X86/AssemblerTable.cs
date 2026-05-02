@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace ARMeilleure.CodeGen.X86
 {
@@ -13,7 +12,6 @@ namespace ARMeilleure.CodeGen.X86
         private const int BadOp = 0;
 
         [Flags]
-        [SuppressMessage("Design", "CA1069: Enums values should not be duplicated")]
         private enum InstructionFlags
         {
             None = 0,

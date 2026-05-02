@@ -12,8 +12,8 @@ namespace Ryujinx.Graphics.Nvdec.FFmpeg.Native
 
         private static readonly Dictionary<string, (int, int)> _librariesWhitelist = new()
         {
-            { AvCodecLibraryName, (58, 59) },
-            { AvUtilLibraryName, (56, 57) },
+            { AvCodecLibraryName, (59, 60) },
+            { AvUtilLibraryName, (57, 58) },
         };
 
         private static string FormatLibraryNameForCurrentOs(string libraryName, int version)
@@ -30,23 +30,17 @@ namespace Ryujinx.Graphics.Nvdec.FFmpeg.Native
             {
                 return $"lib{libraryName}.{version}.dylib";
             }
-            else if (OperatingSystem.IsIOS()) 
-            {
-                string libName = $"lib{libraryName}.{version}.dylib";
-                return libName;
-            }
             else
             {
                 throw new NotImplementedException($"Unsupported OS for FFmpeg: {RuntimeInformation.RuntimeIdentifier}");
             }
         }
 
-
-        private static bool TryLoadWhitelistedLibrary(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, out IntPtr handle)
+        private static bool TryLoadWhitelistedLibrary(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, out nint handle)
         {
-            handle = IntPtr.Zero;
+            handle = nint.Zero;
 
-            if (_librariesWhitelist.TryGetValue(libraryName, out var value))
+            if (_librariesWhitelist.TryGetValue(libraryName, out (int, int) value))
             {
                 (int minVersion, int maxVersion) = value;
 
@@ -76,7 +70,7 @@ namespace Ryujinx.Graphics.Nvdec.FFmpeg.Native
                     return handle;
                 }
 
-                return IntPtr.Zero;
+                return nint.Zero;
             });
         }
 

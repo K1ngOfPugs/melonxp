@@ -1,6 +1,6 @@
 namespace Ryujinx.Horizon.Sdk.OsTypes
 {
-    public enum TriBool
+    enum TriBool
     {
         False,
         True,

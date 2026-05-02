@@ -32,11 +32,12 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
         private const long AverageSecondsPerYear = 31556952;
         private const long SecondsPerRepeat = YearsPerRepeat * AverageSecondsPerYear;
 
-        private static readonly int[] _yearLengths = { DaysPerNYear, DaysPerLYear };
-        private static readonly int[][] _monthsLengths = {
-            new[] { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
-            new[] { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
-        };
+        private static readonly int[] _yearLengths = [DaysPerNYear, DaysPerLYear];
+        private static readonly int[][] _monthsLengths =
+        [
+            [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        ];
 
         private static ReadOnlySpan<byte> TimeZoneDefaultRule => ",M4.1.0,M10.5.0"u8;
 
@@ -221,7 +222,6 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
         {
             seconds = 0;
 
-
             bool isValid = GetNum(name, ref namePosition, out int num, 0, HoursPerDays * DaysPerWeek - 1);
             if (!isValid)
             {
@@ -263,6 +263,7 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
                     seconds += num;
                 }
             }
+
             return true;
         }
 
@@ -485,7 +486,7 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
                     return false;
                 }
 
-                if (name[namePosition] != '\0' && name[namePosition] != ',' && name[namePosition] != ';')
+                if (name[namePosition] is not (byte)'\0' and not (byte)',' and not (byte)';')
                 {
                     bool isValid = GetOffset(name.ToArray(), ref namePosition, ref dstOffset);
 
@@ -505,7 +506,7 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
                     namePosition = 0;
                 }
 
-                if (name[namePosition] == ',' || name[namePosition] == ';')
+                if (name[namePosition] is (byte)',' or (byte)';')
                 {
                     namePosition++;
 
@@ -743,6 +744,7 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
                 {
                     outRules.Chars[charsPosition + i] = destName[i];
                 }
+
                 outRules.Chars[charsPosition + destLen] = 0;
             }
 
@@ -762,6 +764,7 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
                     {
                         value += SecondsPerDay;
                     }
+
                     break;
 
                 case RuleType.DayOfYear:
@@ -922,7 +925,6 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
                 return false;
             }
 
-
             if (streamLength < (timeCount * TimeTypeSize
                                  + timeCount
                                  + typeCount * 6
@@ -1050,7 +1052,6 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
                         outRules.Ttis[i].IsGMT = p[0] != 0;
                         p = p[1..];
                     }
-
                 }
 
                 long position = (workBuffer.Length - p.Length);
@@ -1553,7 +1554,7 @@ namespace Ryujinx.HLE.HOS.Services.Time.TimeZone
 
             int savedSeconds;
 
-            if (calendarTime.Second >= 0 && calendarTime.Second < SecondsPerMinute)
+            if (calendarTime.Second is >= 0 and < SecondsPerMinute)
             {
                 savedSeconds = 0;
             }

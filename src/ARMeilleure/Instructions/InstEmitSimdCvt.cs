@@ -333,7 +333,7 @@ namespace ARMeilleure.Instructions
             }
             else
             {
-                EmitFcvt_s_Gp(context, (op1) => EmitUnaryMathCall(context, nameof(Math.Floor), op1));
+                EmitFcvt_s_Gp(context, (op1) => EmitUnaryMathCall(context, nameof(MathHelper.Floor), op1));
             }
         }
 
@@ -349,7 +349,7 @@ namespace ARMeilleure.Instructions
             }
             else
             {
-                EmitFcvt(context, (op1) => EmitUnaryMathCall(context, nameof(Math.Floor), op1), signed: true, scalar: false);
+                EmitFcvt(context, (op1) => EmitUnaryMathCall(context, nameof(MathHelper.Floor), op1), signed: true, scalar: false);
             }
         }
 
@@ -365,7 +365,7 @@ namespace ARMeilleure.Instructions
             }
             else
             {
-                EmitFcvt_u_Gp(context, (op1) => EmitUnaryMathCall(context, nameof(Math.Floor), op1));
+                EmitFcvt_u_Gp(context, (op1) => EmitUnaryMathCall(context, nameof(MathHelper.Floor), op1));
             }
         }
 
@@ -538,7 +538,7 @@ namespace ARMeilleure.Instructions
             }
             else
             {
-                EmitFcvt_s_Gp(context, (op1) => EmitUnaryMathCall(context, nameof(Math.Ceiling), op1));
+                EmitFcvt_s_Gp(context, (op1) => EmitUnaryMathCall(context, nameof(MathHelper.Ceiling), op1));
             }
         }
 
@@ -554,7 +554,7 @@ namespace ARMeilleure.Instructions
             }
             else
             {
-                EmitFcvt_u_Gp(context, (op1) => EmitUnaryMathCall(context, nameof(Math.Ceiling), op1));
+                EmitFcvt_u_Gp(context, (op1) => EmitUnaryMathCall(context, nameof(MathHelper.Ceiling), op1));
             }
         }
 
@@ -1119,7 +1119,7 @@ namespace ARMeilleure.Instructions
 
         private static Operand EmitFPConvert(ArmEmitterContext context, Operand value, int size, bool signed)
         {
-            Debug.Assert(value.Type == OperandType.I32 || value.Type == OperandType.I64);
+            Debug.Assert(value.Type is OperandType.I32 or OperandType.I64);
             Debug.Assert((uint)size < 2);
 
             OperandType type = size == 0 ? OperandType.FP32 : OperandType.FP64;
@@ -1136,7 +1136,7 @@ namespace ARMeilleure.Instructions
 
         private static Operand EmitScalarFcvts(ArmEmitterContext context, Operand value, int fBits)
         {
-            Debug.Assert(value.Type == OperandType.FP32 || value.Type == OperandType.FP64);
+            Debug.Assert(value.Type is OperandType.FP32 or OperandType.FP64);
 
             value = EmitF2iFBitsMul(context, value, fBits);
 
@@ -1160,7 +1160,7 @@ namespace ARMeilleure.Instructions
 
         private static Operand EmitScalarFcvtu(ArmEmitterContext context, Operand value, int fBits)
         {
-            Debug.Assert(value.Type == OperandType.FP32 || value.Type == OperandType.FP64);
+            Debug.Assert(value.Type is OperandType.FP32 or OperandType.FP64);
 
             value = EmitF2iFBitsMul(context, value, fBits);
 
@@ -1184,7 +1184,7 @@ namespace ARMeilleure.Instructions
 
         private static Operand EmitF2iFBitsMul(ArmEmitterContext context, Operand value, int fBits)
         {
-            Debug.Assert(value.Type == OperandType.FP32 || value.Type == OperandType.FP64);
+            Debug.Assert(value.Type is OperandType.FP32 or OperandType.FP64);
 
             if (fBits == 0)
             {
@@ -1203,7 +1203,7 @@ namespace ARMeilleure.Instructions
 
         private static Operand EmitI2fFBitsMul(ArmEmitterContext context, Operand value, int fBits)
         {
-            Debug.Assert(value.Type == OperandType.FP32 || value.Type == OperandType.FP64);
+            Debug.Assert(value.Type is OperandType.FP32 or OperandType.FP64);
 
             if (fBits == 0)
             {

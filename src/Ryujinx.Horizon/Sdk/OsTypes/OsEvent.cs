@@ -1,16 +1,15 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 
 namespace Ryujinx.Horizon.Sdk.OsTypes
 {
-    public static partial class Os
+    static partial class Os
     {
         public static void InitializeEvent(out EventType evnt, bool signaled, EventClearMode clearMode)
         {
             evnt = new EventType
             {
-                MultiWaitHolders = new LinkedList<MultiWaitHolderBase>(),
+                MultiWaitHolders = [],
                 Signaled = signaled,
                 InitiallySignaled = signaled,
                 ClearMode = clearMode,

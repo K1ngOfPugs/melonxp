@@ -1,3 +1,5 @@
+using ARMeilleure.Common;
+using ARMeilleure.Memory;
 using ARMeilleure.Translation;
 using NUnit.Framework;
 using Ryujinx.Cpu.Jit;
@@ -10,14 +12,15 @@ namespace Ryujinx.Tests.Cpu
 {
     internal class EnvironmentTests
     {
-#pragma warning disable IDE0052 // Remove unread private member
         private static Translator _translator;
-#pragma warning restore IDE0052
 
         private static void EnsureTranslator()
         {
             // Create a translator, as one is needed to register the signal handler or emit methods.
-            _translator ??= new Translator(new JitMemoryAllocator(), new MockMemoryManager(), true);
+            _translator ??= new Translator(
+                new JitMemoryAllocator(),
+                new MockMemoryManager(),
+                AddressTable<ulong>.CreateForArm(true, MemoryManagerType.SoftwarePageTable));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -48,7 +51,7 @@ namespace Ryujinx.Tests.Cpu
             bool methodCalled = false;
             bool isFz = false;
 
-            var method = TranslatorTestMethods.GenerateFpFlagsPInvokeTest();
+            TranslatorTestMethods.FpFlagsPInvokeTest method = TranslatorTestMethods.GenerateFpFlagsPInvokeTest();
 
             // This method sets flush-to-zero and then calls the managed method.
             // Before and after setting the flags, it ensures subnormal addition works as expected.

@@ -8,7 +8,7 @@ namespace ARMeilleure.Signal
 {
     public static class NativeSignalHandlerGenerator
     {
-        public const int MaxTrackedRanges = 8;
+        public const int MaxTrackedRanges = 16;
 
         private const int StructAddressOffset = 0;
         private const int StructWriteOffset = 4;
@@ -21,7 +21,7 @@ namespace ARMeilleure.Signal
 
         private const uint EXCEPTION_ACCESS_VIOLATION = 0xc0000005;
 
-        private static Operand EmitGenericRegionCheck(EmitterContext context, IntPtr signalStructPtr, Operand faultAddress, Operand isWrite, int rangeStructSize)
+        private static Operand EmitGenericRegionCheck(EmitterContext context, nint signalStructPtr, Operand faultAddress, Operand isWrite, int rangeStructSize)
         {
             Operand inRegionLocal = context.AllocateLocal(OperandType.I32);
             context.Copy(inRegionLocal, Const(0));
@@ -87,13 +87,13 @@ namespace ARMeilleure.Signal
 
         private static Operand GenerateUnixFaultAddress(EmitterContext context, Operand sigInfoPtr)
         {
-            ulong structAddressOffset = (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS()) ? 24ul : 16ul; // si_addr
+            ulong structAddressOffset = OperatingSystem.IsMacOS() ? 24ul : 16ul; // si_addr
             return context.Load(OperandType.I64, context.Add(sigInfoPtr, Const(structAddressOffset)));
         }
 
         private static Operand GenerateUnixWriteFlag(EmitterContext context, Operand ucontextPtr)
         {
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+            if (OperatingSystem.IsMacOS())
             {
                 const ulong McontextOffset = 48; // uc_mcontext
                 Operand ctxPtr = context.Load(OperandType.I64, context.Add(ucontextPtr, Const(McontextOffset)));
@@ -155,7 +155,7 @@ namespace ARMeilleure.Signal
             throw new PlatformNotSupportedException();
         }
 
-        public static byte[] GenerateUnixSignalHandler(IntPtr signalStructPtr, int rangeStructSize)
+        public static byte[] GenerateUnixSignalHandler(nint signalStructPtr, int rangeStructSize)
         {
             EmitterContext context = new();
 
@@ -198,12 +198,12 @@ namespace ARMeilleure.Signal
 
             ControlFlowGraph cfg = context.GetControlFlowGraph();
 
-            OperandType[] argTypes = new OperandType[] { OperandType.I32, OperandType.I64, OperandType.I64 };
+            OperandType[] argTypes = [OperandType.I32, OperandType.I64, OperandType.I64];
 
             return Compiler.Compile(cfg, argTypes, OperandType.None, CompilerOptions.HighCq, RuntimeInformation.ProcessArchitecture).Code;
         }
 
-        public static byte[] GenerateWindowsSignalHandler(IntPtr signalStructPtr, int rangeStructSize)
+        public static byte[] GenerateWindowsSignalHandler(nint signalStructPtr, int rangeStructSize)
         {
             EmitterContext context = new();
 
@@ -252,7 +252,7 @@ namespace ARMeilleure.Signal
 
             ControlFlowGraph cfg = context.GetControlFlowGraph();
 
-            OperandType[] argTypes = new OperandType[] { OperandType.I64 };
+            OperandType[] argTypes = [OperandType.I64];
 
             return Compiler.Compile(cfg, argTypes, OperandType.I32, CompilerOptions.HighCq, RuntimeInformation.ProcessArchitecture).Code;
         }

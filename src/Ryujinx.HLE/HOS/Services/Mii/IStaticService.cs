@@ -6,7 +6,7 @@ namespace Ryujinx.HLE.HOS.Services.Mii
 {
     [Service("mii:e", true)]
     [Service("mii:u", false)]
-    partial class IStaticService : IpcService
+    class IStaticService : IpcService
     {
         private readonly DatabaseImpl _databaseImpl;
 

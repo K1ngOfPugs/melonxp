@@ -10,7 +10,8 @@ using static Ryujinx.Audio.Integration.IHardwareDeviceDriver;
 
 namespace Ryujinx.Audio.Backends.OpenAL
 {
-    public class OpenALHardwareDeviceDriver : IHardwareDeviceDriver
+    // ReSharper disable once InconsistentNaming
+    public sealed class OpenALHardwareDeviceDriver : IHardwareDeviceDriver
     {
         private readonly ALDevice _device;
         private readonly ALContext _context;
@@ -41,7 +42,7 @@ namespace Ryujinx.Audio.Backends.OpenAL
 
         public OpenALHardwareDeviceDriver()
         {
-            _device = ALC.OpenDevice("");
+            _device = ALC.OpenDevice(string.Empty);
             _context = ALC.CreateContext(_device, new ALContextAttributes());
             _updateRequiredEvent = new ManualResetEvent(false);
             _pauseEvent = new ManualResetEvent(true);
@@ -148,7 +149,7 @@ namespace Ryujinx.Audio.Backends.OpenAL
             Dispose(true);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -178,7 +179,7 @@ namespace Ryujinx.Audio.Backends.OpenAL
 
         public bool SupportsChannelCount(uint channelCount)
         {
-            return channelCount == 1 || channelCount == 2 || channelCount == 6;
+            return channelCount is 1 or 2 or 6;
         }
 
         public bool SupportsDirection(Direction direction)

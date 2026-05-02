@@ -1,3 +1,4 @@
+using Ryujinx.Common.Collections;
 using Ryujinx.Common.Logging;
 using Ryujinx.Graphics.GAL;
 using Ryujinx.Graphics.Gpu.Memory;
@@ -72,6 +73,7 @@ namespace Ryujinx.Graphics.Gpu.Image
         }
 
         private readonly GpuChannel _channel;
+        private readonly BitMap _invalidMap;
         private readonly ConcurrentQueue<DereferenceRequest> _dereferenceQueue = new();
         private TextureDescriptor _defaultDescriptor;
 
@@ -97,7 +99,7 @@ namespace Ryujinx.Graphics.Gpu.Image
             /// </summary>
             public TextureAliasList()
             {
-                _aliases = new List<Alias>();
+                _aliases = [];
             }
 
             /// <summary>
@@ -118,7 +120,7 @@ namespace Ryujinx.Graphics.Gpu.Image
             /// <returns>Texture with the requested format, or null if not found</returns>
             public Texture Find(Format format)
             {
-                foreach (var alias in _aliases)
+                foreach (Alias alias in _aliases)
                 {
                     if (alias.Format == format)
                     {
@@ -134,7 +136,7 @@ namespace Ryujinx.Graphics.Gpu.Image
             /// </summary>
             public void Destroy()
             {
-                foreach (var entry in _aliases)
+                foreach (Alias entry in _aliases)
                 {
                     entry.Texture.DecrementReferenceCount();
                 }
@@ -166,6 +168,7 @@ namespace Ryujinx.Graphics.Gpu.Image
         {
             _channel = channel;
             _aliasLists = new Dictionary<Texture, TextureAliasList>();
+            _invalidMap = new BitMap(maximumId + 1);
         }
 
         /// <summary>
@@ -182,6 +185,11 @@ namespace Ryujinx.Graphics.Gpu.Image
 
             if (texture == null)
             {
+                if (_invalidMap.IsSet(id))
+                {
+                    return ref descriptor;
+                }
+
                 texture = PhysicalMemory.TextureCache.FindShortCache(descriptor);
 
                 if (texture == null)
@@ -198,6 +206,7 @@ namespace Ryujinx.Graphics.Gpu.Image
                     // If this happens, then the texture address is invalid, we can't add it to the cache.
                     if (texture == null)
                     {
+                        _invalidMap.Set(id);
                         return ref descriptor;
                     }
                 }
@@ -361,7 +370,7 @@ namespace Ryujinx.Graphics.Gpu.Image
         /// <param name="deferred">If true, queue the dereference to happen on the render thread, otherwise dereference immediately</param>
         public void ForceRemove(Texture texture, int id, bool deferred)
         {
-            var previous = Interlocked.Exchange(ref Items[id], null);
+            Texture previous = Interlocked.Exchange(ref Items[id], null);
 
             if (deferred)
             {
@@ -454,6 +463,7 @@ namespace Ryujinx.Graphics.Gpu.Image
                                 // If this is null, a request was already queued to decrement reference.
                                 texture.DecrementReferenceCount(this, request.ID);
                             }
+
                             continue;
                         }
                     }
@@ -514,6 +524,8 @@ namespace Ryujinx.Graphics.Gpu.Image
                         RemoveAliasList(texture);
                     }
                 }
+
+                _invalidMap.Clear(id);
             }
         }
 
@@ -544,7 +556,7 @@ namespace Ryujinx.Graphics.Gpu.Image
             int width = target == Target.TextureBuffer ? descriptor.UnpackBufferTextureWidth() : descriptor.UnpackWidth();
             int height = descriptor.UnpackHeight();
 
-            if (target == Target.Texture2DMultisample || target == Target.Texture2DMultisampleArray)
+            if (target is Target.Texture2DMultisample or Target.Texture2DMultisampleArray)
             {
                 // This is divided back before the backend texture is created.
                 width *= samplesInX;
@@ -648,7 +660,7 @@ namespace Ryujinx.Graphics.Gpu.Image
                 swizzleB,
                 swizzleA);
 
-            if (formatInfo.Format.IsDepthOrStencil())
+            if (formatInfo.Format.IsDepthOrStencil)
             {
                 swizzleR = SwizzleComponent.Red;
                 swizzleG = SwizzleComponent.Red;
@@ -699,8 +711,8 @@ namespace Ryujinx.Graphics.Gpu.Image
         {
             int maxSize = width;
 
-            if (target != Target.Texture1D &&
-                target != Target.Texture1DArray)
+            if (target is not Target.Texture1D and
+                not Target.Texture1DArray)
             {
                 maxSize = Math.Max(maxSize, height);
             }
@@ -721,7 +733,7 @@ namespace Ryujinx.Graphics.Gpu.Image
         /// <param name="format">The format of the texture</param>
         /// <param name="components">The texture swizzle components</param>
         /// <returns>The depth-stencil mode</returns>
-        private static DepthStencilMode GetDepthStencilMode(Format format, params SwizzleComponent[] components)
+        private static DepthStencilMode GetDepthStencilMode(Format format, params ReadOnlySpan<SwizzleComponent> components)
         {
             // R = Depth, G = Stencil.
             // On 24-bits depth formats, this is inverted (Stencil is R etc).
@@ -761,8 +773,8 @@ namespace Ryujinx.Graphics.Gpu.Image
         /// <returns>True if the swizzle component is equal to the red or green, false otherwise</returns>
         private static bool IsRG(SwizzleComponent component)
         {
-            return component == SwizzleComponent.Red ||
-                   component == SwizzleComponent.Green;
+            return component is SwizzleComponent.Red or
+                   SwizzleComponent.Green;
         }
 
         /// <summary>

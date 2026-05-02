@@ -29,6 +29,7 @@ namespace Ryujinx.HLE.HOS.Kernel
                 capabilities,
                 context.ResourceLimit,
                 MemoryRegion.Service,
+                context.Device.Configuration.MemoryConfiguration,
                 null,
                 customThreadStart);
 
@@ -37,7 +38,7 @@ namespace Ryujinx.HLE.HOS.Kernel
                 return result;
             }
 
-            process.DefaultCpuCore = 3;
+            process.DefaultCpuCore = KScheduler.CpuCoresCount - 1;
 
             context.Processes.TryAdd(process.Pid, process);
 

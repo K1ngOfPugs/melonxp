@@ -1,4 +1,5 @@
 using OpenTK.Graphics.OpenGL;
+using Ryujinx.Common.Configuration;
 using Ryujinx.Graphics.GAL;
 using Ryujinx.Graphics.OpenGL.Effects;
 using Ryujinx.Graphics.OpenGL.Effects.Smaa;
@@ -54,7 +55,7 @@ namespace Ryujinx.Graphics.OpenGL
             GL.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
         }
 
-        public void ChangeVSyncMode(bool vsyncEnabled) { }
+        public void ChangeVSyncMode(VSyncMode vSyncMode) { }
 
         public void SetSize(int width, int height)
         {
@@ -69,19 +70,19 @@ namespace Ryujinx.Graphics.OpenGL
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, drawFramebuffer);
             GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, readFramebuffer);
 
-            TextureView viewConverted = view.Format.IsBgr() ? _renderer.TextureCopy.BgraSwap(view) : view;
+            TextureView viewConverted = view.Format.IsBgr ? _renderer.TextureCopy.BgraSwap(view) : view;
 
             UpdateEffect();
 
             if (_antiAliasing != null)
             {
-                var oldView = viewConverted;
+                TextureView oldView = viewConverted;
 
                 viewConverted = _antiAliasing.Run(viewConverted, _width, _height);
 
-                if (viewConverted.Format.IsBgr())
+                if (viewConverted.Format.IsBgr)
                 {
-                    var swappedView = _renderer.TextureCopy.BgraSwap(viewConverted);
+                    TextureView swappedView = _renderer.TextureCopy.BgraSwap(viewConverted);
 
                     viewConverted?.Dispose();
 
@@ -151,14 +152,14 @@ namespace Ryujinx.Graphics.OpenGL
 
             if (ScreenCaptureRequested)
             {
-                CaptureFrame(srcX0, srcY0, srcX1, srcY1, view.Format.IsBgr(), crop.FlipX, crop.FlipY);
+                CaptureFrame(srcX0, srcY0, srcX1, srcY1, view.Format.IsBgr, crop.FlipX, crop.FlipY);
 
                 ScreenCaptureRequested = false;
             }
 
             if (_scalingFilter != null)
             {
-                if (viewConverted.Format.IsBgr() && !_isBgra)
+                if (viewConverted.Format.IsBgr && !_isBgra)
                 {
                     RecreateUpscalingTexture(true);
                 }
@@ -329,7 +330,7 @@ namespace Ryujinx.Graphics.OpenGL
                     case AntiAliasing.SmaaMedium:
                     case AntiAliasing.SmaaHigh:
                     case AntiAliasing.SmaaUltra:
-                        var quality = _currentAntiAliasing - AntiAliasing.SmaaLow;
+                        int quality = _currentAntiAliasing - AntiAliasing.SmaaLow;
                         if (_antiAliasing is SmaaPostProcessingEffect smaa)
                         {
                             smaa.Quality = quality;
@@ -339,6 +340,7 @@ namespace Ryujinx.Graphics.OpenGL
                             _antiAliasing?.Dispose();
                             _antiAliasing = new SmaaPostProcessingEffect(_renderer, quality);
                         }
+
                         break;
                 }
             }
@@ -370,6 +372,7 @@ namespace Ryujinx.Graphics.OpenGL
                             _scalingFilter?.Dispose();
                             _scalingFilter = new FsrScalingFilter(_renderer);
                         }
+
                         _isLinear = false;
                         _scalingFilter.Level = _scalingFilterLevel;
 
@@ -381,6 +384,7 @@ namespace Ryujinx.Graphics.OpenGL
                             _scalingFilter?.Dispose();
                             _scalingFilter = new AreaScalingFilter(_renderer);
                         }
+
                         _isLinear = false;
 
                         RecreateUpscalingTexture();
@@ -393,7 +397,7 @@ namespace Ryujinx.Graphics.OpenGL
         {
             _upscaledTexture?.Dispose();
 
-            var info = new TextureCreateInfo(
+            TextureCreateInfo info = new(
                 _width,
                 _height,
                 1,

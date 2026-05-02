@@ -1,5 +1,6 @@
 using Ryujinx.Audio.Renderer.Parameter.Sink;
 using Ryujinx.Audio.Renderer.Server.MemoryPool;
+using System;
 using System.Diagnostics;
 
 namespace Ryujinx.Audio.Renderer.Dsp.Command
@@ -25,17 +26,19 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
         {
             Input = new ushort[Constants.ChannelCountMax];
         }
-
+        
         public CircularBufferSinkCommand Initialize(uint bufferOffset, ref CircularBufferParameter parameter, ref AddressInfo circularBufferAddressInfo, uint currentOffset, int nodeId)
         {
             Enabled = true;
             NodeId = nodeId;
 
             InputCount = parameter.InputCount;
+            
+            Span<byte> inputSpan = parameter.Input.AsSpan();
 
             for (int i = 0; i < InputCount; i++)
             {
-                Input[i] = (ushort)(bufferOffset + parameter.Input[i]);
+                Input[i] = (ushort)(bufferOffset + inputSpan[i]);
             }
 
             CircularBuffer = circularBufferAddressInfo.GetReference(true);

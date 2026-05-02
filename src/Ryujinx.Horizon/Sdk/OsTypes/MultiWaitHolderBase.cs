@@ -2,7 +2,7 @@ using Ryujinx.Horizon.Sdk.OsTypes.Impl;
 
 namespace Ryujinx.Horizon.Sdk.OsTypes
 {
-    public class MultiWaitHolderBase
+    class MultiWaitHolderBase
     {
         protected MultiWaitImpl MultiWait;
 

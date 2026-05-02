@@ -1,7 +1,6 @@
 using Ryujinx.Common;
 using Ryujinx.Common.Memory;
 using System;
-using System.Buffers;
 using System.Runtime.Intrinsics;
 using static Ryujinx.Graphics.Texture.BlockLinearConstants;
 
@@ -80,6 +79,7 @@ namespace Ryujinx.Graphics.Texture
                         outPtr += outStrideGap;
                     }
                 }
+
                 return true;
             }
 
@@ -230,8 +230,10 @@ namespace Ryujinx.Graphics.Texture
                                 }
                             }
                         }
+
                         outOffs += stride * h * d * layers;
                     }
+
                     return true;
                 }
 
@@ -246,6 +248,7 @@ namespace Ryujinx.Graphics.Texture
                     _ => throw new NotSupportedException($"Unable to convert ${bytesPerPixel} bpp pixel format."),
                 };
             }
+
             return outputOwner;
         }
 
@@ -351,6 +354,7 @@ namespace Ryujinx.Graphics.Texture
                         inPtr += inStrideGap;
                     }
                 }
+
                 return true;
             }
 
@@ -494,8 +498,10 @@ namespace Ryujinx.Graphics.Texture
                                 }
                             }
                         }
+
                         inOffs += stride * h * d * layers;
                     }
+
                     return true;
                 }
 

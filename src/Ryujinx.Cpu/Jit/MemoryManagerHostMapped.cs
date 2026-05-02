@@ -1,4 +1,4 @@
-﻿using ARMeilleure.Memory;
+using ARMeilleure.Memory;
 using Ryujinx.Memory;
 using Ryujinx.Memory.Range;
 using Ryujinx.Memory.Tracking;
@@ -31,7 +31,7 @@ namespace Ryujinx.Cpu.Jit
 
         public int AddressSpaceBits { get; }
 
-        public IntPtr PageTablePointer => _addressSpace.Base.Pointer;
+        public nint PageTablePointer => _addressSpace.Base.Pointer;
 
         public MemoryManagerType Type => _unsafeMode ? MemoryManagerType.HostMappedUnsafe : MemoryManagerType.HostMapped;
 
@@ -150,6 +150,11 @@ namespace Ryujinx.Cpu.Jit
 
                 return default;
             }
+        }
+        
+        public override bool TryReadUnsafe(ulong va, int length, out Span<byte> data)
+        {
+            throw new NotImplementedException();
         }
 
         public override T ReadTracked<T>(ulong va)
@@ -340,7 +345,7 @@ namespace Ryujinx.Cpu.Jit
         {
             int pages = GetPagesCount(va, (uint)size, out va);
 
-            var regions = new List<MemoryRange>();
+            List<MemoryRange> regions = [];
 
             ulong regionStart = GetPhysicalAddressChecked(va);
             ulong regionSize = PageSize;

@@ -27,13 +27,20 @@ namespace Ryujinx.Common.Logging.Targets
 
         private readonly int _overflowTimeout;
 
-        string ILogTarget.Name { get => _target.Name; }
+        private sealed class FlushEventArgs : LogEventArgs
+        {
+            public readonly ManualResetEventSlim SignalEvent;
 
-        public AsyncLogTargetWrapper(ILogTarget target)
-            : this(target, -1, AsyncLogTargetOverflowAction.Block)
-        { }
+            public FlushEventArgs(ManualResetEventSlim signalEvent)
+                : base(LogLevel.Notice, TimeSpan.Zero, string.Empty, string.Empty)
+            {
+                SignalEvent = signalEvent;
+            }
+        }
 
-        public AsyncLogTargetWrapper(ILogTarget target, int queueLimit, AsyncLogTargetOverflowAction overflowAction)
+        string ILogTarget.Name => _target.Name;
+
+        public AsyncLogTargetWrapper(ILogTarget target, int queueLimit = -1, AsyncLogTargetOverflowAction overflowAction = AsyncLogTargetOverflowAction.Block)
         {
             _target = target;
             _messageQueue = new BlockingCollection<LogEventArgs>(queueLimit);
@@ -45,7 +52,15 @@ namespace Ryujinx.Common.Logging.Targets
                 {
                     try
                     {
-                        _target.Log(this, _messageQueue.Take());
+                        LogEventArgs item = _messageQueue.Take();
+
+                        if (item is FlushEventArgs flush)
+                        {
+                            flush.SignalEvent.Set();
+                            continue;
+                        }
+
+                        _target.Log(this, item);
                     }
                     catch (InvalidOperationException)
                     {
@@ -70,6 +85,26 @@ namespace Ryujinx.Common.Logging.Targets
             {
                 _messageQueue.TryAdd(e, _overflowTimeout);
             }
+        }
+
+        public void Flush()
+        {
+            if (_messageQueue.Count == 0 || _messageQueue.IsAddingCompleted)
+            {
+                return;
+            }
+
+            using ManualResetEventSlim signal = new ManualResetEventSlim(false);
+            try
+            {
+                _messageQueue.Add(new FlushEventArgs(signal));
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+
+            signal.Wait();
         }
 
         public void Dispose()

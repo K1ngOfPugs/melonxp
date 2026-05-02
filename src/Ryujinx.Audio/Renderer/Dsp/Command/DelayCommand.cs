@@ -45,14 +45,14 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
             WorkBuffer = workBuffer;
 
             IsEffectEnabled = isEnabled;
-
+            
             Span<byte> inputSpan = Parameter.Input.AsSpan();
             Span<byte> outputSpan = Parameter.Output.AsSpan();
 
             for (int i = 0; i < Parameter.ChannelCount; i++)
             {
-                InputBufferIndices[i] = (ushort)(bufferOffset + Parameter.Input[i]);
-                OutputBufferIndices[i] = (ushort)(bufferOffset + Parameter.Output[i]);
+                InputBufferIndices[i] = (ushort)(bufferOffset + inputSpan[i]);
+                OutputBufferIndices[i] = (ushort)(bufferOffset + outputSpan[i]);
             }
 
             DataSourceHelper.RemapLegacyChannelEffectMappingToChannelResourceMapping(newEffectChannelMappingSupported, InputBufferIndices, Parameter.ChannelCount);
@@ -85,7 +85,7 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private unsafe void ProcessDelayStereo(ref DelayState state, Span<IntPtr> outputBuffers, ReadOnlySpan<IntPtr> inputBuffers, uint sampleCount)
+        private unsafe void ProcessDelayStereo(ref DelayState state, Span<nint> outputBuffers, ReadOnlySpan<nint> inputBuffers, uint sampleCount)
         {
             const ushort ChannelCount = 2;
 
@@ -122,7 +122,7 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private unsafe void ProcessDelayQuadraphonic(ref DelayState state, Span<IntPtr> outputBuffers, ReadOnlySpan<IntPtr> inputBuffers, uint sampleCount)
+        private unsafe void ProcessDelayQuadraphonic(ref DelayState state, Span<nint> outputBuffers, ReadOnlySpan<nint> inputBuffers, uint sampleCount)
         {
             const ushort ChannelCount = 4;
 
@@ -136,7 +136,6 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
                                           delayFeedbackCrossGain, delayFeedbackBaseGain, 0.0f, delayFeedbackCrossGain,
                                           delayFeedbackCrossGain, 0.0f, delayFeedbackBaseGain, delayFeedbackCrossGain,
                                           0.0f, delayFeedbackCrossGain, delayFeedbackCrossGain, delayFeedbackBaseGain);
-
 
             for (int i = 0; i < sampleCount; i++)
             {
@@ -168,7 +167,7 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private unsafe void ProcessDelaySurround(ref DelayState state, Span<IntPtr> outputBuffers, ReadOnlySpan<IntPtr> inputBuffers, uint sampleCount)
+        private unsafe void ProcessDelaySurround(ref DelayState state, Span<nint> outputBuffers, ReadOnlySpan<nint> inputBuffers, uint sampleCount)
         {
             const ushort ChannelCount = 6;
 
@@ -227,8 +226,8 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
 
             if (IsEffectEnabled && Parameter.IsChannelCountValid())
             {
-                Span<IntPtr> inputBuffers = stackalloc IntPtr[Parameter.ChannelCount];
-                Span<IntPtr> outputBuffers = stackalloc IntPtr[Parameter.ChannelCount];
+                Span<nint> inputBuffers = stackalloc nint[Parameter.ChannelCount];
+                Span<nint> outputBuffers = stackalloc nint[Parameter.ChannelCount];
 
                 for (int i = 0; i < Parameter.ChannelCount; i++)
                 {

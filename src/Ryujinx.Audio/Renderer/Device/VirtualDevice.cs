@@ -10,14 +10,14 @@ namespace Ryujinx.Audio.Renderer.Device
         /// <summary>
         /// All the defined virtual devices.
         /// </summary>
-        public static readonly VirtualDevice[] Devices = new VirtualDevice[5]
-        {
+        public static readonly VirtualDevice[] Devices =
+        [
             new("AudioStereoJackOutput", 2, true),
             new("AudioBuiltInSpeakerOutput", 2, false),
             new("AudioTvOutput", 6, false),
             new("AudioUsbDeviceOutput", 2, true),
-            new("AudioExternalOutput", 6, true),
-        };
+            new("AudioExternalOutput", 6, true)
+        ];
 
         /// <summary>
         /// The name of the <see cref="VirtualDevice"/>.
@@ -58,7 +58,7 @@ namespace Ryujinx.Audio.Renderer.Device
         /// <param name="volume">The new master volume.</param>
         public void UpdateMasterVolume(float volume)
         {
-            Debug.Assert(volume >= 0.0f && volume <= 1.0f);
+            Debug.Assert(volume is >= 0.0f and <= 1.0f);
 
             MasterVolume = volume;
         }

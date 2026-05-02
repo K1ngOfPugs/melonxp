@@ -13,13 +13,13 @@ namespace ARMeilleure.CodeGen.Arm64
 
         public static void RunPass(ControlFlowGraph cfg)
         {
-            var constants = new Dictionary<ulong, Operand>();
+            Dictionary<ulong, Operand> constants = new();
 
             Operand GetConstantCopy(BasicBlock block, Operation operation, Operand source)
             {
                 // If the constant has many uses, we also force a new constant mov to be added, in order
                 // to avoid overflow of the counts field (that is limited to 16 bits).
-                if (!constants.TryGetValue(source.Value, out var constant) || constant.UsesCount > MaxConstantUses)
+                if (!constants.TryGetValue(source.Value, out Operand constant) || constant.UsesCount > MaxConstantUses)
                 {
                     constant = Local(source.Type);
 
@@ -254,7 +254,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
         private static bool IsMemoryLoadOrStore(Instruction inst)
         {
-            return inst == Instruction.Load || inst == Instruction.Store;
+            return inst is Instruction.Load or Instruction.Store;
         }
 
         private static bool ConstTooLong(Operand constOp, OperandType accessType)

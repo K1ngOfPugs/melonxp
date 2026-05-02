@@ -40,7 +40,8 @@ namespace Ryujinx.HLE.HOS.Tamper.CodeEmitters
             }
 
             // Use the conditional begin instruction stored in the stack.
-            var upperInstruction = context.CurrentBlock.BaseInstruction;
+            byte[] upperInstruction = context.CurrentBlock.BaseInstruction 
+                                      ?? throw new TamperCompilationException($"Base instruction in current block was null; termination type '{terminationType}'");
             CodeType codeType = InstructionHelper.GetCodeType(upperInstruction);
 
             // Pop the current block of operations from the stack so control instructions

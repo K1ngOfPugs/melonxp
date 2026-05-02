@@ -16,13 +16,13 @@ namespace Ryujinx.HLE.Utilities
 
             IFileSystem partitionFileSystem;
 
-            if (Path.GetExtension(path).ToLower() == ".xci")
+            if (Path.GetExtension(path).Equals(".xci", System.StringComparison.OrdinalIgnoreCase))
             {
                 partitionFileSystem = new Xci(fileSystem.KeySet, file.AsStorage()).OpenPartition(XciPartitionType.Secure);
             }
             else
             {
-                var pfsTemp = new PartitionFileSystem();
+                PartitionFileSystem pfsTemp = new();
                 Result initResult = pfsTemp.Initialize(file.AsStorage());
 
                 if (throwOnFailure)

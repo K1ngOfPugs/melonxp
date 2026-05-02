@@ -2,7 +2,6 @@ using ARMeilleure.Memory;
 using ARMeilleure.State;
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Ryujinx.Cpu.LightningJit.State
 {
@@ -20,14 +19,13 @@ namespace Ryujinx.Cpu.LightningJit.State
             public uint HostFpFlags;
             public ulong DispatchAddress;
             public int Running;
-            public ulong PageTablePointer;
         }
 
         private static NativeCtxStorage _dummyStorage = new();
 
         private readonly IJitMemoryBlock _block;
 
-        public IntPtr BasePtr => _block.Pointer;
+        public nint BasePtr => _block.Pointer;
 
         public NativeContext(IJitMemoryAllocator allocator)
         {
@@ -113,9 +111,6 @@ namespace Ryujinx.Cpu.LightningJit.State
         public bool GetRunning() => GetStorage().Running != 0;
         public void SetRunning(bool value) => GetStorage().Running = value ? 1 : 0;
 
-        public ulong GetPageTablePointer() => GetStorage().PageTablePointer;
-        public void SetPageTablePointer(ulong pageTablePointer) => GetStorage().PageTablePointer = pageTablePointer;
-
         public unsafe static int GetXOffset()
         {
             return StorageOffset(ref _dummyStorage, ref _dummyStorage.X[0]);
@@ -164,11 +159,6 @@ namespace Ryujinx.Cpu.LightningJit.State
         public static int GetRunningOffset()
         {
             return StorageOffset(ref _dummyStorage, ref _dummyStorage.Running);
-        }
-
-        public static int GetPageTablePointerOffset()
-        {
-            return StorageOffset(ref _dummyStorage, ref _dummyStorage.PageTablePointer);
         }
 
         private static int StorageOffset<T>(ref NativeCtxStorage storage, ref T target)

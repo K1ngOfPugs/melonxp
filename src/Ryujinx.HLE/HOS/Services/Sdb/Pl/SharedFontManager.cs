@@ -5,6 +5,7 @@ using LibHac.FsSystem;
 using LibHac.Ncm;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
+using Microsoft.IO;
 using Ryujinx.Common.Memory;
 using Ryujinx.HLE.Exceptions;
 using Ryujinx.HLE.FileSystem;
@@ -76,7 +77,7 @@ namespace Ryujinx.HLE.HOS.Services.Sdb.Pl
                                 Nca nca = new(_device.System.KeySet, ncaFileStream);
                                 IFileSystem romfs = nca.OpenFileSystem(NcaSectionType.Data, _device.System.FsIntegrityCheckLevel);
 
-                                using var fontFile = new UniqueRef<IFile>();
+                                using UniqueRef<IFile> fontFile = new();
 
                                 romfs.OpenFile(ref fontFile.Ref, ("/" + fontFilename).ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
@@ -105,7 +106,7 @@ namespace Ryujinx.HLE.HOS.Services.Sdb.Pl
                                 titleName = "Unknown";
                             }
 
-                            throw new InvalidSystemResourceException($"{titleName} ({fontTitle:x8}) system title not found! This font will not work, provide the system archive to fix this error. (See https://github.com/Ryujinx/Ryujinx#requirements for more information)");
+                            throw new InvalidSystemResourceException($"{titleName} ({fontTitle:x8}) system title not found! This font will not work, provide the system archive to fix this error.");
                         }
                     }
                     else
@@ -161,7 +162,7 @@ namespace Ryujinx.HLE.HOS.Services.Sdb.Pl
             static uint KXor(uint data) => data ^ FontKey;
 
             using BinaryReader reader = new(bfttfStream);
-            using MemoryStream ttfStream = MemoryStreamManager.Shared.GetStream();
+            using RecyclableMemoryStream ttfStream = MemoryStreamManager.Shared.GetStream();
             using BinaryWriter output = new(ttfStream);
 
             if (KXor(reader.ReadUInt32()) != BFTTFMagic)

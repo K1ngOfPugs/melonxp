@@ -66,6 +66,15 @@ namespace Ryujinx.Input
         void SetConfiguration(InputConfig configuration);
 
         /// <summary>
+        /// Set the LED on the gamepad to a given color.
+        /// </summary>
+        /// <remarks>Does nothing on a controller without LED functionality.</remarks>
+        /// <param name="packedRgb">The packed RGB integer.</param>
+        void SetLed(uint packedRgb);
+
+        public void ClearLed() => SetLed(0);
+
+        /// <summary>
         /// Starts a rumble effect on the gamepad.
         /// </summary>
         /// <param name="lowFrequency">The intensity of the low frequency from 0.0f to 1.0f</param>
@@ -95,25 +104,28 @@ namespace Ryujinx.Input
         {
             // NOTE: Update Array size if JoystickInputId is changed.
             Array3<Array2<float>> joysticksState = default;
+            Span<Array2<float>> joysticksStateSpan = joysticksState.AsSpan();
 
             for (StickInputId inputId = StickInputId.Left; inputId < StickInputId.Count; inputId++)
             {
                 (float state0, float state1) = gamepad.GetStick(inputId);
 
                 Array2<float> state = default;
+                Span<float> stateSpan = state.AsSpan();
 
-                state[0] = state0;
-                state[1] = state1;
+                stateSpan[0] = state0;
+                stateSpan[1] = state1;
 
-                joysticksState[(int)inputId] = state;
+                joysticksStateSpan[(int)inputId] = state;
             }
 
             // NOTE: Update Array size if GamepadInputId is changed.
             Array28<bool> buttonsState = default;
+            Span<bool> buttonsStateSpan = buttonsState.AsSpan();
 
             for (GamepadButtonInputId inputId = GamepadButtonInputId.A; inputId < GamepadButtonInputId.Count; inputId++)
             {
-                buttonsState[(int)inputId] = gamepad.IsPressed(inputId);
+                buttonsStateSpan[(int)inputId] = gamepad.IsPressed(inputId);
             }
 
             return new GamepadStateSnapshot(joysticksState, buttonsState);

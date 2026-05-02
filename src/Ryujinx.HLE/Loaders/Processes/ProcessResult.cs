@@ -6,7 +6,6 @@ using Ryujinx.Cpu;
 using Ryujinx.HLE.HOS.SystemState;
 using Ryujinx.HLE.Loaders.Processes.Extensions;
 using Ryujinx.Horizon.Common;
-using System;
 
 namespace Ryujinx.HLE.Loaders.Processes
 {
@@ -53,19 +52,25 @@ namespace Ryujinx.HLE.Loaders.Processes
 
             if (metaLoader is not null)
             {
-                ulong programId = metaLoader.GetProgramId();
+                ulong programId = metaLoader.ProgramId;
 
                 Name = ApplicationControlProperties.Title[(int)titleLanguage].NameString.ToString();
 
                 if (string.IsNullOrWhiteSpace(Name))
                 {
-                    Name = Array.Find(ApplicationControlProperties.Title.ItemsRo.ToArray(), x => x.Name[0] != 0).NameString.ToString();
+                    foreach (ApplicationControlProperty.ApplicationTitle appTitle in ApplicationControlProperties.Title)
+                    {
+                        if (appTitle.Name[0] != 0)
+                            continue;
+
+                        Name = appTitle.NameString.ToString();
+                    }
                 }
 
                 DisplayVersion = ApplicationControlProperties.DisplayVersionString.ToString();
                 ProgramId = programId;
                 ProgramIdText = $"{programId:x16}";
-                Is64Bit = metaLoader.IsProgram64Bit();
+                Is64Bit = metaLoader.IsProgram64Bit;
             }
 
             DiskCacheEnabled = diskCacheEnabled;
@@ -84,10 +89,19 @@ namespace Ryujinx.HLE.Loaders.Processes
                 return false;
             }
 
-            // TODO: LibHac npdm currently doesn't support version field.
-            string version = ProgramId > 0x0100000000007FFF ? DisplayVersion : device.System.ContentManager.GetCurrentFirmwareVersion()?.VersionString ?? "?";
+            bool isFirmware = ProgramId is >= 0x0100000000000819 and <= 0x010000000000081C;
+            bool isFirmwareApplication = ProgramId <= 0x0100000000007FFF;
 
-            Logger.Info?.Print(LogClass.Loader, $"Application Loaded: {Name} v{version} [{ProgramIdText}] [{(Is64Bit ? "64-bit" : "32-bit")}]");
+            string name = !isFirmware
+                ? (isFirmwareApplication ? "Firmware Application " : string.Empty) + (!string.IsNullOrWhiteSpace(Name) ? Name : "<Unknown Name>")
+                : "Firmware";
+
+            // TODO: LibHac npdm currently doesn't support version field.
+            string version = !isFirmware
+                ? (!string.IsNullOrWhiteSpace(DisplayVersion) ? DisplayVersion : "<Unknown Version>")
+                : device.System.ContentManager.GetCurrentFirmwareVersion()?.VersionString ?? "?";
+
+            Logger.Info?.Print(LogClass.Loader, $"Application Loaded: {name} v{version} [{ProgramIdText}] [{(Is64Bit ? "64-bit" : "32-bit")}]");
 
             return true;
         }

@@ -3,7 +3,7 @@ using Ryujinx.HLE.HOS.Services.Ldn.UserServiceCreator;
 namespace Ryujinx.HLE.HOS.Services.Ldn
 {
     [Service("ldn:u")]
-    partial class IUserServiceCreator : IpcService
+    class IUserServiceCreator : IpcService
     {
         public IUserServiceCreator(ServiceCtx context) : base(context.Device.System.LdnServer) { }
 
@@ -12,6 +12,15 @@ namespace Ryujinx.HLE.HOS.Services.Ldn
         public ResultCode CreateUserLocalCommunicationService(ServiceCtx context)
         {
             MakeObject(context, new IUserLocalCommunicationService(context));
+
+            return ResultCode.Success;
+        }
+
+        [CommandCmif(1)] // 18.0.0+
+        // CreateClientProcessMonitor() -> object<nn::ldn::detail::IClientProcessMonitor>
+        public ResultCode CreateClientProcessMonitor(ServiceCtx context)
+        {
+            MakeObject(context, new IClientProcessMonitor(context));
 
             return ResultCode.Success;
         }

@@ -15,7 +15,6 @@ using Ryujinx.HLE.FileSystem;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Globalization;
 using ContentType = LibHac.Ncm.ContentType;
 
 namespace Ryujinx.HLE.Loaders.Processes.Extensions
@@ -24,14 +23,12 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
     {
         private static readonly DownloadableContentJsonSerializerContext _contentSerializerContext = new(JsonHelper.GetDefaultSerializerOptions());
 
-        private static readonly TitleUpdateMetadataJsonSerializerContext _titleSerializerContext = new(JsonHelper.GetDefaultSerializerOptions());
-
         public static Dictionary<ulong, ContentMetaData> GetContentData(this IFileSystem partitionFileSystem,
             ContentMetaType contentType, VirtualFileSystem fileSystem, IntegrityCheckLevel checkLevel)
         {
             fileSystem.ImportTickets(partitionFileSystem);
 
-            var programs = new Dictionary<ulong, ContentMetaData>();
+            Dictionary<ulong, ContentMetaData> programs = new();
 
             foreach (DirectoryEntryEx fileEntry in partitionFileSystem.EnumerateEntries("/", "*.cnmt.nca"))
             {
@@ -105,12 +102,13 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
                     return (false, ProcessResult.Failed);
                 }
 
-                // Load Update NCAs.
-                (Nca updatePatchNca, Nca updateControlNca) = mainNca.GetUpdateData(device.FileSystem, device.System.FsIntegrityCheckLevel, device.Configuration.UserChannelPersistence.Index, out string _);
+                (Nca updatePatchNca, Nca updateControlNca) = mainNca.GetUpdateData(device.FileSystem, device.System.FsIntegrityCheckLevel, device.Configuration.UserChannelPersistence.Index, out string updatePath);
 
                 if (updatePatchNca != null)
                 {
                     patchNca = updatePatchNca;
+                    if (updatePath != null) 
+                        Logger.Notice.PrintMsg(LogClass.Application, $"Loading update NCA from '{updatePath}'.");
                 }
 
                 if (updateControlNca != null)
@@ -122,7 +120,7 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
                 device.Configuration.ContentManager.ClearAocData();
 
                 // Load DownloadableContents.
-                string addOnContentMetadataPath = System.IO.Path.Combine(AppDataManager.GamesDirPath, mainNca.GetProgramIdBase().ToString("x16"), "dlc.json");
+                string addOnContentMetadataPath = System.IO.Path.Combine(AppDataManager.GamesDirPath, mainNca.ProgramIdBase.ToString("x16"), "dlc.json");
                 if (File.Exists(addOnContentMetadataPath))
                 {
                     List<DownloadableContentContainer> dlcContainerList = JsonHelper.DeserializeFromFile(addOnContentMetadataPath, _contentSerializerContext.ListDownloadableContentContainer);
@@ -131,15 +129,16 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
                     {
                         foreach (DownloadableContentNca downloadableContentNca in downloadableContentContainer.DownloadableContentNcaList)
                         {
-                            string dlcPath = PlatformRelative(downloadableContentContainer.ContainerPath);
-
-                            if (File.Exists(dlcPath) && downloadableContentNca.Enabled)
+                            if (File.Exists(downloadableContentContainer.ContainerPath))
                             {
-                                device.Configuration.ContentManager.AddAocItem(downloadableContentNca.TitleId, dlcPath, downloadableContentNca.FullPath);
+                                if (downloadableContentNca.Enabled)
+                                {
+                                    device.Configuration.ContentManager.AddAocItem(downloadableContentNca.TitleId, downloadableContentContainer.ContainerPath, downloadableContentNca.FullPath);
+                                }
                             }
                             else
                             {
-                                Logger.Warning?.Print(LogClass.Application, $"Cannot find AddOnContent file {dlcPath}. It may have been moved or renamed.");
+                                Logger.Warning?.Print(LogClass.Application, $"Cannot find AddOnContent file {downloadableContentContainer.ContainerPath}. It may have been moved or renamed.");
                             }
                         }
                     }
@@ -151,34 +150,6 @@ namespace Ryujinx.HLE.Loaders.Processes.Extensions
             errorMessage = $"Unable to load: Could not find Main NCA for title \"{applicationId:X16}\"";
 
             return (false, ProcessResult.Failed);
-        }
-
-        private static string PlatformRelative(string path)
-        {
-            if (OperatingSystem.IsIOS() && !File.Exists(path))
-            {
-                path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), path);
-            }
-
-            return path;
-        }
-
-        public static Nca GetNca(this IFileSystem fileSystem, Switch device, string path)
-        {
-            using var ncaFile = new UniqueRef<IFile>();
-
-            fileSystem.OpenFile(ref ncaFile.Ref, path.ToU8Span(), OpenMode.Read).ThrowIfFailure();
-
-            return new Nca(device.Configuration.VirtualFileSystem.KeySet, ncaFile.Release().AsStorage());
-        }
-
-        public static Nca GetNca(this IFileSystem fileSystem, KeySet keySet, string path)
-        {
-            using var ncaFile = new UniqueRef<IFile>();
-
-            fileSystem.OpenFile(ref ncaFile.Ref, path.ToU8Span(), OpenMode.Read).ThrowIfFailure();
-
-            return new Nca(keySet, ncaFile.Release().AsStorage());
         }
     }
 }

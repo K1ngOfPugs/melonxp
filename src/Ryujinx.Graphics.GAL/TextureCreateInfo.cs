@@ -1,6 +1,5 @@
 using Ryujinx.Common;
 using System;
-using System.Numerics;
 
 namespace Ryujinx.Graphics.GAL
 {
@@ -48,6 +47,7 @@ namespace Ryujinx.Graphics.GAL
             Width = width;
             Height = height;
             Depth = depth;
+            Levels = levels;
             Samples = samples;
             BlockWidth = blockWidth;
             BlockHeight = blockHeight;
@@ -59,22 +59,6 @@ namespace Ryujinx.Graphics.GAL
             SwizzleG = swizzleG;
             SwizzleB = swizzleB;
             SwizzleA = swizzleA;
-
-            int maxSize = width;
-
-            if (target != Target.Texture1D &&
-                target != Target.Texture1DArray)
-            {
-                maxSize = Math.Max(maxSize, height);
-            }
-
-            if (target == Target.Texture3D)
-            {
-                maxSize = Math.Max(maxSize, depth);
-            }
-
-            int maxLevels = BitOperations.Log2((uint)maxSize) + 1;
-            Levels = Math.Min(levels, maxLevels);
         }
 
         public int GetMipSize(int level)
@@ -114,9 +98,9 @@ namespace Ryujinx.Graphics.GAL
 
         public int GetLayers()
         {
-            if (Target == Target.Texture2DArray ||
-                Target == Target.Texture2DMultisampleArray ||
-                Target == Target.CubemapArray)
+            if (Target is Target.Texture2DArray or
+                Target.Texture2DMultisampleArray or
+                Target.CubemapArray)
             {
                 return Depth;
             }

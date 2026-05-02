@@ -115,7 +115,7 @@ namespace ARMeilleure.CodeGen.RegisterAllocators
         {
             NumberLocals(cfg, regMasks.RegistersCount);
 
-            var context = new AllocationContext(stackAlloc, regMasks, _intervals.Count);
+            AllocationContext context = new(stackAlloc, regMasks, _intervals.Count);
 
             BuildIntervals(cfg, context);
 
@@ -208,7 +208,7 @@ namespace ARMeilleure.CodeGen.RegisterAllocators
 
         private bool TryAllocateRegWithoutSpill(AllocationContext context, LiveInterval current, int cIndex, int registersCount)
         {
-            RegisterType regType = current.Local.Type.ToRegisterType();
+            RegisterType regType = current.Local.Type.Register;
 
             Span<int> freePositions = stackalloc int[registersCount];
 
@@ -318,7 +318,7 @@ namespace ARMeilleure.CodeGen.RegisterAllocators
 
         private void AllocateRegWithSpill(AllocationContext context, LiveInterval current, int cIndex, int registersCount)
         {
-            RegisterType regType = current.Local.Type.ToRegisterType();
+            RegisterType regType = current.Local.Type.Register;
 
             Span<int> usePositions = stackalloc int[registersCount];
             Span<int> blockedPositions = stackalloc int[registersCount];
@@ -799,8 +799,8 @@ namespace ARMeilleure.CodeGen.RegisterAllocators
 
         private void NumberLocals(ControlFlowGraph cfg, int registersCount)
         {
-            _operationNodes = new List<(IntrusiveList<Operation>, Operation)>();
-            _intervals = new List<LiveInterval>();
+            _operationNodes = [];
+            _intervals = [];
 
             for (int index = 0; index < registersCount; index++)
             {
@@ -839,7 +839,7 @@ namespace ARMeilleure.CodeGen.RegisterAllocators
                         {
                             dest.NumberLocal(_intervals.Count);
 
-                            LiveInterval interval = new LiveInterval(dest);
+                            LiveInterval interval = new(dest);
                             _intervals.Add(interval);
 
                             SetVisited(dest);
@@ -847,7 +847,7 @@ namespace ARMeilleure.CodeGen.RegisterAllocators
                             // If this is a copy (or copy-like operation), set the copy source interval as well.
                             // This is used for register preferencing later on, which allows the copy to be eliminated
                             // in some cases.
-                            if (node.Instruction == Instruction.Copy || node.Instruction == Instruction.ZeroExtend32)
+                            if (node.Instruction is Instruction.Copy or Instruction.ZeroExtend32)
                             {
                                 Operand source = node.GetSource(0);
 
@@ -980,7 +980,7 @@ namespace ARMeilleure.CodeGen.RegisterAllocators
 
             _blockLiveIn = blkLiveIn;
 
-            _blockEdges = new HashSet<int>();
+            _blockEdges = [];
 
             // Compute lifetime intervals.
             int operationPos = _operationsCount;
@@ -1120,8 +1120,8 @@ namespace ARMeilleure.CodeGen.RegisterAllocators
 
         private static bool IsLocalOrRegister(OperandKind kind)
         {
-            return kind == OperandKind.LocalVariable ||
-                   kind == OperandKind.Register;
+            return kind is OperandKind.LocalVariable or
+                   OperandKind.Register;
         }
     }
 }

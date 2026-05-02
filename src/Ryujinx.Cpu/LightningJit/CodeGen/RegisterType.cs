@@ -1,6 +1,6 @@
 namespace Ryujinx.Cpu.LightningJit.CodeGen
 {
-    public enum RegisterType
+    enum RegisterType
     {
         Integer,
         Vector,

@@ -3,7 +3,7 @@ using Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.Library
 
 namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.SystemAppletProxy
 {
-    partial class ILibraryAppletCreator : IpcService
+    class ILibraryAppletCreator : IpcService
     {
         public ILibraryAppletCreator() { }
 
@@ -15,6 +15,21 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.Sys
 #pragma warning disable IDE0059 // Remove unnecessary value assignment
             int libraryAppletMode = context.RequestData.ReadInt32();
 #pragma warning restore IDE0059
+
+            MakeObject(context, new ILibraryAppletAccessor(appletId, context.Device.System));
+
+            return ResultCode.Success;
+        }
+
+        [CommandCmif(3)] // 20.0.0+
+        // CreateLibraryAppletEx(u32, u32, u64) -> object<nn::am::service::ILibraryAppletAccessor>
+        public ResultCode CreateLibraryAppletEx(ServiceCtx context)
+        {
+            AppletId appletId = (AppletId)context.RequestData.ReadInt32();
+
+            _ = context.RequestData.ReadInt32(); // libraryAppletMode
+
+            _ = context.RequestData.ReadUInt64(); // threadId
 
             MakeObject(context, new ILibraryAppletAccessor(appletId, context.Device.System));
 

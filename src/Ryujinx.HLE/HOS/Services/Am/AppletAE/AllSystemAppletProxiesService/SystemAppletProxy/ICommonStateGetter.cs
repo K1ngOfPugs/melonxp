@@ -10,7 +10,7 @@ using System;
 
 namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.SystemAppletProxy
 {
-    partial class ICommonStateGetter : DisposableIpcService
+    class ICommonStateGetter : DisposableIpcService
     {
         private readonly ServiceCtx _context;
 
@@ -214,7 +214,7 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.Sys
 
             _vrModeEnabled = vrModeEnabled;
 
-            using var lblApi = new LblApi();
+            using LblApi lblApi = new();
 
             if (vrModeEnabled)
             {

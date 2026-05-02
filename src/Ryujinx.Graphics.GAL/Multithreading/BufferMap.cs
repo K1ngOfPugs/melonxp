@@ -16,7 +16,7 @@ namespace Ryujinx.Graphics.GAL.Multithreading
         private ulong _bufferHandle = 0;
 
         private readonly Dictionary<BufferHandle, BufferHandle> _bufferMap = new();
-        private readonly HashSet<BufferHandle> _inFlight = new();
+        private readonly HashSet<BufferHandle> _inFlight = [];
         private readonly AutoResetEvent _inFlightChanged = new(false);
 
         internal BufferHandle CreateBufferHandle()
@@ -76,7 +76,6 @@ namespace Ryujinx.Graphics.GAL.Multithreading
         internal BufferHandle MapBufferBlocking(BufferHandle handle)
         {
             // Blocks until the handle is available.
-
 
             lock (_bufferMap)
             {

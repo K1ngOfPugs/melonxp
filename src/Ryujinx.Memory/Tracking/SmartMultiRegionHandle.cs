@@ -45,7 +45,7 @@ namespace Ryujinx.Memory.Tracking
 
         public void ForceDirty(ulong address, ulong size)
         {
-            foreach (var handle in _handles)
+            foreach (RegionHandle handle in _handles)
             {
                 if (handle != null && handle.OverlapsWith(address, size))
                 {
@@ -56,23 +56,17 @@ namespace Ryujinx.Memory.Tracking
 
         public void RegisterAction(RegionSignal action)
         {
-            foreach (var handle in _handles)
+            foreach (RegionHandle handle in _handles)
             {
-                if (handle != null)
-                {
-                    handle?.RegisterAction((address, size) => action(handle.Address, handle.Size));
-                }
+                handle?.RegisterAction((address, size) => action(handle.Address, handle.Size));
             }
         }
 
         public void RegisterPreciseAction(PreciseRegionSignal action)
         {
-            foreach (var handle in _handles)
+            foreach (RegionHandle handle in _handles)
             {
-                if (handle != null)
-                {
-                    handle?.RegisterPreciseAction((address, size, write) => action(handle.Address, handle.Size, write));
-                }
+                handle?.RegisterPreciseAction((address, size, write) => action(handle.Address, handle.Size, write));
             }
         }
 
@@ -110,6 +104,7 @@ namespace Ryujinx.Memory.Tracking
             {
                 splitLow.RegisterAction(signal);
             }
+
             _handles[handleIndex] = splitLow;
 
             RegionHandle splitHigh = _tracking.BeginTracking(address + size, handle.Size - size, _id);
@@ -118,6 +113,7 @@ namespace Ryujinx.Memory.Tracking
             {
                 splitHigh.RegisterAction(signal);
             }
+
             _handles[splitIndex] = splitHigh;
         }
 
@@ -136,6 +132,7 @@ namespace Ryujinx.Memory.Tracking
                         SplitHandle(i, startHandle);
                         return; // The remainer of this handle should be filled in later on.
                     }
+
                     break;
                 }
             }
@@ -201,6 +198,7 @@ namespace Ryujinx.Memory.Tracking
                         modifiedAction(rgStart, rgSize);
                         rgSize = 0;
                     }
+
                     rgStart = handle.EndAddress;
                 }
 
@@ -255,6 +253,7 @@ namespace Ryujinx.Memory.Tracking
                         modifiedAction(rgStart, rgSize);
                         rgSize = 0;
                     }
+
                     rgStart = handle.EndAddress;
                 }
 
@@ -273,7 +272,7 @@ namespace Ryujinx.Memory.Tracking
         {
             GC.SuppressFinalize(this);
 
-            foreach (var handle in _handles)
+            foreach (RegionHandle handle in _handles)
             {
                 handle?.Dispose();
             }

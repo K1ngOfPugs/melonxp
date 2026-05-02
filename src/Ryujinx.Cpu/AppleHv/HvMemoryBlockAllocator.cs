@@ -4,7 +4,6 @@ using System.Runtime.Versioning;
 namespace Ryujinx.Cpu.AppleHv
 {
     [SupportedOSPlatform("macos")]
-    [SupportedOSPlatform("ios")]
     class HvMemoryBlockAllocator : PrivateMemoryAllocatorImpl<HvMemoryBlockAllocator.Block>
     {
         public class Block : PrivateMemoryAllocator.Block
@@ -46,7 +45,7 @@ namespace Ryujinx.Cpu.AppleHv
 
         public HvMemoryBlockAllocation Allocate(ulong size, ulong alignment)
         {
-            var allocation = Allocate(size, alignment, CreateBlock);
+            Allocation allocation = Allocate(size, alignment, CreateBlock);
 
             return new HvMemoryBlockAllocation(this, allocation.Block, allocation.Offset, allocation.Size);
         }

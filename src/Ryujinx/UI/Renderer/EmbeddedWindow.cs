@@ -1,10 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Platform;
+using Ryujinx.Ava.Systems.Configuration;
+using Ryujinx.Ava.Utilities;
 using Ryujinx.Common.Configuration;
-using Ryujinx.UI.Common.Configuration;
-using Ryujinx.UI.Common.Helper;
+using Ryujinx.Common.Helper;
+using Ryujinx.Common.Logging;
+using Ryujinx.Graphics.RenderDocApi;
+using Ryujinx.HLE;
 using SPB.Graphics;
 using SPB.Platform;
 using SPB.Platform.GLX;
@@ -25,15 +28,16 @@ namespace Ryujinx.Ava.UI.Renderer
 
         protected GLXWindow X11Window { get; set; }
 
-        protected IntPtr WindowHandle { get; set; }
-        protected IntPtr X11Display { get; set; }
-        protected IntPtr NsView { get; set; }
-        protected IntPtr MetalLayer { get; set; }
+        protected nint WindowHandle { get; set; }
+        protected nint X11Display { get; set; }
+        protected nint NsView { get; set; }
+        protected nint MetalLayer { get; set; }
 
         public delegate void UpdateBoundsCallbackDelegate(Rect rect);
+
         private UpdateBoundsCallbackDelegate _updateBoundsCallback;
 
-        public event EventHandler<IntPtr> WindowCreated;
+        public event EventHandler<nint> WindowCreated;
         public event EventHandler<Size> BoundsChanged;
 
         public EmbeddedWindow()
@@ -47,12 +51,61 @@ namespace Ryujinx.Ava.UI.Renderer
 
         protected virtual void OnWindowDestroyed() { }
 
+        public bool ToggleRenderDocCapture(Switch device)
+        {
+            if (!RenderDoc.IsAvailable) return false;
+
+            if (RenderDoc.IsFrameCapturing)
+            {
+                if (EndRenderDocCapture())
+                {
+                    Logger.Info?.Print(LogClass.Application, "Ended RenderDoc capture.");
+                    return true;
+                }
+            } 
+            else if (StartRenderDocCapture(device))
+            {
+                Logger.Info?.Print(LogClass.Application, "Starting RenderDoc capture.");
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool StartRenderDocCapture(Switch device)
+        {
+            if (!RenderDoc.IsAvailable) return false;
+
+            if (RenderDoc.IsFrameCapturing) return false;
+
+            RenderDoc.StartFrameCapture(nint.Zero, WindowHandle);
+            RenderDoc.SetCaptureTitle(TitleHelper.FormatRenderDocCaptureTitle(device.Processes.ActiveApplication, Program.Version));
+
+            return true;
+        }
+
+        public bool EndRenderDocCapture()
+        {
+            if (!RenderDoc.IsAvailable) return false;
+            if (!RenderDoc.IsFrameCapturing) return false;
+
+            return RenderDoc.IsFrameCapturing && RenderDoc.EndFrameCapture(nint.Zero, WindowHandle);
+        }
+
+        public bool DiscardRenderDocCapture()
+        {
+            if (!RenderDoc.IsAvailable) return false;
+            if (!RenderDoc.IsFrameCapturing) return false;
+
+            return RenderDoc.IsFrameCapturing && RenderDoc.DiscardFrameCapture(nint.Zero, WindowHandle);
+        }
+
         protected virtual void OnWindowDestroying()
         {
-            WindowHandle = IntPtr.Zero;
-            X11Display = IntPtr.Zero;
-            NsView = IntPtr.Zero;
-            MetalLayer = IntPtr.Zero;
+            WindowHandle = nint.Zero;
+            X11Display = nint.Zero;
+            NsView = nint.Zero;
+            MetalLayer = nint.Zero;
         }
 
         private void OnNativeEmbeddedWindowCreated(object sender, EventArgs e)
@@ -116,7 +169,7 @@ namespace Ryujinx.Ava.UI.Renderer
         }
 
         [SupportedOSPlatform("linux")]
-        private IPlatformHandle CreateLinux(IPlatformHandle control)
+        private PlatformHandle CreateLinux(IPlatformHandle control)
         {
             if (ConfigurationState.Instance.Graphics.GraphicsBackend.Value == GraphicsBackend.Vulkan)
             {
@@ -125,7 +178,9 @@ namespace Ryujinx.Ava.UI.Renderer
             }
             else
             {
-                X11Window = PlatformHelper.CreateOpenGLWindow(new FramebufferFormat(new ColorFormat(8, 8, 8, 0), 16, 0, ColorFormat.Zero, 0, 2, false), 0, 0, 100, 100) as GLXWindow;
+                X11Window = PlatformHelper.CreateOpenGLWindow(
+                    new FramebufferFormat(new ColorFormat(8, 8, 8, 0), 16, 0, ColorFormat.Zero, 0, 2, false), 0, 0, 100,
+                    100) as GLXWindow;
             }
 
             WindowHandle = X11Window.WindowHandle.RawHandle;
@@ -135,11 +190,11 @@ namespace Ryujinx.Ava.UI.Renderer
         }
 
         [SupportedOSPlatform("windows")]
-        IPlatformHandle CreateWin32(IPlatformHandle control)
+        PlatformHandle CreateWin32(IPlatformHandle control)
         {
             _className = "NativeWindow-" + Guid.NewGuid();
 
-            _wndProcDelegate = delegate (IntPtr hWnd, WindowsMessages msg, IntPtr wParam, IntPtr lParam)
+            _wndProcDelegate = delegate(nint hWnd, WindowsMessages msg, nint wParam, nint lParam)
             {
                 switch (msg)
                 {
@@ -162,7 +217,8 @@ namespace Ryujinx.Ava.UI.Renderer
 
             RegisterClassEx(ref wndClassEx);
 
-            WindowHandle = CreateWindowEx(0, _className, "NativeWindow", WindowStyles.WsChild, 0, 0, 640, 480, control.Handle, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            WindowHandle = CreateWindowEx(0, _className, "NativeWindow", WindowStyles.WsChild, 0, 0, 640, 480,
+                control.Handle, nint.Zero, nint.Zero, nint.Zero);
 
             SetWindowLongPtrW(control.Handle, GWLP_WNDPROC, wndClassEx.lpfnWndProc);
 
@@ -172,7 +228,7 @@ namespace Ryujinx.Ava.UI.Renderer
         }
 
         [SupportedOSPlatform("macos")]
-        IPlatformHandle CreateMacOS()
+        PlatformHandle CreateMacOS()
         {
             // Create a new CAMetalLayer.
             ObjectiveC.Object layerObject = new("CAMetalLayer");
@@ -195,7 +251,7 @@ namespace Ryujinx.Ava.UI.Renderer
                 metalLayer.SendMessage("setContentsScale:", Program.DesktopScaleFactor);
             };
 
-            IntPtr nsView = child.ObjPtr;
+            nint nsView = child.ObjPtr;
             MetalLayer = metalLayer.ObjPtr;
             NsView = nsView;
 
@@ -216,11 +272,9 @@ namespace Ryujinx.Ava.UI.Renderer
         }
 
         [SupportedOSPlatform("macos")]
-#pragma warning disable CA1822 // Mark member as static
-        void DestroyMacOS()
+        static void DestroyMacOS()
         {
             // TODO
         }
-#pragma warning restore CA1822
     }
 }

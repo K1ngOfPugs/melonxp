@@ -208,7 +208,7 @@ namespace Ryujinx.Tests.Memory
 
             // Query some large regions to prep the subdivision of the tracking region.
 
-            int[] regionSizes = new int[] { 6, 4, 3, 2, 6, 1 };
+            int[] regionSizes = [6, 4, 3, 2, 6, 1];
             ulong address = 0;
 
             for (int i = 0; i < regionSizes.Length; i++)
@@ -333,24 +333,24 @@ namespace Ryujinx.Tests.Memory
 
             // Finally, create a granular handle that inherits all these handles.
 
-            IEnumerable<IRegionHandle>[] handleGroups = new IEnumerable<IRegionHandle>[]
-            {
-                granular.GetHandles(),
+            IEnumerable<IRegionHandle>[] handleGroups =
+            [
+                granular.Handles,
                 singlePages,
-                doublePages,
-            };
+                doublePages
+            ];
 
             MultiRegionHandle combined = _tracking.BeginGranularTracking(0, PageSize * 18, handleGroups.SelectMany((handles) => handles), PageSize, 0);
 
-            bool[] expectedDirty = new bool[]
-            {
+            bool[] expectedDirty =
+            [
                 true, true, true, // Gap.
                 false, true, false, // Multi-region.
                 true, true, // Gap.
                 false, true, false, // Individual handles.
                 false, false, true, true, false, false, // Double size handles.
-                true, // Gap.
-            };
+                true // Gap.
+            ];
 
             for (int i = 0; i < 18; i++)
             {
@@ -389,7 +389,7 @@ namespace Ryujinx.Tests.Memory
                 Assert.IsTrue(throws);
             }
 
-            IEnumerable<IRegionHandle> combinedHandles = combined.GetHandles();
+            IEnumerable<IRegionHandle> combinedHandles = combined.Handles;
 
             Assert.AreEqual(handleGroups[0].ElementAt(0), combinedHandles.ElementAt(3));
             Assert.AreEqual(handleGroups[0].ElementAt(1), combinedHandles.ElementAt(4));
@@ -400,6 +400,8 @@ namespace Ryujinx.Tests.Memory
             Assert.AreEqual(singlePages[2], combinedHandles.ElementAt(10));
         }
 
+        static readonly bool[] _expectedPagesModified = [true, false, false];
+
         [Test]
         public void PreciseAction()
         {
@@ -409,7 +411,11 @@ namespace Ryujinx.Tests.Memory
             PreparePages(granular, 3, PageSize * 3);
 
             // Add a precise action to the second and third handle in the multiregion.
-            granular.RegisterPreciseAction(PageSize * 4, PageSize * 2, (_, _, _) => { actionTriggered = true; return true; });
+            granular.RegisterPreciseAction(PageSize * 4, PageSize * 2, (_, _, _) =>
+            {
+                actionTriggered = true;
+                return true;
+            });
 
             // Precise write to first handle in the multiregion.
             _tracking.VirtualMemoryEvent(PageSize * 3, PageSize, true, precise: true);
@@ -433,7 +439,7 @@ namespace Ryujinx.Tests.Memory
             Assert.IsTrue(actionTriggered); // Action triggered.
 
             // Precise writes are ignored on two later handles due to the action returning true.
-            Assert.AreEqual(pagesModified, new bool[] { true, false, false });
+            Assert.AreEqual(pagesModified, _expectedPagesModified);
         }
     }
 }

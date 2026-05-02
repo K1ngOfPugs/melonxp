@@ -10,7 +10,6 @@ using Ryujinx.Audio.Renderer.Server.Upsampler;
 using Ryujinx.Audio.Renderer.Server.Voice;
 using Ryujinx.Common;
 using System;
-using System.Runtime.CompilerServices;
 using CpuAddress = System.UInt64;
 
 namespace Ryujinx.Audio.Renderer.Server
@@ -190,7 +189,7 @@ namespace Ryujinx.Audio.Renderer.Server
                     throw new NotImplementedException();
             }
         }
-
+        
         /// <summary>
         /// Create a new <see cref="CommandBuffer"/>.
         /// </summary>
@@ -626,7 +625,6 @@ namespace Ryujinx.Audio.Renderer.Server
             }
         }
 
-
         /// <summary>
         /// Generate a new <see cref="DelayCommand"/>.
         /// </summary>
@@ -850,9 +848,9 @@ namespace Ryujinx.Audio.Renderer.Server
         public void GenerateFillBuffer(SplitterDestination destination, float value, int length, int nodeId)
         {
             FillBufferCommand command = _fillBufferCommandPool.Allocate().Initialize(destination, length, value, nodeId);
-
+            
             command.EstimatedProcessingTime = _commandProcessingTimeEstimator.Estimate(command);
-
+            
             AddCommand(command);
         }
     }

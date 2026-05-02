@@ -56,7 +56,7 @@ namespace Ryujinx.Graphics.OpenGL
                         minVertexCount = vertexCount;
                     }
 
-                    GL.BindVertexBuffer(bindingIndex, vb.Buffer.Handle.ToInt32(), (IntPtr)vb.Buffer.Offset, vb.Stride);
+                    GL.BindVertexBuffer(bindingIndex, vb.Buffer.Handle, (nint)vb.Buffer.Offset, vb.Stride);
                     GL.VertexBindingDivisor(bindingIndex, vb.Divisor);
                     _vertexBuffersInUse |= 1u << bindingIndex;
                 }
@@ -64,7 +64,7 @@ namespace Ryujinx.Graphics.OpenGL
                 {
                     if ((_vertexBuffersInUse & (1u << bindingIndex)) != 0)
                     {
-                        GL.BindVertexBuffer(bindingIndex, 0, IntPtr.Zero, 0);
+                        GL.BindVertexBuffer(bindingIndex, 0, nint.Zero, 0);
                         _vertexBuffersInUse &= ~(1u << bindingIndex);
                     }
                 }
@@ -104,8 +104,8 @@ namespace Ryujinx.Graphics.OpenGL
                 int offset = attrib.Offset;
                 int size = fmtInfo.Components;
 
-                bool isFloat = fmtInfo.PixelType == PixelType.Float ||
-                               fmtInfo.PixelType == PixelType.HalfFloat;
+                bool isFloat = fmtInfo.PixelType is PixelType.Float or
+                               PixelType.HalfFloat;
 
                 if (isFloat || fmtInfo.Normalized || fmtInfo.Scaled)
                 {
@@ -134,19 +134,19 @@ namespace Ryujinx.Graphics.OpenGL
         public void SetIndexBuffer(BufferRange range)
         {
             _indexBuffer = range;
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, range.Handle.ToInt32());
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, range.Handle);
         }
 
         public void SetRangeOfIndexBuffer()
         {
             Buffer.Resize(_tempIndexBuffer, _indexBuffer.Size);
             Buffer.Copy(_indexBuffer.Handle, _tempIndexBuffer, _indexBuffer.Offset, 0, _indexBuffer.Size);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _tempIndexBuffer.ToInt32());
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _tempIndexBuffer);
         }
 
         public void RestoreIndexBuffer()
         {
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer.Handle.ToInt32());
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer.Handle);
         }
 
         public void PreDraw(int vertexCount)
@@ -177,7 +177,7 @@ namespace Ryujinx.Graphics.OpenGL
             {
                 int vbIndex = BitOperations.TrailingZeroCount(buffersInUse);
 
-                ref var vb = ref _vertexBuffers[vbIndex];
+                ref VertexBufferDescriptor vb = ref _vertexBuffers[vbIndex];
 
                 int requiredSize = vertexCount * vb.Stride;
 
@@ -188,7 +188,7 @@ namespace Ryujinx.Graphics.OpenGL
                     Buffer.Copy(vb.Buffer.Handle, tempVertexBuffer, vb.Buffer.Offset, currentTempVbOffset, vb.Buffer.Size);
                     Buffer.Clear(tempVertexBuffer, currentTempVbOffset + vb.Buffer.Size, requiredSize - vb.Buffer.Size, 0);
 
-                    GL.BindVertexBuffer(vbIndex, tempVertexBuffer.ToInt32(), (IntPtr)currentTempVbOffset, vb.Stride);
+                    GL.BindVertexBuffer(vbIndex, tempVertexBuffer, (nint)currentTempVbOffset, vb.Stride);
 
                     currentTempVbOffset += requiredSize;
                     _vertexBuffersLimited |= 1u << vbIndex;
@@ -232,9 +232,9 @@ namespace Ryujinx.Graphics.OpenGL
             {
                 int vbIndex = BitOperations.TrailingZeroCount(buffersLimited);
 
-                ref var vb = ref _vertexBuffers[vbIndex];
+                ref VertexBufferDescriptor vb = ref _vertexBuffers[vbIndex];
 
-                GL.BindVertexBuffer(vbIndex, vb.Buffer.Handle.ToInt32(), (IntPtr)vb.Buffer.Offset, vb.Stride);
+                GL.BindVertexBuffer(vbIndex, vb.Buffer.Handle, (nint)vb.Buffer.Offset, vb.Stride);
 
                 buffersLimited &= ~(1u << vbIndex);
             }

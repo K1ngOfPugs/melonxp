@@ -1,4 +1,5 @@
 using Ryujinx.Common;
+using Ryujinx.Common.Configuration;
 using Ryujinx.Common.Logging;
 using Ryujinx.Common.Utilities;
 using Ryujinx.HLE.HOS.Services.Nifm.StaticService.GeneralService;
@@ -9,25 +10,20 @@ using System.Runtime.CompilerServices;
 
 namespace Ryujinx.HLE.HOS.Services.Nifm.StaticService
 {
-    public static class AnyInternetRequestAccepted {
-        static public bool isAnyInternetRequestAccepted = false;
-    }
-
-    partial class IGeneralService : DisposableIpcService
+    class IGeneralService : DisposableIpcService
     {
-    
         private readonly GeneralServiceDetail _generalServiceDetail;
 
         private IPInterfaceProperties _targetPropertiesCache = null;
         private UnicastIPAddressInformation _targetAddressInfoCache = null;
         private string _cacheChosenInterface = null;
 
-        public IGeneralService()
+        public IGeneralService(ServiceCtx context)
         {
             _generalServiceDetail = new GeneralServiceDetail
             {
                 ClientId = GeneralServiceManager.Count,
-                IsAnyInternetRequestAccepted = AnyInternetRequestAccepted.isAnyInternetRequestAccepted, // NOTE: Why not accept any internet request?
+                IsAnyInternetRequestAccepted = !context.Device.DirtyHacks.IsEnabled(DirtyHack.NifmServiceDisableIsAnyInternetRequestAccepted), // NOTE: Why not accept any internet request?
             };
 
             NetworkChange.NetworkAddressChanged += LocalInterfaceCacheHandler;
@@ -83,7 +79,7 @@ namespace Ryujinx.HLE.HOS.Services.Nifm.StaticService
 
             NetworkProfileData networkProfile = new()
             {
-                Uuid = UInt128Utils.CreateRandom(),
+                Uuid = Random.Shared.NextUInt128(),
             };
 
             networkProfile.IpSettingData.IpAddressSetting = new IpAddressSetting(interfaceProperties, unicastAddress);

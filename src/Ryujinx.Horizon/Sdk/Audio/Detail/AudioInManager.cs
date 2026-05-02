@@ -5,6 +5,7 @@ using Ryujinx.Horizon.Common;
 using Ryujinx.Horizon.Sdk.Applet;
 using Ryujinx.Horizon.Sdk.Sf;
 using Ryujinx.Horizon.Sdk.Sf.Hipc;
+using Ryujinx.Memory;
 using System;
 
 namespace Ryujinx.Horizon.Sdk.Audio.Detail
@@ -21,7 +22,7 @@ namespace Ryujinx.Horizon.Sdk.Audio.Detail
         [CmifCommand(0)]
         public Result ListAudioIns(out int count, [Buffer(HipcBufferFlags.Out | HipcBufferFlags.MapAlias)] Span<DeviceName> names)
         {
-            string[] deviceNames = _impl.ListAudioIns(filtered: false);
+            string[] deviceNames = AudioInputManager.ListAudioIns(filtered: false);
 
             count = 0;
 
@@ -49,7 +50,7 @@ namespace Ryujinx.Horizon.Sdk.Audio.Detail
             [Buffer(HipcBufferFlags.In | HipcBufferFlags.MapAlias)] ReadOnlySpan<DeviceName> name,
             [ClientProcessId] ulong pid)
         {
-            var clientMemoryManager = HorizonStatic.Syscall.GetMemoryManagerByProcessHandle(processHandle);
+            IVirtualMemoryManager clientMemoryManager = HorizonStatic.Syscall.GetMemoryManagerByProcessHandle(processHandle);
 
             ResultCode rc = _impl.OpenAudioIn(
                 out string outputDeviceName,
@@ -93,7 +94,7 @@ namespace Ryujinx.Horizon.Sdk.Audio.Detail
         [CmifCommand(4)] // 3.0.0+
         public Result ListAudioInsAutoFiltered(out int count, [Buffer(HipcBufferFlags.Out | HipcBufferFlags.AutoSelect)] Span<DeviceName> names)
         {
-            string[] deviceNames = _impl.ListAudioIns(filtered: true);
+            string[] deviceNames = AudioInputManager.ListAudioIns(filtered: true);
 
             count = 0;
 

@@ -1,19 +1,21 @@
 using Avalonia.Controls;
+using FluentAvalonia.UI.Controls;
 using Ryujinx.Ava.Common.Locale;
+using Ryujinx.Ava.Systems.Configuration;
+using Ryujinx.Ava.UI.Controls;
 using Ryujinx.Ava.UI.Helpers;
 using Ryujinx.Ava.UI.Models;
 using Ryujinx.Ava.UI.ViewModels.Input;
 
 namespace Ryujinx.Ava.UI.Views.Input
 {
-    public partial class InputView : UserControl
+    public partial class InputView : RyujinxControl<InputViewModel>
     {
         private bool _dialogOpen;
-        private InputViewModel ViewModel { get; set; }
 
         public InputView()
         {
-            DataContext = ViewModel = new InputViewModel(this);
+            ViewModel = new InputViewModel(this, ConfigurationState.Instance.System.UseInputGlobalConfig);
 
             InitializeComponent();
         }
@@ -23,17 +25,33 @@ namespace Ryujinx.Ava.UI.Views.Input
             ViewModel.Save();
         }
 
+        public void ToggleLocalGlobalInput(bool enableConfigGlobal)
+        {
+            Dispose();
+            ViewModel = new InputViewModel(this, enableConfigGlobal); // Create new Input Page with global input configs
+            InitializeComponent();
+        }
+
         private async void PlayerIndexBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (PlayerIndexBox != null)
+            {
+                if (PlayerIndexBox.SelectedIndex != (int)ViewModel.PlayerId)
+                {
+                    PlayerIndexBox.SelectedIndex = (int)ViewModel.PlayerId;
+                }
+            }
+
             if (ViewModel.IsModified && !_dialogOpen)
             {
                 _dialogOpen = true;
 
-                var result = await ContentDialogHelper.CreateConfirmationDialog(
+                UserResult result = await ContentDialogHelper.CreateDeniableConfirmationDialog(
                     LocaleManager.Instance[LocaleKeys.DialogControllerSettingsModifiedConfirmMessage],
                     LocaleManager.Instance[LocaleKeys.DialogControllerSettingsModifiedConfirmSubMessage],
                     LocaleManager.Instance[LocaleKeys.InputDialogYes],
                     LocaleManager.Instance[LocaleKeys.InputDialogNo],
+                    LocaleManager.Instance[LocaleKeys.Cancel],
                     LocaleManager.Instance[LocaleKeys.RyujinxConfirm]);
 
                 if (result == UserResult.Yes)
@@ -43,13 +61,29 @@ namespace Ryujinx.Ava.UI.Views.Input
 
                 _dialogOpen = false;
 
-                ViewModel.IsModified = false;
-
-                if (e.AddedItems.Count > 0)
+                if (result == UserResult.Cancel)
                 {
-                    var player = (PlayerModel)e.AddedItems[0];
-                    ViewModel.PlayerId = player.Id;
+                    if (e.AddedItems.Count > 0)
+                    {
+                        ViewModel.IsModified = true;
+                        ViewModel.PlayerId = ((PlayerModel)e.AddedItems[0])!.Id;
+                    }
+
+                    return;
                 }
+
+                ViewModel.IsModified = false;
+                ViewModel.PlayerId = ViewModel.PlayerIdChoose;
+
+            }
+        }
+
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is FAComboBox faComboBox)
+            {
+                faComboBox.IsDropDownOpen = false;
+                ViewModel.IsModified = true;
             }
         }
 

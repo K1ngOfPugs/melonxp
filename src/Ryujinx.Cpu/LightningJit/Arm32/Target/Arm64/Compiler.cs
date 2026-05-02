@@ -2,7 +2,6 @@ using ARMeilleure.Common;
 using ARMeilleure.Memory;
 using Ryujinx.Cpu.LightningJit.CodeGen;
 using Ryujinx.Cpu.LightningJit.CodeGen.Arm64;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
@@ -24,10 +23,10 @@ namespace Ryujinx.Cpu.LightningJit.Arm32.Target.Arm64
             public readonly MemoryManagerType MemoryManagerType;
             public readonly TailMerger TailMerger;
             public readonly AddressTable<ulong> FuncTable;
-            public readonly IntPtr DispatchStubPointer;
+            public readonly nint DispatchStubPointer;
 
             private readonly RegisterSaveRestore _registerSaveRestore;
-            private readonly IntPtr _pageTablePointer;
+            private readonly nint _pageTablePointer;
 
             public Context(
                 CodeWriter writer,
@@ -36,8 +35,8 @@ namespace Ryujinx.Cpu.LightningJit.Arm32.Target.Arm64
                 TailMerger tailMerger,
                 AddressTable<ulong> funcTable,
                 RegisterSaveRestore registerSaveRestore,
-                IntPtr dispatchStubPointer,
-                IntPtr pageTablePointer)
+                nint dispatchStubPointer,
+                nint pageTablePointer)
             {
                 Writer = writer;
                 RegisterAllocator = registerAllocator;
@@ -226,7 +225,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm32.Target.Arm64
             }
         }
 
-        public static CompiledFunction Compile(CpuPreset cpuPreset, IMemoryManager memoryManager, ulong address, AddressTable<ulong> funcTable, IntPtr dispatchStubPtr, bool isThumb)
+        public static CompiledFunction Compile(CpuPreset cpuPreset, IMemoryManager memoryManager, ulong address, AddressTable<ulong> funcTable, nint dispatchStubPtr, bool isThumb)
         {
             MultiBlock multiBlock = Decoder<InstEmit>.DecodeMulti(cpuPreset, memoryManager, address, isThumb);
 
@@ -382,7 +381,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm32.Target.Arm64
                 if (currentCond != ArmCondition.Al)
                 {
                     instructionPointer = context.CodeWriter.InstructionPointer;
-                    context.Arm64Assembler.B(currentCond.Invert(), 0);
+                    context.Arm64Assembler.B(currentCond.Inverse, 0);
                 }
             }
         }
@@ -494,7 +493,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm32.Target.Arm64
                 {
                     delta = targetIndex - branchIndex;
 
-                    if (delta >= -Encodable26BitsOffsetLimit && delta < Encodable26BitsOffsetLimit)
+                    if (delta is >= (-Encodable26BitsOffsetLimit) and < Encodable26BitsOffsetLimit)
                     {
                         writer.WriteInstructionAt(branchIndex, encoding | (uint)(delta & 0x3ffffff));
 
@@ -560,7 +559,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm32.Target.Arm64
                 }
             }
 
-            Debug.Assert(name == InstName.B || name == InstName.Cbnz, $"Unknown branch instruction \"{name}\".");
+            Debug.Assert(name is InstName.B or InstName.Cbnz, $"Unknown branch instruction \"{name}\".");
         }
 
         private static void RewriteCallInstructionWithTarget(in Context context, uint targetAddress, uint nextAddress, int branchIndex)
@@ -746,6 +745,7 @@ namespace Ryujinx.Cpu.LightningJit.Arm32.Target.Arm64
                             InstEmitSystem.WriteUdf(context.Writer, context.RegisterAllocator, context.TailMerger, context.GetReservedStackOffset(), pc, imm);
                             break;
                     }
+
                     context.LoadFromContext();
                     break;
                 case BranchType.ReadCntpct:

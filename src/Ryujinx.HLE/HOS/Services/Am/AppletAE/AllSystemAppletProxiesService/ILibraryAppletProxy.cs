@@ -3,7 +3,7 @@ using Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.SystemA
 
 namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService
 {
-    partial class ILibraryAppletProxy : IpcService
+    class ILibraryAppletProxy : IpcService
     {
         private readonly ulong _pid;
 

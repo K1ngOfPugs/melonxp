@@ -16,7 +16,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl.Instructions
 
             bool isArray = (texOp.Type & SamplerType.Array) != 0;
 
-            var texCallBuilder = new StringBuilder();
+            StringBuilder texCallBuilder = new();
 
             if (texOp.Inst == Instruction.ImageAtomic)
             {
@@ -54,7 +54,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl.Instructions
             texCallBuilder.Append('(');
             texCallBuilder.Append(imageName);
 
-            int coordsCount = texOp.Type.GetDimensions();
+            int coordsCount = texOp.Type.Dimensions;
 
             int pCount = coordsCount + (isArray ? 1 : 0);
 
@@ -162,7 +162,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl.Instructions
         {
             AstTextureOperation texOp = (AstTextureOperation)operation;
 
-            int coordsCount = texOp.Type.GetDimensions();
+            int coordsCount = texOp.Type.Dimensions;
             int coordsIndex = 0;
 
             string samplerName = GetSamplerName(context, texOp, ref coordsIndex);
@@ -264,7 +264,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl.Instructions
 
             texCall += "(" + samplerName;
 
-            int coordsCount = texOp.Type.GetDimensions();
+            int coordsCount = texOp.Type.Dimensions;
 
             int pCount = coordsCount;
 
@@ -432,7 +432,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl.Instructions
 
             bool colorIsVector = isGather || !isShadow;
 
-            texCall += ")" + (colorIsVector ? GetMaskMultiDest(texOp.Index) : "");
+            texCall += ")" + (colorIsVector ? GetMaskMultiDest(texOp.Index) : string.Empty);
 
             return texCall;
         }
@@ -595,6 +595,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl.Instructions
                             varName = $"gl_out[{expr}].{varName}";
                         }
                     }
+
                     break;
 
                 default:
@@ -657,7 +658,7 @@ namespace Ryujinx.Graphics.Shader.CodeGen.Glsl.Instructions
                     samplerName = $"{samplerName}[{GetSourceExpr(context, texOp.GetSource(srcIndex++), AggregateType.S32)}]";
                 }
 
-                name = $"{texOp.Type.ToGlslSamplerType()}({name}, {samplerName})";
+                name = $"{texOp.Type.GlslSamplerTypeName}({name}, {samplerName})";
             }
 
             return name;

@@ -16,7 +16,7 @@ using System.Text;
 namespace Ryujinx.HLE.HOS.Services.Sockets.Sfdnsres
 {
     [Service("sfdnsres")]
-    partial class IResolver : IpcService
+    class IResolver : IpcService
     {
         public IResolver(ServiceCtx context)
         {
@@ -292,7 +292,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Sfdnsres
         {
             string host = MemoryHelper.ReadAsciiString(context.Memory, inputBufferPosition, (int)inputBufferSize);
 
-            if (!context.Device.Configuration.EnableInternetAccess)
+            if (host != "localhost" && !context.Device.Configuration.EnableInternetAccess)
             {
                 Logger.Info?.Print(LogClass.ServiceSfdnsres, $"Guest network access disabled, DNS Blocked: {host}");
 
@@ -604,7 +604,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Sfdnsres
 
         private static List<AddrInfoSerialized> DeserializeAddrInfos(IVirtualMemoryManager memory, ulong address, ulong size)
         {
-            List<AddrInfoSerialized> result = new();
+            List<AddrInfoSerialized> result = [];
 
             ReadOnlySpan<byte> data = memory.GetSpan(address, (int)size);
 

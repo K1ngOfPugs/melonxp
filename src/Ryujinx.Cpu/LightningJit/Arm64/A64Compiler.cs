@@ -13,12 +13,12 @@ namespace Ryujinx.Cpu.LightningJit.Arm64
             IMemoryManager memoryManager,
             ulong address,
             AddressTable<ulong> funcTable,
-            IntPtr dispatchStubPtr,
+            nint dispatchStubPtr,
             Architecture targetArch)
         {
             if (targetArch == Architecture.Arm64)
             {
-                return CompilerPass.Compile(cpuPreset, memoryManager, address, funcTable, dispatchStubPtr);
+                return Compiler.Compile(cpuPreset, memoryManager, address, funcTable, dispatchStubPtr);
             }
             else
             {

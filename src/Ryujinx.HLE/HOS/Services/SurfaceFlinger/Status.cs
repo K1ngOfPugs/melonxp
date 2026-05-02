@@ -1,8 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Ryujinx.HLE.HOS.Services.SurfaceFlinger
 {
-    [SuppressMessage("Design", "CA1069: Enums values should not be duplicated")]
     enum Status
     {
         Success = 0,

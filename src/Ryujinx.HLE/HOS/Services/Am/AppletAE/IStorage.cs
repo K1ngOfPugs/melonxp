@@ -1,6 +1,6 @@
 namespace Ryujinx.HLE.HOS.Services.Am.AppletAE
 {
-    partial class IStorage : IpcService
+    class IStorage : IpcService
     {
         public bool IsReadOnly { get; private set; }
         public byte[] Data { get; private set; }
@@ -9,11 +9,6 @@ namespace Ryujinx.HLE.HOS.Services.Am.AppletAE
         {
             IsReadOnly = isReadOnly;
             Data = data;
-        }
-
-        public byte[] GetData()
-        {
-            return Data;
         }
 
         [CommandCmif(0)]

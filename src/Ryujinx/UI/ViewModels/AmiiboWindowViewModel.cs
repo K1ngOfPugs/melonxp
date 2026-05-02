@@ -2,14 +2,16 @@ using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Ryujinx.Ava.Common.Locale;
+using Ryujinx.Ava.Common.Models.Amiibo;
 using Ryujinx.Ava.UI.Helpers;
 using Ryujinx.Ava.UI.Windows;
+using Ryujinx.Ava.Utilities;
 using Ryujinx.Common;
 using Ryujinx.Common.Configuration;
 using Ryujinx.Common.Logging;
 using Ryujinx.Common.Utilities;
-using Ryujinx.UI.Common.Models.Amiibo;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,31 +24,30 @@ using System.Threading.Tasks;
 
 namespace Ryujinx.Ava.UI.ViewModels
 {
-    public class AmiiboWindowViewModel : BaseModel, IDisposable
+    public partial class AmiiboWindowViewModel : BaseModel, IDisposable
     {
+        // ReSharper disable once InconsistentNaming
+        private static bool _cachedUseRandomUuid;
+
         private const string DefaultJson = "{ \"amiibo\": [] }";
         private const float AmiiboImageSize = 350f;
 
         private readonly string _amiiboJsonPath;
         private readonly byte[] _amiiboLogoBytes;
         private readonly HttpClient _httpClient;
-        private readonly StyleableWindow _owner;
+        private readonly AmiiboWindow _owner;
 
-        private Bitmap _amiiboImage;
         private List<AmiiboApi> _amiiboList;
         private AvaloniaList<AmiiboApi> _amiibos;
         private ObservableCollection<string> _amiiboSeries;
 
         private int _amiiboSelectedIndex;
         private int _seriesSelectedIndex;
-        private bool _enableScanning;
         private bool _showAllAmiibo;
-        private bool _useRandomUuid;
-        private string _usage;
 
         private static readonly AmiiboJsonSerializerContext _serializerContext = new(JsonHelper.GetDefaultSerializerOptions());
 
-        public AmiiboWindowViewModel(StyleableWindow owner, string lastScannedAmiiboId, string titleId)
+        public AmiiboWindowViewModel(AmiiboWindow owner, string lastScannedAmiiboId, string titleId)
         {
             _owner = owner;
 
@@ -61,11 +62,11 @@ namespace Ryujinx.Ava.UI.ViewModels
             Directory.CreateDirectory(Path.Join(AppDataManager.BaseDirPath, "system", "amiibo"));
 
             _amiiboJsonPath = Path.Join(AppDataManager.BaseDirPath, "system", "amiibo", "Amiibo.json");
-            _amiiboList = new List<AmiiboApi>();
-            _amiiboSeries = new ObservableCollection<string>();
-            _amiibos = new AvaloniaList<AmiiboApi>();
+            _amiiboList = [];
+            _amiiboSeries = [];
+            _amiibos = [];
 
-            _amiiboLogoBytes = EmbeddedResources.Read("Ryujinx.UI.Common/Resources/Logo_Amiibo.png");
+            _amiiboLogoBytes = EmbeddedResources.Read("Ryujinx/Assets/UIImages/Logo_Amiibo.png");
 
             _ = LoadContentAsync();
         }
@@ -79,14 +80,14 @@ namespace Ryujinx.Ava.UI.ViewModels
 
         public bool UseRandomUuid
         {
-            get => _useRandomUuid;
+            get;
             set
             {
-                _useRandomUuid = value;
+                _cachedUseRandomUuid = field = value;
 
                 OnPropertyChanged();
             }
-        }
+        } = _cachedUseRandomUuid;
 
         public bool ShowAllAmiibo
         {
@@ -150,37 +151,29 @@ namespace Ryujinx.Ava.UI.ViewModels
             }
         }
 
-        public Bitmap AmiiboImage
-        {
-            get => _amiiboImage;
-            set
-            {
-                _amiiboImage = value;
+        [ObservableProperty]
+        public partial Bitmap AmiiboImage { get; set; }
 
-                OnPropertyChanged();
+        [ObservableProperty]
+        public partial string Usage { get; set; }
+
+        [ObservableProperty]
+        public partial bool EnableScanning { get; set; }
+
+        public void Scan()
+        {
+            if (AmiiboSelectedIndex > -1)
+            {
+                _owner.ScannedAmiibo = AmiiboList[AmiiboSelectedIndex];
+                _owner.IsScanned = true;
+                _owner.Close();
             }
         }
 
-        public string Usage
+        public void Cancel()
         {
-            get => _usage;
-            set
-            {
-                _usage = value;
-
-                OnPropertyChanged();
-            }
-        }
-
-        public bool EnableScanning
-        {
-            get => _enableScanning;
-            set
-            {
-                _enableScanning = value;
-
-                OnPropertyChanged();
-            }
+            _owner.IsScanned = false;
+            _owner.Close();
         }
 
         public void Dispose()
@@ -231,6 +224,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                 catch (Exception exception)
                 {
                     Logger.Warning?.Print(LogClass.Application, $"Unable to read data from '{_amiiboJsonPath}': {exception}");
+                    localIsValid = false;
                 }
 
                 if (!localIsValid || await NeedsUpdate(amiiboJson.LastUpdated))
@@ -245,7 +239,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                     Logger.Error?.Print(LogClass.Application, $"Couldn't get valid amiibo data: {exception}");
 
                     // Neither local or remote files are valid JSON, close window.
-                    ShowInfoDialog();
+                    await ShowInfoDialog();
                     Close();
                 }
                 else if (!remoteIsValid)
@@ -254,7 +248,47 @@ namespace Ryujinx.Ava.UI.ViewModels
 
                     // Only the local file is valid, the local one should be used
                     // but the user should be warned.
-                    ShowInfoDialog();
+                    await ShowInfoDialog();
+                }
+            }
+
+            return amiiboJson;
+        }
+
+        private async Task<AmiiboJson?> ReadLocalJsonFileAsync()
+        {
+            bool isValid = false;
+            AmiiboJson amiiboJson = new();
+
+            try
+            {
+                try
+                {
+                    if (File.Exists(_amiiboJsonPath))
+                    {
+                        isValid = TryGetAmiiboJson(await File.ReadAllTextAsync(_amiiboJsonPath), out amiiboJson);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Logger.Warning?.Print(LogClass.Application, $"Unable to read data from '{_amiiboJsonPath}': {exception}");
+                    isValid = false;
+                }
+
+                if (!isValid)
+                {
+                    return null;
+                }
+            }
+            catch (Exception exception)
+            {
+                if (!isValid)
+                {
+                    Logger.Error?.Print(LogClass.Application, $"Couldn't get valid amiibo data: {exception}");
+
+                    // Neither local file is not valid JSON, close window.
+                    await ShowInfoDialog();
+                    Close();
                 }
             }
 
@@ -263,9 +297,17 @@ namespace Ryujinx.Ava.UI.ViewModels
 
         private async Task LoadContentAsync()
         {
-            AmiiboJson amiiboJson = await GetMostRecentAmiiboListOrDefaultJson();
+            AmiiboJson? amiiboJson;
 
-            _amiiboList = amiiboJson.Amiibo.OrderBy(amiibo => amiibo.AmiiboSeries).ToList();
+            if (CommandLineState.OnlyLocalAmiibo)
+                amiiboJson = await ReadLocalJsonFileAsync();
+            else
+                amiiboJson = await GetMostRecentAmiiboListOrDefaultJson();
+
+            if (!amiiboJson.HasValue)
+                return;
+
+            _amiiboList = amiiboJson.Value.Amiibo.OrderBy(amiibo => amiibo.AmiiboSeries).ToList();
 
             ParseAmiiboData();
         }
@@ -301,7 +343,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                 }
             }
 
-            if (LastScannedAmiiboId != "")
+            if (LastScannedAmiiboId != string.Empty)
             {
                 SelectLastScannedAmiibo();
             }
@@ -313,7 +355,7 @@ namespace Ryujinx.Ava.UI.ViewModels
 
         private void SelectLastScannedAmiibo()
         {
-            AmiiboApi scanned = _amiiboList.Find(amiibo => amiibo.GetId() == LastScannedAmiiboId);
+            AmiiboApi scanned = _amiiboList.FirstOrDefault(amiibo => amiibo.GetId() == LastScannedAmiiboId);
 
             SeriesSelectedIndex = AmiiboSeries.IndexOf(scanned.AmiiboSeries);
             AmiiboSelectedIndex = AmiiboList.IndexOf(scanned);
@@ -323,14 +365,24 @@ namespace Ryujinx.Ava.UI.ViewModels
         {
             _amiibos.Clear();
 
+            List<AmiiboApi> amiiboSortedList;
+
+            // If no series selected, just display all available amiibos
             if (_seriesSelectedIndex < 0)
             {
-                return;
+                amiiboSortedList = _amiiboList
+                    .OrderBy(amiibo => amiibo.AmiiboSeries)
+                    .ThenBy(x => x.Name)
+                    .ToList();
+            }
+            else
+            {
+                amiiboSortedList = _amiiboList
+                    .Where(amiibo => amiibo.AmiiboSeries == _amiiboSeries[SeriesSelectedIndex])
+                    .OrderBy(amiibo => amiibo.Name).ToList();
             }
 
-            List<AmiiboApi> amiiboSortedList = _amiiboList
-                .Where(amiibo => amiibo.AmiiboSeries == _amiiboSeries[SeriesSelectedIndex])
-                .OrderBy(amiibo => amiibo.Name).ToList();
+            
 
             for (int i = 0; i < amiiboSortedList.Count; i++)
             {
@@ -367,14 +419,14 @@ namespace Ryujinx.Ava.UI.ViewModels
 
             Usage = string.Empty;
 
-            if (_amiiboSelectedIndex < 0)
+            if (_amiiboSelectedIndex < 0 || _amiibos.Count < 1)
             {
                 return;
             }
 
             AmiiboApi selected = _amiibos[_amiiboSelectedIndex];
 
-            string imageUrl = _amiiboList.Find(amiibo => amiibo.Equals(selected)).Image;
+            string imageUrl = _amiiboList.FirstOrDefault(amiibo => amiibo.Equals(selected)).Image;
 
             StringBuilder usageStringBuilder = new();
 
@@ -402,7 +454,7 @@ namespace Ryujinx.Ava.UI.ViewModels
                         usageStringBuilder.Append($"{LocaleManager.Instance[LocaleKeys.Unknown]}.");
                     }
 
-                    Usage = $"{LocaleManager.Instance[LocaleKeys.Usage]} {(writable ? $" ({LocaleManager.Instance[LocaleKeys.Writable]})" : "")} : {usageStringBuilder}";
+                    Usage = $"{LocaleManager.Instance[LocaleKeys.Usage]} {(writable ? $" ({LocaleManager.Instance[LocaleKeys.Writable]})" : string.Empty)} : {usageStringBuilder}";
                 }
             }
 
@@ -413,7 +465,7 @@ namespace Ryujinx.Ava.UI.ViewModels
         {
             try
             {
-                HttpResponseMessage response = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, "https://amiibo.ryujinx.org/"));
+                HttpResponseMessage response = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, SharedConstants.AmiiboTagsUrl));
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -432,7 +484,7 @@ namespace Ryujinx.Ava.UI.ViewModels
         {
             try
             {
-                HttpResponseMessage response = await _httpClient.GetAsync("https://amiibo.ryujinx.org/");
+                HttpResponseMessage response = await _httpClient.GetAsync(SharedConstants.AmiiboTagsUrl);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -461,7 +513,7 @@ namespace Ryujinx.Ava.UI.ViewModels
             await ContentDialogHelper.CreateInfoDialog(LocaleManager.Instance[LocaleKeys.DialogAmiiboApiTitle],
                 LocaleManager.Instance[LocaleKeys.DialogAmiiboApiFailFetchMessage],
                 LocaleManager.Instance[LocaleKeys.InputDialogOk],
-                "",
+                string.Empty,
                 LocaleManager.Instance[LocaleKeys.RyujinxInfo]);
 
             return null;
@@ -506,12 +558,12 @@ namespace Ryujinx.Ava.UI.ViewModels
             AmiiboImage = bitmap;
         }
 
-        private static async void ShowInfoDialog()
+        private static async Task ShowInfoDialog()
         {
             await ContentDialogHelper.CreateInfoDialog(LocaleManager.Instance[LocaleKeys.DialogAmiiboApiTitle],
                 LocaleManager.Instance[LocaleKeys.DialogAmiiboApiConnectErrorMessage],
                 LocaleManager.Instance[LocaleKeys.InputDialogOk],
-                "",
+                string.Empty,
                 LocaleManager.Instance[LocaleKeys.RyujinxInfo]);
         }
     }

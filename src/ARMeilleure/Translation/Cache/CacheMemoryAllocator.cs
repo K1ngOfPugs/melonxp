@@ -23,33 +23,28 @@ namespace ARMeilleure.Translation.Cache
             }
         }
 
-        private readonly List<MemoryBlock> _blocks = new();
+        private readonly List<MemoryBlock> _blocks = [];
 
         public CacheMemoryAllocator(int capacity)
         {
             _blocks.Add(new MemoryBlock(0, capacity));
         }
 
-        public int Allocate(ref int size, int alignment)
+        public int Allocate(int size)
         {
-            int alignM1 = alignment - 1;
             for (int i = 0; i < _blocks.Count; i++)
             {
                 MemoryBlock block = _blocks[i];
-                int misAlignment = ((block.Offset + alignM1) & (~alignM1)) - block.Offset;
-                int alignedSize = size + misAlignment;
 
-                if (block.Size > alignedSize)
+                if (block.Size > size)
                 {
-                    size = alignedSize;
-                    _blocks[i] = new MemoryBlock(block.Offset + alignedSize, block.Size - alignedSize);
-                    return block.Offset + misAlignment;
+                    _blocks[i] = new MemoryBlock(block.Offset + size, block.Size - size);
+                    return block.Offset;
                 }
-                else if (block.Size == alignedSize)
+                else if (block.Size == size)
                 {
-                    size = alignedSize;
                     _blocks.RemoveAt(i);
-                    return block.Offset + misAlignment;
+                    return block.Offset;
                 }
             }
 

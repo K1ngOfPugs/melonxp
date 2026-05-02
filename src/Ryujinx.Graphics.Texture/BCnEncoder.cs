@@ -2,7 +2,6 @@ using Ryujinx.Common;
 using Ryujinx.Common.Memory;
 using Ryujinx.Graphics.Texture.Encoders;
 using System;
-using System.Buffers;
 
 namespace Ryujinx.Graphics.Texture
 {

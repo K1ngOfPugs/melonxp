@@ -1,8 +1,8 @@
-using Ryujinx.Common.Memory;
 using Ryujinx.Graphics.GAL;
 using Ryujinx.Graphics.Gpu.Engine.Types;
 using Ryujinx.Graphics.Gpu.Shader;
 using Ryujinx.Graphics.Shader;
+using System;
 
 namespace Ryujinx.Graphics.Gpu.Engine.Threed
 {
@@ -214,10 +214,11 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed
         /// Updates the type of the vertex attributes consumed by the shader.
         /// </summary>
         /// <param name="state">The new state</param>
-        public void SetAttributeTypes(ref Array32<VertexAttribState> state)
+        public void SetAttributeTypes(ReadOnlySpan<VertexAttribState> state)
         {
             bool changed = false;
-            ref Array32<AttributeType> attributeTypes = ref _graphics.AttributeTypes;
+            // ref Array32<AttributeType> attributeTypes = ref _graphics.AttributeTypes;
+            Span<AttributeType> attributeTypesSpan = _graphics.AttributeTypes.AsSpan();
             bool mayConvertVtgToCompute = ShaderCache.MayConvertVtgToCompute(ref _context.Capabilities);
             bool supportsScaledFormats = _context.Capabilities.SupportsScaledVertexFormats && !mayConvertVtgToCompute;
 
@@ -253,17 +254,17 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed
                 {
                     value |= AttributeType.Packed;
 
-                    if (type == VertexAttribType.Snorm ||
-                        type == VertexAttribType.Sint ||
-                        type == VertexAttribType.Sscaled)
+                    if (type is VertexAttribType.Snorm or
+                        VertexAttribType.Sint or
+                        VertexAttribType.Sscaled)
                     {
                         value |= AttributeType.PackedRgb10A2Signed;
                     }
                 }
 
-                if (attributeTypes[location] != value)
+                if (attributeTypesSpan[location] != value)
                 {
-                    attributeTypes[location] = value;
+                    attributeTypesSpan[location] = value;
                     changed = true;
                 }
             }
@@ -279,26 +280,30 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed
         /// </summary>
         /// <param name="rtControl">The render target control register</param>
         /// <param name="state">The color attachment state</param>
-        public void SetFragmentOutputTypes(RtControl rtControl, ref Array8<RtColorState> state)
+        public void SetFragmentOutputTypes(RtControl rtControl, ReadOnlySpan<RtColorState> state)
         {
             bool changed = false;
             int count = rtControl.UnpackCount();
+            
+            Span<AttributeType> fragmentOutputTypesSpan = _graphics.FragmentOutputTypes.AsSpan();
 
             for (int index = 0; index < Constants.TotalRenderTargets; index++)
             {
                 int rtIndex = rtControl.UnpackPermutationIndex(index);
 
-                var colorState = state[rtIndex];
+                RtColorState colorState = state[rtIndex];
 
                 if (index < count && StateUpdater.IsRtEnabled(colorState))
                 {
                     Format format = colorState.Format.Convert().Format;
 
-                    AttributeType type = format.IsInteger() ? (format.IsSint() ? AttributeType.Sint : AttributeType.Uint) : AttributeType.Float;
+                    AttributeType type = format.IsInt 
+                        ? (format.IsSignedInt ? AttributeType.Sint : AttributeType.Uint) 
+                        : AttributeType.Float;
 
-                    if (type != _graphics.FragmentOutputTypes[index])
+                    if (type != fragmentOutputTypesSpan[index])
                     {
-                        _graphics.FragmentOutputTypes[index] = type;
+                        fragmentOutputTypesSpan[index] = type;
                         changed = true;
                     }
                 }

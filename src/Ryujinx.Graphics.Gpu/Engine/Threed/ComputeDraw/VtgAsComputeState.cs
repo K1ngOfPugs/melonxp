@@ -125,9 +125,14 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
             _vacContext.VertexInfoBufferUpdater.SetVertexCounts(_count, _instanceCount, _firstVertex, _firstInstance);
             _vacContext.VertexInfoBufferUpdater.SetGeometryCounts(primitivesCount);
 
+            Span<VertexAttribState> vertexAttribStateSpan = _state.State.VertexAttribState.AsSpan();
+            Span<GpuVa> vertexBufferEndAddressSpan = _state.State.VertexBufferEndAddress.AsSpan();
+            Span<VertexBufferState> vertexBufferStateSpan = _state.State.VertexBufferState.AsSpan();
+            Span<Boolean32> vertexBufferInstancedSpan = _state.State.VertexBufferInstanced.AsSpan();
+
             for (int index = 0; index < Constants.TotalVertexAttribs; index++)
             {
-                var vertexAttrib = _state.State.VertexAttribState[index];
+                VertexAttribState vertexAttrib = vertexAttribStateSpan[index];
 
                 if (!FormatTable.TryGetSingleComponentAttribFormat(vertexAttrib.UnpackFormat(), out Format format, out int componentsCount))
                 {
@@ -153,9 +158,9 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
 
                 int bufferIndex = vertexAttrib.UnpackBufferIndex();
 
-                GpuVa endAddress = _state.State.VertexBufferEndAddress[bufferIndex];
-                var vertexBuffer = _state.State.VertexBufferState[bufferIndex];
-                bool instanced = _state.State.VertexBufferInstanced[bufferIndex];
+                GpuVa endAddress = vertexBufferEndAddressSpan[bufferIndex];
+                VertexBufferState vertexBuffer = vertexBufferStateSpan[bufferIndex];
+                bool instanced = vertexBufferInstancedSpan[bufferIndex];
 
                 ulong address = vertexBuffer.Address.Pack();
 
@@ -170,10 +175,8 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
                 int vbStride = vertexBuffer.UnpackStride();
                 ulong vbSize = GetVertexBufferSize(address, endAddress.Pack(), vbStride, _indexed, instanced, _firstVertex, _count);
 
-                ulong oldVbSize = vbSize;
-
                 ulong attributeOffset = (ulong)vertexAttrib.UnpackOffset();
-                int componentSize = format.GetScalarSize();
+                int componentSize = format.ScalarSize;
 
                 address += attributeOffset;
 
@@ -200,11 +203,11 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
 
             int vertexInfoBinding = _vertexAsCompute.Reservations.VertexInfoConstantBufferBinding;
             BufferRange vertexInfoRange = new(_vacContext.VertexInfoBufferUpdater.Handle, 0, VertexInfoBuffer.RequiredSize);
-            _context.Renderer.Pipeline.SetUniformBuffers(stackalloc[] { new BufferAssignment(vertexInfoBinding, vertexInfoRange) });
+            _context.Renderer.Pipeline.SetUniformBuffers([new BufferAssignment(vertexInfoBinding, vertexInfoRange)]);
 
             int vertexDataBinding = _vertexAsCompute.Reservations.VertexOutputStorageBufferBinding;
             BufferRange vertexDataRange = _vacContext.GetVertexDataBufferRange(_vertexDataOffset, _vertexDataSize, write: true);
-            _context.Renderer.Pipeline.SetStorageBuffers(stackalloc[] { new BufferAssignment(vertexDataBinding, vertexDataRange) });
+            _context.Renderer.Pipeline.SetStorageBuffers([new BufferAssignment(vertexDataBinding, vertexDataRange)]);
 
             _vacContext.VertexInfoBufferUpdater.Commit();
 
@@ -232,7 +235,7 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
 
             int vertexInfoBinding = _vertexAsCompute.Reservations.VertexInfoConstantBufferBinding;
             BufferRange vertexInfoRange = new(_vacContext.VertexInfoBufferUpdater.Handle, 0, VertexInfoBuffer.RequiredSize);
-            _context.Renderer.Pipeline.SetUniformBuffers(stackalloc[] { new BufferAssignment(vertexInfoBinding, vertexInfoRange) });
+            _context.Renderer.Pipeline.SetUniformBuffers([new BufferAssignment(vertexInfoBinding, vertexInfoRange)]);
 
             int vertexDataBinding = _vertexAsCompute.Reservations.VertexOutputStorageBufferBinding;
 
@@ -250,12 +253,11 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
             BufferRange vertexBuffer = _vacContext.GetGeometryVertexDataBufferRange(_geometryVertexDataOffset, _geometryVertexDataSize, write: true);
             BufferRange indexBuffer = _vacContext.GetGeometryIndexDataBufferRange(_geometryIndexDataOffset, _geometryIndexDataSize, write: true);
 
-            _context.Renderer.Pipeline.SetStorageBuffers(stackalloc[]
-            {
+            _context.Renderer.Pipeline.SetStorageBuffers([
                 new BufferAssignment(vertexDataBinding, vertexDataRange),
                 new BufferAssignment(geometryVbBinding, vertexBuffer),
-                new BufferAssignment(geometryIbBinding, indexBuffer),
-            });
+                new BufferAssignment(geometryIbBinding, indexBuffer)
+            ]);
 
             _context.Renderer.Pipeline.DispatchCompute(
                 BitUtils.DivRoundUp(primitivesCount, ComputeLocalSize),
@@ -299,7 +301,7 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
 
                 _context.Renderer.Pipeline.SetProgram(_vertexPassthroughProgram);
                 _context.Renderer.Pipeline.SetIndexBuffer(indexBuffer, IndexType.UInt);
-                _context.Renderer.Pipeline.SetStorageBuffers(stackalloc[] { new BufferAssignment(vertexDataBinding, vertexBuffer) });
+                _context.Renderer.Pipeline.SetStorageBuffers([new BufferAssignment(vertexDataBinding, vertexBuffer)]);
 
                 _context.Renderer.Pipeline.SetPrimitiveRestart(true, -1);
                 _context.Renderer.Pipeline.SetPrimitiveTopology(GetGeometryOutputTopology(_geometryAsCompute.Info.GeometryVerticesPerPrimitive));
@@ -314,7 +316,7 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
                 BufferRange vertexDataRange = _vacContext.GetVertexDataBufferRange(_vertexDataOffset, _vertexDataSize, write: false);
 
                 _context.Renderer.Pipeline.SetProgram(_vertexPassthroughProgram);
-                _context.Renderer.Pipeline.SetStorageBuffers(stackalloc[] { new BufferAssignment(vertexDataBinding, vertexDataRange) });
+                _context.Renderer.Pipeline.SetStorageBuffers([new BufferAssignment(vertexDataBinding, vertexDataRange)]);
                 _context.Renderer.Pipeline.Draw(_count, _instanceCount, 0, 0);
             }
         }
@@ -369,7 +371,7 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
         /// <param name="size">Size of the buffer in bytes</param>
         private readonly void SetBufferTexture(ResourceReservations reservations, int index, Format format, ulong address, ulong size)
         {
-            var memoryManager = _channel.MemoryManager;
+            MemoryManager memoryManager = _channel.MemoryManager;
 
             BufferRange range = memoryManager.Physical.BufferCache.GetBufferRange(memoryManager.GetPhysicalRegions(address, size), BufferStage.VertexBuffer);
 
@@ -410,7 +412,7 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
             indexOffset <<= shift;
             size <<= shift;
 
-            var memoryManager = _channel.MemoryManager;
+            MemoryManager memoryManager = _channel.MemoryManager;
 
             ulong misalign = address & ((ulong)_context.Capabilities.TextureBufferOffsetAlignment - 1);
             BufferRange range = memoryManager.Physical.BufferCache.GetBufferRange(
@@ -478,7 +480,7 @@ namespace Ryujinx.Graphics.Gpu.Engine.Threed.ComputeDraw
         private readonly ulong GetVertexBufferSize(ulong vbAddress, ulong vbEndAddress, int vbStride, bool indexed, bool instanced, int firstVertex, int vertexCount)
         {
             IndexType indexType = _state.State.IndexBufferState.Type;
-            bool indexTypeSmall = indexType == IndexType.UByte || indexType == IndexType.UShort;
+            bool indexTypeSmall = indexType is IndexType.UByte or IndexType.UShort;
             ulong vbSize = vbEndAddress - vbAddress + 1;
             ulong size;
 

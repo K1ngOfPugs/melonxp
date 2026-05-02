@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Ryujinx.HLE.HOS.Services.Time.StaticService
 {
-    partial class ITimeZoneServiceForGlue : IpcService
+    class ITimeZoneServiceForGlue : IpcService
     {
         private readonly TimeZoneContentManager _timeZoneContentManager;
         private readonly ITimeZoneServiceForPsc _inner;

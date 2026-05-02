@@ -57,17 +57,17 @@ namespace Ryujinx.Graphics.Texture.Encoders
             }
         }
 
-        private static readonly int[] _mostFrequentPartitions = new int[]
-        {
-            0, 13, 2, 1, 15, 14, 10, 23,
-        };
+        private static readonly int[] _mostFrequentPartitions =
+        [
+            0, 13, 2, 1, 15, 14, 10, 23
+        ];
 
         private static Block CompressBlock(ReadOnlySpan<byte> data, int x, int y, int width, int height, bool fastMode)
         {
             int w = Math.Min(4, width - x);
             int h = Math.Min(4, height - y);
 
-            var dataUint = MemoryMarshal.Cast<byte, uint>(data);
+            ReadOnlySpan<uint> dataUint = MemoryMarshal.Cast<byte, uint>(data);
 
             int baseOffset = y * width + x;
 
@@ -153,7 +153,7 @@ namespace Ryujinx.Graphics.Texture.Encoders
 
             int selectedPartition = 0;
 
-            if (selectedMode == 1 || selectedMode == 7)
+            if (selectedMode is 1 or 7)
             {
                 int partitionSelectionLowestError = int.MaxValue;
 
@@ -180,7 +180,7 @@ namespace Ryujinx.Graphics.Texture.Encoders
 
             for (int m = 0; m < 8; m++)
             {
-                for (int r = 0; r < (m == 4 || m == 5 ? 4 : 1); r++)
+                for (int r = 0; r < (m is 4 or 5 ? 4 : 1); r++)
                 {
                     for (int im = 0; im < (m == 4 ? 2 : 1); im++)
                     {

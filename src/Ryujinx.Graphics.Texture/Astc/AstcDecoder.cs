@@ -1,7 +1,6 @@
 using Ryujinx.Common.Memory;
 using Ryujinx.Common.Utilities;
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -481,6 +480,7 @@ namespace Ryujinx.Graphics.Texture.Astc
             {
                 Debug.Assert(colorEndpointMode[i] < 16);
             }
+
             Debug.Assert(bitStream.BitsLeft == texelParams.GetPackedBitSize());
 
             // Decode both color data and texel weight data
@@ -1033,7 +1033,6 @@ namespace Ryujinx.Graphics.Texture.Astc
                         break;
                     }
 
-
                 case 1:
                     {
                         Span<uint> val = ReadUintColorValues(2, colorValues, ref colorValuesPosition);
@@ -1296,7 +1295,6 @@ namespace Ryujinx.Graphics.Texture.Astc
                                         break;
                                     }
 
-
                                 case 4:
                                     {
                                         c = 22;
@@ -1390,6 +1388,7 @@ namespace Ryujinx.Graphics.Texture.Astc
                                 default:
                                     throw new AstcDecoderException("Unsupported quint encoding for color values.");
                             }
+
                             break;
                         }
                 }
@@ -1575,7 +1574,7 @@ namespace Ryujinx.Graphics.Texture.Astc
                 r |= (modeBits & 0xC) >> 1;
             }
 
-            Debug.Assert(2 <= r && r <= 7);
+            Debug.Assert(r is >= 2 and <= 7);
 
             // Determine width & height
             switch (layout)
@@ -1694,12 +1693,12 @@ namespace Ryujinx.Graphics.Texture.Astc
 
             if (h)
             {
-                ReadOnlySpan<byte> maxWeights = new byte[] { 9, 11, 15, 19, 23, 31 };
+                ReadOnlySpan<byte> maxWeights = [9, 11, 15, 19, 23, 31];
                 texelParams.MaxWeight = maxWeights[r - 2];
             }
             else
             {
-                ReadOnlySpan<byte> maxWeights = new byte[] { 1, 2, 3, 4, 5, 7 };
+                ReadOnlySpan<byte> maxWeights = [1, 2, 3, 4, 5, 7];
                 texelParams.MaxWeight = maxWeights[r - 2];
             }
 

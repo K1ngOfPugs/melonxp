@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Ryujinx.Horizon.Sdk.OsTypes
 {
-    public class MultiWait
+    class MultiWait
     {
         private readonly MultiWaitImpl _impl;
 

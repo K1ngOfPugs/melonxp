@@ -1,6 +1,6 @@
 using Ryujinx.Graphics.GAL;
+using Ryujinx.Memory.Range;
 using System;
-using System.Collections.Generic;
 
 namespace Ryujinx.Graphics.Gpu.Memory
 {
@@ -56,14 +56,14 @@ namespace Ryujinx.Graphics.Gpu.Memory
         /// <param name="parent">Parent buffer</param>
         /// <param name="stage">Initial buffer stage</param>
         /// <param name="baseBuffers">Buffers to inherit state from</param>
-        public BufferBackingState(GpuContext context, Buffer parent, BufferStage stage, IEnumerable<Buffer> baseBuffers = null)
+        public BufferBackingState(GpuContext context, Buffer parent, BufferStage stage, Buffer[] baseBuffers)
         {
             _size = (int)parent.Size;
             _systemMemoryType = context.Capabilities.MemoryType;
 
             // Backend managed is always auto, unified memory is always host.
             _desiredType = BufferBackingType.HostMemory;
-            _canSwap = _systemMemoryType != SystemMemoryType.BackendManaged && _systemMemoryType != SystemMemoryType.UnifiedMemory;
+            _canSwap = _systemMemoryType is not SystemMemoryType.BackendManaged and not SystemMemoryType.UnifiedMemory;
 
             if (_canSwap)
             {
@@ -72,7 +72,7 @@ namespace Ryujinx.Graphics.Gpu.Memory
 
                 BufferStage storageFlags = stage & BufferStage.StorageMask;
 
-                if (parent.Size > DeviceLocalSizeThreshold && baseBuffers == null)
+                if (parent.Size > DeviceLocalSizeThreshold && baseBuffers.Length == 0)
                 {
                     _desiredType = BufferBackingType.DeviceMemory;
                 }
@@ -81,7 +81,7 @@ namespace Ryujinx.Graphics.Gpu.Memory
                 {
                     // Storage buffer bindings may require special treatment.
 
-                    var rawStage = stage & BufferStage.StageMask;
+                    BufferStage rawStage = stage & BufferStage.StageMask;
 
                     if (rawStage == BufferStage.Fragment)
                     {
@@ -100,11 +100,11 @@ namespace Ryujinx.Graphics.Gpu.Memory
                     // TODO: Might be nice to force atomic access to be device local for any stage.
                 }
 
-                if (baseBuffers != null)
+                if (baseBuffers.Length != 0)
                 {
-                    foreach (Buffer buffer in baseBuffers)
+                    foreach (Buffer item in baseBuffers)
                     {
-                        CombineState(buffer.BackingState);
+                        CombineState(item.BackingState);
                     }
                 }
             }
@@ -225,7 +225,7 @@ namespace Ryujinx.Graphics.Gpu.Memory
                     // Storage write.
                     _writeCount++;
 
-                    var rawStage = stage & BufferStage.StageMask;
+                    BufferStage rawStage = stage & BufferStage.StageMask;
 
                     if (rawStage == BufferStage.Fragment)
                     {

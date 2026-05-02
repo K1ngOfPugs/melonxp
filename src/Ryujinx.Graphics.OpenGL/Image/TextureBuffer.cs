@@ -2,7 +2,6 @@ using OpenTK.Graphics.OpenGL;
 using Ryujinx.Common.Memory;
 using Ryujinx.Graphics.GAL;
 using System;
-using System.Buffers;
 
 namespace Ryujinx.Graphics.OpenGL.Image
 {
@@ -58,7 +57,7 @@ namespace Ryujinx.Graphics.OpenGL.Image
         /// <inheritdoc/>
         public void SetData(MemoryOwner<byte> data)
         {
-            var dataSpan = data.Span;
+            Span<byte> dataSpan = data.Span;
 
             Buffer.SetData(_buffer, _bufferOffset, dataSpan[..Math.Min(dataSpan.Length, _bufferSize)]);
 
@@ -68,14 +67,12 @@ namespace Ryujinx.Graphics.OpenGL.Image
         /// <inheritdoc/>
         public void SetData(MemoryOwner<byte> data, int layer, int level)
         {
-            data.Dispose();
             throw new NotSupportedException();
         }
 
         /// <inheritdoc/>
         public void SetData(MemoryOwner<byte> data, int layer, int level, Rectangle<int> region)
         {
-            data.Dispose();
             throw new NotSupportedException();
         }
 
@@ -100,7 +97,7 @@ namespace Ryujinx.Graphics.OpenGL.Image
 
             SizedInternalFormat format = (SizedInternalFormat)FormatTable.GetFormatInfo(Info.Format).PixelInternalFormat;
 
-            GL.TexBufferRange(TextureBufferTarget.TextureBuffer, format, _buffer.ToInt32(), (IntPtr)buffer.Offset, buffer.Size);
+            GL.TexBufferRange(TextureBufferTarget.TextureBuffer, format, _buffer, (nint)buffer.Offset, buffer.Size);
         }
 
         public void Dispose()

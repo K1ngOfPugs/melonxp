@@ -3,7 +3,7 @@ using Ryujinx.HLE.HOS.Services.Am.AppletOE.ApplicationProxyService.ApplicationPr
 
 namespace Ryujinx.HLE.HOS.Services.Am.AppletOE.ApplicationProxyService
 {
-    partial class IApplicationProxy : IpcService
+    class IApplicationProxy : IpcService
     {
         private readonly ulong _pid;
 

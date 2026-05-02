@@ -10,14 +10,14 @@ namespace Ryujinx.HLE.HOS.Services.Ssl
 {
     [Service("ssl")]
     [Service("ssl:s")]
-    partial class ISslService : IpcService
+    class ISslService : IpcService
     {
         // NOTE: The SSL service is used by games to connect it to various official online services, which we do not intend to support.
         //       In this case it is acceptable to stub all calls of the service.
         public ISslService(ServiceCtx context) { }
 
         [CommandCmif(0)]
-        // CreateContext(nn::ssl::sf::SslVersion, u64, pid) -> object<nn::ssl::sf::ISslContext>
+        // CreateContext(nn::ssl::sf::SslVersion, u64 pid_placeholder, pid) -> object<nn::ssl::sf::ISslContext>
         public ResultCode CreateContext(ServiceCtx context)
         {
             SslVersion sslVersion = (SslVersion)context.RequestData.ReadUInt32();
@@ -126,14 +126,18 @@ namespace Ryujinx.HLE.HOS.Services.Ssl
         }
 
         [CommandCmif(100)]
-        // CreateContextForSystem(u64 pid, nn::ssl::sf::SslVersion, u64)
+        // CreateContextForSystem(nn::ssl::sf::SslVersion, u64 pid_placeholder, pid) -> object<nn::ssl::sf::ISslContextForSystem>
         public ResultCode CreateContextForSystem(ServiceCtx context)
         {
-            ulong pid = context.RequestData.ReadUInt64();
             SslVersion sslVersion = (SslVersion)context.RequestData.ReadUInt32();
+#pragma warning disable IDE0059 // Remove unnecessary value assignment
             ulong pidPlaceholder = context.RequestData.ReadUInt64();
+#pragma warning restore IDE0059
 
-            Logger.Stub?.PrintStub(LogClass.ServiceSsl, new { pid, sslVersion, pidPlaceholder });
+            // Note: We use ISslContext here instead of ISslContextForSystem class because Ryujinx implements both in one class.
+            MakeObject(context, new ISslContext(context.Request.HandleDesc.PId, sslVersion));
+
+            Logger.Stub?.PrintStub(LogClass.ServiceSsl, new { sslVersion });
 
             return ResultCode.Success;
         }

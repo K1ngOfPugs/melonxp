@@ -1,7 +1,7 @@
 namespace Ryujinx.HLE.HOS.Services.Caps
 {
     [Service("caps:c")]
-    partial class IAlbumControlService : IpcService
+    class IAlbumControlService : IpcService
     {
         public IAlbumControlService(ServiceCtx context) { }
 

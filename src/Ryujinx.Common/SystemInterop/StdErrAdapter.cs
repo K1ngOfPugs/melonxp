@@ -12,14 +12,14 @@ namespace Ryujinx.Common.SystemInterop
     public partial class StdErrAdapter : IDisposable
     {
         private bool _disposable;
-        private Stream _pipeReader;
-        private Stream _pipeWriter;
+        private FileStream _pipeReader;
+        private FileStream _pipeWriter;
         private CancellationTokenSource _cancellationTokenSource;
         private Task _worker;
 
         public StdErrAdapter()
         {
-            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) // TODO: iOS?
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 RegisterPosix();
             }
@@ -27,7 +27,6 @@ namespace Ryujinx.Common.SystemInterop
 
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        [SupportedOSPlatform("ios")]
         private void RegisterPosix()
         {
             const int StdErrFileno = 2;
@@ -45,10 +44,9 @@ namespace Ryujinx.Common.SystemInterop
 
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        [SupportedOSPlatform("ios")]
         private async Task EventWorkerAsync(CancellationToken cancellationToken)
         {
-            using TextReader reader = new StreamReader(_pipeReader, leaveOpen: true);
+            using StreamReader reader = new(_pipeReader, leaveOpen: true);
             string line;
             while (cancellationToken.IsCancellationRequested == false && (line = await reader.ReadLineAsync(cancellationToken)) != null)
             {
@@ -94,14 +92,12 @@ namespace Ryujinx.Common.SystemInterop
 
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        [SupportedOSPlatform("ios")]
-        private static Stream CreateFileDescriptorStream(int fd)
+        private static FileStream CreateFileDescriptorStream(int fd)
         {
             return new FileStream(
                 new SafeFileHandle(fd, ownsHandle: true),
                 FileAccess.ReadWrite
             );
         }
-
     }
 }

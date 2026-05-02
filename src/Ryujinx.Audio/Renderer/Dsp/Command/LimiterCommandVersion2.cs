@@ -33,7 +33,7 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
             InputBufferIndices = new ushort[Constants.VoiceChannelCountMax];
             OutputBufferIndices = new ushort[Constants.VoiceChannelCountMax];
         }
-
+        
         public LimiterCommandVersion2 Initialize(
             uint bufferOffset,
             LimiterParameter parameter,
@@ -51,16 +51,16 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
             WorkBuffer = workBuffer;
 
             IsEffectEnabled = isEnabled;
-
+            
             Span<byte> inputSpan = _parameter.Input.AsSpan();
             Span<byte> outputSpan = _parameter.Output.AsSpan();
 
             for (int i = 0; i < _parameter.ChannelCount; i++)
             {
-                InputBufferIndices[i] = (ushort)(bufferOffset + _parameter.Input[i]);
-                OutputBufferIndices[i] = (ushort)(bufferOffset + _parameter.Output[i]);
+                InputBufferIndices[i] = (ushort)(bufferOffset + inputSpan[i]);
+                OutputBufferIndices[i] = (ushort)(bufferOffset + outputSpan[i]);
             }
-
+            
             return this;
         }
 
@@ -96,8 +96,8 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
                     statistics.Reset();
                 }
 
-                Span<IntPtr> inputBuffers = stackalloc IntPtr[_parameter.ChannelCount];
-                Span<IntPtr> outputBuffers = stackalloc IntPtr[_parameter.ChannelCount];
+                Span<nint> inputBuffers = stackalloc nint[_parameter.ChannelCount];
+                Span<nint> outputBuffers = stackalloc nint[_parameter.ChannelCount];
 
                 for (int i = 0; i < _parameter.ChannelCount; i++)
                 {
@@ -158,8 +158,11 @@ namespace Ryujinx.Audio.Renderer.Dsp.Command
                         {
                             ref LimiterStatistics statistics = ref MemoryMarshal.Cast<byte, LimiterStatistics>(ResultState.Span[0].SpecificData)[0];
 
-                            statistics.InputMax[channelIndex] = Math.Max(statistics.InputMax[channelIndex], sampleInputMax);
-                            statistics.CompressionGainMin[channelIndex] = Math.Min(statistics.CompressionGainMin[channelIndex], compressionGain);
+                            Span<float> inputMaxSpan = statistics.InputMax.AsSpan();
+                            Span<float> compressionGainMinSpan = statistics.CompressionGainMin.AsSpan();
+                            
+                            inputMaxSpan[channelIndex] = Math.Max(inputMaxSpan[channelIndex], sampleInputMax);
+                            compressionGainMinSpan[channelIndex] = Math.Min(compressionGainMinSpan[channelIndex], compressionGain);
                         }
                     }
                 }

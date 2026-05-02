@@ -1,350 +1,107 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using Ryujinx.Ava.UI.ViewModels;
 using Ryujinx.Common.Configuration.Hid;
 using Ryujinx.Common.Configuration.Hid.Keyboard;
 
 namespace Ryujinx.Ava.UI.Models.Input
 {
-    public class KeyboardInputConfig : BaseModel
+    public partial class KeyboardInputConfig : BaseModel
     {
         public string Id { get; set; }
+        public string Name { get; set; }
         public ControllerType ControllerType { get; set; }
         public PlayerIndex PlayerIndex { get; set; }
 
-        private Key _leftStickUp;
-        public Key LeftStickUp
-        {
-            get => _leftStickUp;
-            set
-            {
-                _leftStickUp = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key LeftStickUp { get; set; }
 
-        private Key _leftStickDown;
-        public Key LeftStickDown
-        {
-            get => _leftStickDown;
-            set
-            {
-                _leftStickDown = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key LeftStickDown { get; set; }
 
-        private Key _leftStickLeft;
-        public Key LeftStickLeft
-        {
-            get => _leftStickLeft;
-            set
-            {
-                _leftStickLeft = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key LeftStickLeft { get; set; }
 
-        private Key _leftStickRight;
-        public Key LeftStickRight
-        {
-            get => _leftStickRight;
-            set
-            {
-                _leftStickRight = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key LeftStickRight { get; set; }
 
-        private Key _leftStickButton;
-        public Key LeftStickButton
-        {
-            get => _leftStickButton;
-            set
-            {
-                _leftStickButton = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key LeftStickButton { get; set; }
 
-        private Key _rightStickUp;
-        public Key RightStickUp
-        {
-            get => _rightStickUp;
-            set
-            {
-                _rightStickUp = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key RightStickUp { get; set; }
 
-        private Key _rightStickDown;
-        public Key RightStickDown
-        {
-            get => _rightStickDown;
-            set
-            {
-                _rightStickDown = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key RightStickDown { get; set; }
 
-        private Key _rightStickLeft;
-        public Key RightStickLeft
-        {
-            get => _rightStickLeft;
-            set
-            {
-                _rightStickLeft = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key RightStickLeft { get; set; }
 
-        private Key _rightStickRight;
-        public Key RightStickRight
-        {
-            get => _rightStickRight;
-            set
-            {
-                _rightStickRight = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key RightStickRight { get; set; }
 
-        private Key _rightStickButton;
-        public Key RightStickButton
-        {
-            get => _rightStickButton;
-            set
-            {
-                _rightStickButton = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key RightStickButton { get; set; }
 
-        private Key _dpadUp;
-        public Key DpadUp
-        {
-            get => _dpadUp;
-            set
-            {
-                _dpadUp = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key DpadUp { get; set; }
 
-        private Key _dpadDown;
-        public Key DpadDown
-        {
-            get => _dpadDown;
-            set
-            {
-                _dpadDown = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key DpadDown { get; set; }
 
-        private Key _dpadLeft;
-        public Key DpadLeft
-        {
-            get => _dpadLeft;
-            set
-            {
-                _dpadLeft = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key DpadLeft { get; set; }
 
-        private Key _dpadRight;
-        public Key DpadRight
-        {
-            get => _dpadRight;
-            set
-            {
-                _dpadRight = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key DpadRight { get; set; }
 
-        private Key _buttonL;
-        public Key ButtonL
-        {
-            get => _buttonL;
-            set
-            {
-                _buttonL = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonMinus { get; set; }
 
-        private Key _buttonMinus;
-        public Key ButtonMinus
-        {
-            get => _buttonMinus;
-            set
-            {
-                _buttonMinus = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonPlus { get; set; }
 
-        private Key _leftButtonSl;
-        public Key LeftButtonSl
-        {
-            get => _leftButtonSl;
-            set
-            {
-                _leftButtonSl = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonA { get; set; }
 
-        private Key _leftButtonSr;
-        public Key LeftButtonSr
-        {
-            get => _leftButtonSr;
-            set
-            {
-                _leftButtonSr = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonB { get; set; }
 
-        private Key _buttonZl;
-        public Key ButtonZl
-        {
-            get => _buttonZl;
-            set
-            {
-                _buttonZl = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonX { get; set; }
 
-        private Key _buttonCapture;
-        public Key ButtonCapture
-        {
-            get => _buttonCapture;
-            set
-            {
-                _buttonCapture = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonY { get; set; }
 
-        private Key _buttonA;
-        public Key ButtonA
-        {
-            get => _buttonA;
-            set
-            {
-                _buttonA = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonL { get; set; }
 
-        private Key _buttonB;
-        public Key ButtonB
-        {
-            get => _buttonB;
-            set
-            {
-                _buttonB = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonR { get; set; }
 
-        private Key _buttonX;
-        public Key ButtonX
-        {
-            get => _buttonX;
-            set
-            {
-                _buttonX = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonZl { get; set; }
 
-        private Key _buttonY;
-        public Key ButtonY
-        {
-            get => _buttonY;
-            set
-            {
-                _buttonY = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key ButtonZr { get; set; }
 
-        private Key _buttonR;
-        public Key ButtonR
-        {
-            get => _buttonR;
-            set
-            {
-                _buttonR = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key LeftButtonSl { get; set; }
 
-        private Key _buttonPlus;
-        public Key ButtonPlus
-        {
-            get => _buttonPlus;
-            set
-            {
-                _buttonPlus = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key LeftButtonSr { get; set; }
 
-        private Key _rightButtonSl;
-        public Key RightButtonSl
-        {
-            get => _rightButtonSl;
-            set
-            {
-                _rightButtonSl = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key RightButtonSl { get; set; }
 
-        private Key _rightButtonSr;
-        public Key RightButtonSr
-        {
-            get => _rightButtonSr;
-            set
-            {
-                _rightButtonSr = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private Key _buttonZr;
-        public Key ButtonZr
-        {
-            get => _buttonZr;
-            set
-            {
-                _buttonZr = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private Key _buttonHome;
-        public Key ButtonHome
-        {
-            get => _buttonHome;
-            set
-            {
-                _buttonHome = value;
-                OnPropertyChanged();
-            }
-        }
+        [ObservableProperty]
+        public partial Key RightButtonSr { get; set; }
 
         public KeyboardInputConfig(InputConfig config)
         {
             if (config != null)
             {
                 Id = config.Id;
+                Name = config.Name;
                 ControllerType = config.ControllerType;
                 PlayerIndex = config.PlayerIndex;
 
@@ -374,7 +131,6 @@ namespace Ryujinx.Ava.UI.Models.Input
                 LeftButtonSl = keyboardConfig.LeftJoycon.ButtonSl;
                 LeftButtonSr = keyboardConfig.LeftJoycon.ButtonSr;
                 ButtonZl = keyboardConfig.LeftJoycon.ButtonZl;
-                ButtonCapture = keyboardConfig.LeftJoycon.ButtonCapture;
 
                 ButtonA = keyboardConfig.RightJoycon.ButtonA;
                 ButtonB = keyboardConfig.RightJoycon.ButtonB;
@@ -385,15 +141,15 @@ namespace Ryujinx.Ava.UI.Models.Input
                 RightButtonSl = keyboardConfig.RightJoycon.ButtonSl;
                 RightButtonSr = keyboardConfig.RightJoycon.ButtonSr;
                 ButtonZr = keyboardConfig.RightJoycon.ButtonZr;
-                ButtonHome = keyboardConfig.RightJoycon.ButtonHome;
             }
         }
 
         public InputConfig GetConfig()
         {
-            var config = new StandardKeyboardInputConfig
+            StandardKeyboardInputConfig config = new()
             {
                 Id = Id,
+                Name = Name,
                 Backend = InputBackendType.WindowKeyboard,
                 PlayerIndex = PlayerIndex,
                 ControllerType = ControllerType,
@@ -408,7 +164,6 @@ namespace Ryujinx.Ava.UI.Models.Input
                     ButtonZl = ButtonZl,
                     ButtonSl = LeftButtonSl,
                     ButtonSr = LeftButtonSr,
-                    ButtonCapture = ButtonCapture,
                 },
                 RightJoycon = new RightJoyconCommonConfig<Key>
                 {
@@ -421,7 +176,6 @@ namespace Ryujinx.Ava.UI.Models.Input
                     ButtonSr = RightButtonSr,
                     ButtonR = ButtonR,
                     ButtonZr = ButtonZr,
-                    ButtonHome = ButtonHome,
                 },
                 LeftJoyconStick = new JoyconConfigKeyboardStick<Key>
                 {

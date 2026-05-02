@@ -1,6 +1,6 @@
 namespace Ryujinx.HLE.HOS.Services.Am.AppletAE.AllSystemAppletProxiesService.SystemAppletProxy
 {
-    partial class IAppletCommonFunctions : IpcService
+    class IAppletCommonFunctions : IpcService
     {
         public IAppletCommonFunctions() { }
     }

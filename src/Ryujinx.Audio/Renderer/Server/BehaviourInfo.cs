@@ -117,19 +117,19 @@ namespace Ryujinx.Audio.Renderer.Server
         /// </summary>
         /// <remarks>This was added in system update 18.0.0</remarks>
         public const int Revision13 = 13 << 24;
-
+        
         /// <summary>
         /// REV14:
         /// Fixes the Depop Bug.
-        ///
+        /// 
         /// </summary>
         /// <remarks>This was added in system update 19.0.0 </remarks>
         public const int Revision14 = 14 << 24;
-
+        
         /// <summary>
         /// REV15:
         /// Support for float coefficients in biquad filters
-        ///
+        /// 
         /// </summary>
         /// <remarks>This was added in system update 19.0.0 </remarks>
         public const int Revision15 = 15 << 24;
@@ -150,12 +150,12 @@ namespace Ryujinx.Audio.Renderer.Server
         /// Target revision magic supported by the implementation.
         /// </summary>
         public const int ProcessRevision = BaseRevisionMagic + LastRevision;
-
+        
         /// <summary>
         /// Current active revision.
         /// </summary>
         public int UserRevision { get; private set; }
-
+        
         /// <summary>
         /// Current flags of the <see cref="BehaviourInfo"/>.
         /// </summary>
@@ -402,15 +402,6 @@ namespace Ryujinx.Audio.Renderer.Server
         }
 
         /// <summary>
-        /// Check if the audio renderer should support the depop bug fix.
-        /// </summary>
-        /// <returns>True if the audio renderer supports the depop bug fix</returns>
-        public bool IsSplitterDepopBugFixEnabled()
-        {
-            return CheckFeatureSupported(UserRevision, BaseRevisionMagic + Revision14);
-        }
-
-        /// <summary>
         /// Check if the audio renderer should support biquad filter on splitter.
         /// </summary>
         /// <returns>True if the audio renderer support biquad filter on splitter</returns>
@@ -427,7 +418,16 @@ namespace Ryujinx.Audio.Renderer.Server
         {
             return CheckFeatureSupported(UserRevision, BaseRevisionMagic + Revision13);
         }
-
+        
+        /// <summary>
+        /// Check if the audio renderer should support the depop bug fix.
+        /// </summary>
+        /// <returns>True if the audio renderer supports the depop bug fix</returns>
+        public bool IsSplitterDepopBugFixEnabled()
+        {
+            return CheckFeatureSupported(UserRevision, BaseRevisionMagic + Revision14);
+        }
+        
         /// <summary>
         /// Check if the audio renderer should support biquad filter with float coefficients.
         /// </summary>
@@ -493,7 +493,7 @@ namespace Ryujinx.Audio.Renderer.Server
             }
 
             errorCount = Math.Min(_errorIndex, Constants.MaxErrorInfos);
-
+            
             _errorInfos.AsSpan().CopyTo(errorInfos);
         }
 

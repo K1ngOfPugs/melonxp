@@ -1,10 +1,13 @@
 using Ryujinx.Common;
+using System.Threading;
 using System.Timers;
 
 namespace Ryujinx.HLE
 {
     public class PerformanceStatistics
     {
+        private readonly Switch _device;
+
         private const int FrameTypeGame = 0;
         private const int PercentTypeFifo = 0;
 
@@ -20,15 +23,17 @@ namespace Ryujinx.HLE
         private readonly long[] _framesRendered;
         private readonly double[] _percentTime;
 
-        private readonly object[] _frameLock;
-        private readonly object[] _percentLock;
+        private readonly Lock[] _frameLock = [new()];
+        private readonly Lock[] _percentLock = [new()];
 
         private readonly double _ticksToSeconds;
 
-        private readonly Timer _resetTimer;
+        private readonly System.Timers.Timer _resetTimer;
 
-        public PerformanceStatistics()
+        public PerformanceStatistics(Switch device)
         {
+            _device = device;
+
             _frameRate = new double[1];
             _accumulatedFrameTime = new double[1];
             _previousFrameTime = new double[1];
@@ -41,10 +46,7 @@ namespace Ryujinx.HLE
             _framesRendered = new long[1];
             _percentTime = new double[1];
 
-            _frameLock = new[] { new object() };
-            _percentLock = new[] { new object() };
-
-            _resetTimer = new Timer(750);
+            _resetTimer = new(750);
 
             _resetTimer.Elapsed += ResetTimerElapsed;
             _resetTimer.AutoReset = true;
@@ -162,6 +164,13 @@ namespace Ryujinx.HLE
         public double GetGameFrameTime()
         {
             return 1000 / _frameRate[FrameTypeGame];
+        }
+
+        public string FormatFifoPercent()
+        {
+            double fifoPercent = GetFifoPercent();
+
+            return $"FIFO: {fifoPercent:00.00}%";
         }
     }
 }

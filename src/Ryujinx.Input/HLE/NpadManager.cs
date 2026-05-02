@@ -1,12 +1,16 @@
+using Ryujinx.Common;
 using Ryujinx.Common.Configuration.Hid;
 using Ryujinx.Common.Configuration.Hid.Controller;
 using Ryujinx.Common.Configuration.Hid.Keyboard;
 using Ryujinx.HLE.HOS.Services.Hid;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using CemuHookClient = Ryujinx.Input.Motion.CemuHook.Client;
 using ControllerType = Ryujinx.Common.Configuration.Hid.ControllerType;
 using PlayerIndex = Ryujinx.HLE.HOS.Services.Hid.PlayerIndex;
@@ -18,16 +22,13 @@ namespace Ryujinx.Input.HLE
     {
         private readonly CemuHookClient _cemuHookClient;
 
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
 
         private bool _blockInputUpdates;
 
         private const int MaxControllers = 9;
 
         private readonly NpadController[] _controllers;
-        
-        private readonly List<GamepadInput> _hleInputStatesCache = new(MaxControllers);
-        private readonly List<SixAxisInput> _hleMotionStatesCache = new(MaxControllers * 2);
 
         private readonly IGamepadDriver _keyboardDriver;
         private readonly IGamepadDriver _gamepadDriver;
@@ -38,6 +39,9 @@ namespace Ryujinx.Input.HLE
         private bool _enableKeyboard;
         private bool _enableMouse;
         private Switch _device;
+        
+        private readonly List<GamepadInput> _hleInputStates = [];
+        private readonly List<SixAxisInput> _hleMotionStates = new(NpadDevices.MaxControllers);
 
         public NpadManager(IGamepadDriver keyboardDriver, IGamepadDriver gamepadDriver, IGamepadDriver mouseDriver)
         {
@@ -47,7 +51,7 @@ namespace Ryujinx.Input.HLE
             _keyboardDriver = keyboardDriver;
             _gamepadDriver = gamepadDriver;
             _mouseDriver = mouseDriver;
-            _inputConfig = new List<InputConfig>();
+            _inputConfig = [];
 
             _gamepadDriver.OnGamepadConnected += HandleOnGamepadConnected;
             _gamepadDriver.OnGamepadDisconnected += HandleOnGamepadDisconnected;
@@ -57,8 +61,8 @@ namespace Ryujinx.Input.HLE
         {
             lock (_lock)
             {
-                List<InputConfig> validInputs = new();
-                foreach (var inputConfigEntry in _inputConfig)
+                List<InputConfig> validInputs = [];
+                foreach (InputConfig inputConfigEntry in _inputConfig)
                 {
                     if (_controllers[(int)inputConfigEntry.PlayerIndex] != null)
                     {
@@ -94,16 +98,38 @@ namespace Ryujinx.Input.HLE
             // Force input reload
             ReloadConfiguration(_inputConfig, _enableKeyboard, _enableMouse);
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool DriverConfigurationUpdate(ref NpadController controller, InputConfig config)
+        {
+            IGamepadDriver targetDriver = _gamepadDriver;
+
+            if (config is StandardControllerInputConfig)
+            {
+                targetDriver = _gamepadDriver;
+            }
+            else if (config is StandardKeyboardInputConfig)
+            {
+                targetDriver = _keyboardDriver;
+            }
+
+            Debug.Assert(targetDriver != null, "Unknown input configuration!");
+
+            if (controller.GamepadDriver != targetDriver || controller.Id != config.Id)
+            {
+                return controller.UpdateDriverConfiguration(targetDriver, config);
+            }
+
+            return controller.GamepadDriver != null;
+        }
+
         public void ReloadConfiguration(List<InputConfig> inputConfig, bool enableKeyboard, bool enableMouse)
         {
             lock (_lock)
             {
                 NpadController[] oldControllers = _controllers.ToArray();
 
-                Console.WriteLine($"Reloading input configuration... {inputConfig} controllers");
-
-                List<InputConfig> validInputs = new();
+                List<InputConfig> validInputs = [];
 
                 foreach (InputConfig inputConfigEntry in inputConfig)
                 {
@@ -122,10 +148,6 @@ namespace Ryujinx.Input.HLE
                     }
 
                     bool isValid = DriverConfigurationUpdate(ref controller, inputConfigEntry);
-
-                    Console.WriteLine(isValid
-                        ? $" - Player {inputConfigEntry.PlayerIndex}: Connected '{controller.Id}' as {inputConfigEntry.ControllerType}"
-                        : $" - Player {inputConfigEntry.PlayerIndex}: No valid controller found for configuration '{inputConfigEntry.Id}'");
 
                     if (!isValid)
                     {
@@ -168,6 +190,15 @@ namespace Ryujinx.Input.HLE
             }
         }
 
+        public bool InputUpdatesBlocked
+        {
+            get
+            {
+                lock (_lock)
+                    return _blockInputUpdates;
+            }
+        }
+
         public void BlockInputUpdates()
         {
             lock (_lock)
@@ -188,100 +219,126 @@ namespace Ryujinx.Input.HLE
         {
             lock (_lock)
             {
-                if (_blockInputUpdates) return;
+                _hleInputStates.Clear();
+                _hleMotionStates.Clear();
 
-                _hleInputStatesCache.Clear();
-                _hleMotionStatesCache.Clear();
+                KeyboardInput? hleKeyboardInput = null;
 
                 foreach (InputConfig inputConfig in _inputConfig)
                 {
-                    NpadController controller = _controllers[(int)inputConfig.PlayerIndex];
-                    if (controller == null) continue;
+                    GamepadInput inputState = default;
+                    (SixAxisInput, SixAxisInput) motionState = default;
 
+                    NpadController controller = _controllers[(int)inputConfig.PlayerIndex];
                     PlayerIndex playerIndex = (PlayerIndex)inputConfig.PlayerIndex;
 
-                    DriverConfigurationUpdate(ref controller, inputConfig);
+                    bool isJoyconPair = false;
 
-                    controller.UpdateUserConfiguration(inputConfig);
-                    controller.Update();
-                    
-                    var rumbleQueue = _device.Hid.Npads.GetRumbleQueue(playerIndex);
-                    if (rumbleQueue.Count > 0)
+                    // Do we allow input updates and is a controller connected?
+                    if (!_blockInputUpdates && controller != null)
                     {
-                        controller.UpdateRumble(rumbleQueue);
+                        DriverConfigurationUpdate(ref controller, inputConfig);
+
+                        controller.UpdateUserConfiguration(inputConfig);
+                        controller.Update();
+                        controller.UpdateRumble(_device.Hid.Npads.GetRumbleQueue(playerIndex));
+
+                        inputState = controller.GetHLEInputState();
+
+                        inputState.Buttons |= _device.Hid.UpdateStickButtons(inputState.LStick, inputState.RStick);
+
+                        isJoyconPair = inputConfig.ControllerType == ControllerType.JoyconPair;
+
+                        SixAxisInput altMotionState = isJoyconPair ? controller.GetHLEMotionState(true) : default;
+
+                        motionState = (controller.GetHLEMotionState(), altMotionState);
+                    }
+                    else
+                    {
+                        // Ensure that orientation isn't null
+                        motionState.Item1.Orientation = new float[9];
                     }
 
-                    GamepadInput inputState = controller.GetHLEInputState();
-                    inputState.Buttons |= _device.Hid.UpdateStickButtons(inputState.LStick, inputState.RStick);
                     inputState.PlayerId = playerIndex;
-                    _hleInputStatesCache.Add(inputState);
+                    motionState.Item1.PlayerId = playerIndex;
 
-                    SixAxisInput motionMain = controller.GetHLEMotionState();
-                    motionMain.PlayerId = playerIndex;
-                    _hleMotionStatesCache.Add(motionMain);
+                    _hleInputStates.Add(inputState);
+                    _hleMotionStates.Add(motionState.Item1);
 
-                    if (inputConfig.ControllerType == ControllerType.JoyconPair)
+                    if (isJoyconPair && !motionState.Item2.Equals(default))
                     {
-                        SixAxisInput motionAlt = controller.GetHLEMotionState(true);
-                        if (!motionAlt.Equals(default))
-                        {
-                            motionAlt.PlayerId = playerIndex;
-                            _hleMotionStatesCache.Add(motionAlt);
-                        }
+                        motionState.Item2.PlayerId = playerIndex;
+
+                        _hleMotionStates.Add(motionState.Item2);
                     }
                 }
 
-                _device.Hid.Npads.Update(_hleInputStatesCache);
-                _device.Hid.Npads.UpdateSixAxis(_hleMotionStatesCache);
-
-                if (_enableKeyboard)
+                if (!_blockInputUpdates && _enableKeyboard)
                 {
-                    var hleKeyboard = NpadController.GetHLEKeyboardInput(_keyboardDriver);
-                    if (hleKeyboard.Keys.Length != 0) _device.Hid.Keyboard.Update(hleKeyboard);
+                    hleKeyboardInput = NpadController.GetHLEKeyboardInput(_keyboardDriver);
                 }
 
-                if (_enableMouse) UpdateMouse(aspectRatio);
+                _device.Hid.Npads.Update(_hleInputStates);
+                _device.Hid.Npads.UpdateSixAxis(_hleMotionStates);
 
-                _device.TamperMachine.UpdateInput(_hleInputStatesCache);
+                if (hleKeyboardInput.HasValue)
+                {
+                    _device.Hid.Keyboard.Update(hleKeyboardInput.Value);
+                }
+
+                if (_enableMouse)
+                {
+                    IMouse mouse = _mouseDriver.GetGamepad("0") as IMouse;
+
+                    MouseStateSnapshot mouseInput = IMouse.GetMouseStateSnapshot(mouse);
+
+                    uint buttons = 0;
+
+                    if (mouseInput.IsPressed(MouseButton.Button1))
+                    {
+                        buttons |= 1 << 0;
+                    }
+
+                    if (mouseInput.IsPressed(MouseButton.Button2))
+                    {
+                        buttons |= 1 << 1;
+                    }
+
+                    if (mouseInput.IsPressed(MouseButton.Button3))
+                    {
+                        buttons |= 1 << 2;
+                    }
+
+                    if (mouseInput.IsPressed(MouseButton.Button4))
+                    {
+                        buttons |= 1 << 3;
+                    }
+
+                    if (mouseInput.IsPressed(MouseButton.Button5))
+                    {
+                        buttons |= 1 << 4;
+                    }
+
+                    Vector2 position = IMouse.GetScreenPosition(mouseInput.Position, mouse.ClientSize, aspectRatio);
+
+                    _device.Hid.Mouse.Update((int)position.X, (int)position.Y, buttons, (int)mouseInput.Scroll.X, (int)mouseInput.Scroll.Y, true);
+                    
+                    ArrayPool<bool>.Shared.Return(mouseInput.ButtonState);
+                }
+                else
+                {
+                    _device.Hid.Mouse.Update(0, 0);
+                }
+
+                _device.TamperMachine.UpdateInput(_hleInputStates);
             }
         }
-
-        private void UpdateMouse(float aspectRatio)
-        {
-            var mouse = _mouseDriver.GetGamepad("0") as IMouse;
-            if (mouse == null) return;
-
-            var mouseInput = IMouse.GetMouseStateSnapshot(mouse);
-            uint buttons = 0;
-            if (mouseInput.IsPressed(MouseButton.Button1)) buttons |= 1 << 0;
-            if (mouseInput.IsPressed(MouseButton.Button2)) buttons |= 1 << 1;
-            if (mouseInput.IsPressed(MouseButton.Button3)) buttons |= 1 << 2;
-            if (mouseInput.IsPressed(MouseButton.Button4)) buttons |= 1 << 3;
-            if (mouseInput.IsPressed(MouseButton.Button5)) buttons |= 1 << 4;
-
-            var position = IMouse.GetScreenPosition(mouseInput.Position, mouse.ClientSize, aspectRatio);
-            _device.Hid.Mouse.Update((int)position.X, (int)position.Y, buttons, (int)mouseInput.Scroll.X, (int)mouseInput.Scroll.Y, true);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool DriverConfigurationUpdate(ref NpadController controller, InputConfig config)
-        {
-            IGamepadDriver targetDriver = config is StandardKeyboardInputConfig ? _keyboardDriver : _gamepadDriver;
-
-            if (controller.GamepadDriver != targetDriver || controller.Id != config.Id)
-            {
-                return controller.UpdateDriverConfiguration(targetDriver, config);
-            }
-
-            return true;
-        }
-
 
         internal InputConfig GetPlayerInputConfigByIndex(int index)
         {
             lock (_lock)
             {
-                return _inputConfig.Find(x => x.PlayerIndex == (Common.Configuration.Hid.PlayerIndex)index);
+                return _inputConfig.FirstOrDefault(x => x.PlayerIndex == (Common.Configuration.Hid.PlayerIndex)index);
             }
         }
 

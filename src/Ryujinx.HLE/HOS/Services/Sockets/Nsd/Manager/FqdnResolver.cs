@@ -24,10 +24,10 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Nsd.Manager
 
         public static ResultCode Resolve(string address, out string resolvedAddress)
         {
-            if (address == "api.sect.srv.nintendo.net" ||
-                address == "ctest.cdn.nintendo.net" ||
-                address == "ctest.cdn.n.nintendoswitch.cn" ||
-                address == "unknown.dummy.nintendo.net")
+            if (address is "api.sect.srv.nintendo.net" or
+                "ctest.cdn.nintendo.net" or
+                "ctest.cdn.n.nintendoswitch.cn" or
+                "unknown.dummy.nintendo.net")
             {
                 resolvedAddress = address;
             }
@@ -36,7 +36,7 @@ namespace Ryujinx.HLE.HOS.Services.Sockets.Nsd.Manager
                 // TODO: Load Environment from the savedata.
                 address = address.Replace("%", IManager.NsdSettings.Environment);
 
-                resolvedAddress = "";
+                resolvedAddress = string.Empty;
 
                 if (IManager.NsdSettings == null)
                 {

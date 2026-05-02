@@ -3,6 +3,7 @@ using Ryujinx.Horizon.Sdk.Fs;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
 
 namespace Ryujinx.Horizon.Sdk.Ngc.Detail
 {
@@ -22,13 +23,12 @@ namespace Ryujinx.Horizon.Sdk.Ngc.Detail
         }
 
         private readonly IFsClient _fsClient;
-        private readonly object _lock;
+        private readonly Lock _lock = new();
         private bool _intialized;
         private ulong _cacheSize;
 
         public ContentsReader(IFsClient fsClient)
         {
-            _lock = new();
             _fsClient = fsClient;
         }
 
@@ -47,6 +47,7 @@ namespace Ryujinx.Horizon.Sdk.Ngc.Detail
                     {
                         path = $"{MountName}:/ac_{regionIndex}_not_b_nx";
                     }
+
                     break;
                 case AcType.AcB1:
                     if (regionIndex < 0)
@@ -57,6 +58,7 @@ namespace Ryujinx.Horizon.Sdk.Ngc.Detail
                     {
                         path = $"{MountName}:/ac_{regionIndex}_b1_nx";
                     }
+
                     break;
                 case AcType.AcB2:
                     if (regionIndex < 0)
@@ -67,6 +69,7 @@ namespace Ryujinx.Horizon.Sdk.Ngc.Detail
                     {
                         path = $"{MountName}:/ac_{regionIndex}_b2_nx";
                     }
+
                     break;
                 case AcType.AcSimilarForm:
                     path = $"{MountName}:/ac_similar_form_nx";

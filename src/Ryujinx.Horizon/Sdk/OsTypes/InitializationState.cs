@@ -1,6 +1,6 @@
 namespace Ryujinx.Horizon.Sdk.OsTypes
 {
-    public enum InitializationState : byte
+    enum InitializationState : byte
     {
         NotInitialized,
         Initialized,

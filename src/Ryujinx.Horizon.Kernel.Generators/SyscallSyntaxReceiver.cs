@@ -11,12 +11,12 @@ namespace Ryujinx.Horizon.Kernel.Generators
 
         public SyscallSyntaxReceiver()
         {
-            SvcImplementations = new List<MethodDeclarationSyntax>();
+            SvcImplementations = [];
         }
 
         public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
         {
-            if (!(syntaxNode is ClassDeclarationSyntax classDeclaration) || classDeclaration.AttributeLists.Count == 0)
+            if (syntaxNode is not ClassDeclarationSyntax classDeclaration || classDeclaration.AttributeLists.Count == 0)
             {
                 return;
             }
@@ -27,7 +27,7 @@ namespace Ryujinx.Horizon.Kernel.Generators
                 return;
             }
 
-            foreach (var memberDeclaration in classDeclaration.Members)
+            foreach (MemberDeclarationSyntax memberDeclaration in classDeclaration.Members)
             {
                 if (memberDeclaration is MethodDeclarationSyntax methodDeclaration)
                 {

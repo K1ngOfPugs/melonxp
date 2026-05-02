@@ -123,7 +123,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
         public void Cset(Operand rd, ArmCondition condition)
         {
-            var zr = Factory.Register(ZrRegister, RegisterType.Integer, rd.Type);
+            Operand zr = Factory.Register(ZrRegister, RegisterType.Integer, rd.Type);
             Csinc(rd, zr, zr, (ArmCondition)((int)condition ^ 1));
         }
 
@@ -181,10 +181,10 @@ namespace ARMeilleure.CodeGen.Arm64
 
         public void Fmov(Operand rd, Operand rn, bool topHalf)
         {
-            Debug.Assert(rd.Type.IsInteger() != rn.Type.IsInteger());
+            Debug.Assert(rd.Type.IsInteger != rn.Type.IsInteger);
             Debug.Assert(rd.Type == OperandType.I64 || rn.Type == OperandType.I64 || !topHalf);
 
-            uint opcode = rd.Type.IsInteger() ? 0b110u : 0b111u;
+            uint opcode = rd.Type.IsInteger ? 0b110u : 0b111u;
 
             uint rmode = topHalf ? 1u << 19 : 0u;
             uint ftype = rd.Type == OperandType.FP64 || rn.Type == OperandType.FP64 ? 1u << 22 : 0u;
@@ -411,7 +411,7 @@ namespace ARMeilleure.CodeGen.Arm64
 
         public void Mov(Operand rd, Operand rn)
         {
-            if (rd.Type.IsInteger())
+            if (rd.Type.IsInteger)
             {
                 Orr(rd, Factory.Register(ZrRegister, RegisterType.Integer, rd.Type), rn);
             }
@@ -774,6 +774,7 @@ namespace ARMeilleure.CodeGen.Arm64
                     instI |= 1 << 22; // sh flag
                     imm >>= 12;
                 }
+
                 WriteInstructionAuto(instI | (EncodeUImm12(imm, 0) << 10), rd, rn);
             }
             else
@@ -972,7 +973,7 @@ namespace ARMeilleure.CodeGen.Arm64
             uint instruction;
             int scale;
 
-            if (type.IsInteger())
+            if (type.IsInteger)
             {
                 instruction = intInst;
 
@@ -1008,7 +1009,7 @@ namespace ARMeilleure.CodeGen.Arm64
         {
             uint instruction;
 
-            if (type.IsInteger())
+            if (type.IsInteger)
             {
                 instruction = intInst;
 

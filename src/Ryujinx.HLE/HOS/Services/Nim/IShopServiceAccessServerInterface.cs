@@ -6,7 +6,7 @@ using Ryujinx.HLE.HOS.Services.Nim.ShopServiceAccessServerInterface;
 namespace Ryujinx.HLE.HOS.Services.Nim
 {
     [Service("nim:eca")] // 5.0.0+
-    partial class IShopServiceAccessServerInterface : IpcService
+    class IShopServiceAccessServerInterface : IpcService
     {
         public IShopServiceAccessServerInterface(ServiceCtx context) { }
 
