@@ -1,0 +1,56 @@
+name: Build MeloNX (iOS)
+
+on:
+  workflow_dispatch: # Allows you to run this manually from the Actions tab
+
+jobs:
+  build:
+    runs-on: macos-latest # Uses the latest macOS runner with Xcode installed
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Select Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Build Ryujinx Dependencies
+        run: |
+          # If there is a specific build script for the .NET side, run it here.
+          # Usually, for Ryujinx forks, we need to publish the headless project.
+          dotnet restore
+          dotnet build -c Release
+
+      - name: Update Bundle Identifier
+        run: |
+          # Replaces the default bundle ID with a placeholder or your specific one
+          # You can change 'com.github.MeloNX' to whatever you prefer
+          sed -i '' 's/com.melonx.MeloNX/com.kip.MeloNX/g' src/MeloNX/MeloNX.xcodeproj/project.pbxproj
+
+      - name: Build Xcode Project
+        run: |
+          # This command handles the "Build and Run" equivalent
+          # 'CODE_SIGNING_ALLOWED=NO' allows building without a physical dev account tied to the runner.
+          # 'Embed & Sign' behavior is handled via the build settings.
+          xcodebuild build \
+            -project src/MeloNX/MeloNX.xcodeproj \
+            -scheme MeloNX \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_ING_REQUIRED=NO \
+            CODE_SIGN_ENTITLEMENTS="" \
+            CODE_SIGNING_IDENTITY=""
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeloNX-Build
+          path: build/Build/Products/Release-iphoneos/MeloNX.app
